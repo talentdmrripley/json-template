@@ -353,11 +353,11 @@ function _Compile(template_str, options) {
         token = token.substring(1, token.length);
         log('token3: "'+ token+'"');
 
-        literal = {
+        var literal = {
             'meta-left': meta_left,
             'meta-right': meta_right,
             'space': ' ',
-            }[token]
+            }[token];
 
         if (literal !== undefined) {
           current_block.Append(literal);

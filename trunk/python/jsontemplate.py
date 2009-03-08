@@ -108,9 +108,16 @@ def _MakeTokenRegex(meta_left, meta_right):
 
 class _ProgramBuilder(object):
 
-  def __init__(self):
+  def __init__(self, more_formatters):
+    """
+    Args:
+      more_formatters: A function which returns a function to apply to the
+          value, given a format string.  It can return None, in which case the
+          DEFAULT_FORMATTERS dictionary is consulted.
+    """
     self.current_block = _StatementBlock()
     self.stack = [self.current_block]
+    self.more_formatters = more_formatters
 
   def Append(self, statement):
     """
@@ -119,8 +126,20 @@ class _ProgramBuilder(object):
     """
     self.current_block.Append(statement)
 
+  def _GetFormatter(self, format_str):
+    """The user's formatters are consulted first, then the default
+    formatters."""
+    formatter = (
+        self.more_formatters(format_str) or DEFAULT_FORMATTERS.get(format_str))
+
+    if formatter:
+      return formatter
+    else:
+      raise BadFormatter('%r is not a valid formatter' % format_str)
+
   def AppendSubstitution(self, name, formatters):
-      self.current_block.Append((_DoSubstitute, (name, formatters)))
+    formatters = [self._GetFormatter(f) for f in formatters]
+    self.current_block.Append((_DoSubstitute, (name, formatters)))
 
   def NewSection(self, repeated, section_name):
     """
@@ -258,19 +277,21 @@ DEFAULT_FORMATTERS = {
     }
 
 
-def _Compile(
-    template_str, builder, meta='{}', format_char='|', more_formatters=lambda x:
-    None):
+def ParseTemplate(
+    template_str, builder, meta='{}', format_char='|', default_formatter='str'):
+  """
+  Args:
+    template_str: The template string.  It should not have any compilation
+        options in the header -- those are parsed by FromString/FromFile.
+    builder: Something with the interface of _ProgramBuilder
+    meta: metacharacters to use.
+    default_formatter: The formatter to use if none is specified in the
+        template.  The 'str' formatter is the default default -- it just tries
+        to convert the context value to a string in some unspecified manner.
 
-  def _GetFormatter(format_str):
-    """Helper function.  The user's formatters are consulted first."""
-    formatter = (
-        more_formatters(format_str) or DEFAULT_FORMATTERS.get(format_str))
-
-    if formatter:
-      return formatter
-    else:
-      raise BadFormatter('%r is not a valid formatter' % format_str)
+  This function is public so it can be used by other tools, e.g. a syntax
+  checking tool run before submitting a template to source control.
+  """
 
   # Split the metacharacters
   n = len(meta)
@@ -362,11 +383,11 @@ def _Compile(
       if len(parts) == 1:
         # If no formatter is specified, the default is the 'str' formatter,
         # which the user can define however they desire.
-        formatters = [_GetFormatter('str')]
         name = token
+        formatters = [default_formatter]
       else:
-        formatters = [_GetFormatter(name) for name in parts[1:]]
         name = parts[0]
+        formatters = parts[1:]
 
       builder.AppendSubstitution(name, formatters)
       if had_newline:
@@ -442,12 +463,14 @@ class Template(object):
   TODO: more docs.
   """
 
-  def __init__(self, template_str, builder=None, **compile_options):
+  def __init__(
+      self, template_str, builder=None, more_formatters=lambda x: None,
+      **compile_options):
     """
-    See _Compile for options.
+    See ParseTemplate for options.
     """
-    builder = builder or _ProgramBuilder()
-    self._program = _Compile(template_str, builder, **compile_options)
+    builder = builder or _ProgramBuilder(more_formatters)
+    self._program = ParseTemplate(template_str, builder, **compile_options)
 
   _OPTION_RE = re.compile(r'^([a-zA-Z\-]+)\s+(.*)')
   # TODO: whitespace mode, etc.
