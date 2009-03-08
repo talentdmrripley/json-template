@@ -120,7 +120,7 @@ class _ProgramBuilder(object):
           value, given a format string.  It can return None, in which case the
           DEFAULT_FORMATTERS dictionary is consulted.
     """
-    self.current_block = _StatementBlock()
+    self.current_block = _Section()
     self.stack = [self.current_block]
     self.more_formatters = more_formatters
 
@@ -150,7 +150,7 @@ class _ProgramBuilder(object):
     """
     For sections or repeated sections.
     """
-    new_block = _StatementBlock(section_name)
+    new_block = _Section(section_name)
     if repeated:
       func = _DoRepeatedSection
     else:
@@ -175,7 +175,7 @@ class _ProgramBuilder(object):
     return self.current_block
 
 
-class _StatementBlock(object):
+class _Section(object):
 
   def __init__(self, section_name=None):
     """
@@ -609,7 +609,7 @@ def _Execute(statements, context, callback):
       callback(statement)
     else:
       # In the case of a substitution, args is a pair (name, formatter).
-      # In the case of a section, it's a _StatementBlock instance.
+      # In the case of a section, it's a _Section instance.
       func, args = statement
       func(args, context, callback)
 

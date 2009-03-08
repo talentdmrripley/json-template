@@ -149,7 +149,7 @@ function _ScopedContext(context) {
 }
 
 
-function _StatementBlock(section_name) {
+function _Section(section_name) {
   var current_clause = [];
   var statements = {'default': current_clause};
 
@@ -332,7 +332,7 @@ function _Compile(template_str, options) {
 
   var token_re = _MakeTokenRegex(meta_left, meta_right);
   var tokens = template_str.split(token_re);
-  var current_block = _StatementBlock();
+  var current_block = _Section();
   var stack = [current_block];
 
   var strip_num = meta_left.length;  // assume they're the same length
@@ -381,7 +381,7 @@ function _Compile(template_str, options) {
           var func = repeated ? _DoRepeatedSection : _DoSection;
           log('repeated ' + repeated + ' section_name ' + section_name);
 
-          var new_block = _StatementBlock(section_name);
+          var new_block = _Section(section_name);
           current_block.Append([func, new_block]);
           stack.push(new_block);
           current_block = new_block;

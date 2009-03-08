@@ -774,6 +774,7 @@ def main(argv):
       # Until we have better test filtering:
       params.OptionalBoolean('python'),
       params.OptionalBoolean('javascript'),
+      params.OptionalBoolean('all-tests'),
       ]
 
   options = cmdapp.ParseArgv(argv, run_params)
@@ -788,22 +789,27 @@ def main(argv):
   js_verifier = javascript_verifier.V8ShellVerifier(
       options.v8_shell, js_impl, helpers)
 
+  internal_tests = [
+      # Things we can't test externally
+      TokenizeTest(testy.StandardVerifier()),
+      FromStringTest(testy.StandardVerifier()),
+      InternalTemplateTest(v),
+
+      # Internal version
+      Template2Test(v),
+      ]
+
   # External versions
-  if options.python:
+  if options.all_tests:
+    tests = internal_tests + [
+        Template2Test(py_verifier), Template2Test(js_verifier)]
+  elif options.python:
     tests = [Template2Test(py_verifier)]
   elif options.javascript:
     tests = [Template2Test(js_verifier)]
   else:
   # TODO: instantiate these more easily
-    tests = [
-        # Things we can't test externally
-        TokenizeTest(testy.StandardVerifier()),
-        FromStringTest(testy.StandardVerifier()),
-        InternalTemplateTest(v),
-
-        # Internal version
-        Template2Test(v),
-        ]
+    tests = internal_tests
 
   testy.RunTests(tests, options)
 
