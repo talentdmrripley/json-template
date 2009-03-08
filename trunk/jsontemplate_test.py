@@ -765,7 +765,7 @@ def main(argv):
   py_verifier = python_verifier.ExternalVerifier(python_impl)
 
   js_impl = os.path.join(this_dir, 'javascript', 'json-template.js')
-  helpers = os.path.join(this_dir, '..', 'pan', 'javascript', 'test_helpers.js')
+  helpers = os.path.join(this_dir, 'pan', 'javascript', 'test_helpers.js')
   js_verifier = javascript_verifier.V8ShellVerifier(
       options.v8_shell, js_impl, helpers)
 
