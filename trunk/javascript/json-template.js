@@ -290,7 +290,14 @@ var _SECTION_RE = /(repeated)?\s*(section)\s+(\S+)?/;
 // compile on the server side.
 function _Compile(template_str, options) {
   var more_formatters = options.more_formatters || {};
-  var default_formatter = options.default_formatter || 'str'; 
+
+  // We want to allow an explicit null value for default_formatter, which means
+  // that an error is raised if no formatter is specified.
+  if (options.default_formatter === undefined) {
+    var default_formatter = 'str'; 
+  } else {
+    var default_formatter = options.default_formatter;
+  }
 
   function GetFormatter(format_str) {
     var formatter = more_formatters[format_str] ||
@@ -413,6 +420,12 @@ function _Compile(template_str, options) {
       var formatters;
       var name;
       if (parts.length == 1) {
+        if (default_formatter === null) {
+            throw {
+              name: 'MissingFormatter',
+              message: 'This template requires explicit formatters.'
+            };
+        }
         // If no formatter is specified, the default is the 'str' formatter,
         // which the user can define however they desire.
         formatters = [GetFormatter(default_formatter)];

@@ -437,7 +437,11 @@ def FromFile(f, _constructor=None):
     if match:
       name, value = match.group(1), match.group(2)
       if name in Template._OPTION_NAMES:
-        options[name.replace('-', '_')] = value.strip()
+        name = name.replace('-', '_')
+        value = value.strip()
+        if name == 'default_formatter' and value.lower() == 'none':
+          value = None
+        options[name] = value
       else:
         break
     else:
