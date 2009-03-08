@@ -28,7 +28,7 @@ import os
 import sys
 
 if __name__ == '__main__':
-  sys.path.insert(0, os.path.join(os.path.dirname(sys.argv[0]), '../..'))
+  sys.path.insert(0, os.path.join(os.path.dirname(sys.argv[0]), '..'))
 
 from pan.core import json
 from python import jsontemplate
