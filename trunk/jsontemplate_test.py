@@ -36,11 +36,11 @@ from pan.core import params
 from pan.core import json
 from pan.test import testy
 
-from jsontemplate.python import jsontemplate  # module under *direct* test
+from python import jsontemplate  # module under *direct* test
 
 # External verifiers:
-from jsontemplate.javascript import verifier as javascript_verifier
-from jsontemplate.python import verifier as python_verifier
+from javascript import verifier as javascript_verifier
+from python import verifier as python_verifier
 
 # Backward-compatible naming
 template2 = jsontemplate
