@@ -226,12 +226,17 @@ class Template2Test(testy.PyUnitCompatibleTest):
     t = self.Template('Where is your {name:html}', format_char=':')
     self.verify.Expansion(t, {'name': '<head>'}, 'Where is your &lt;head&gt;')
 
-  def testBadFormats(self):
+  def testBadFormatters(self):
     self.verify.CompilationError(
         template2.BadFormatter, 'Where is your {name|BAD}')
 
     self.verify.CompilationError(
         template2.BadFormatter, 'Where is your {name|really|bad}')
+
+  def testMissingFormatter(self):
+    self.verify.CompilationError(
+        template2.MissingFormatter, 'What is your {name}',
+        default_formatter=None)
 
   def testEscapeMetacharacter(self):
     t = self.Template('[.meta-left]Hello[.meta-right]', meta='[]')

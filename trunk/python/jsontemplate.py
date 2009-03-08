@@ -61,6 +61,11 @@ class BadFormatter(CompilationError):
   Raised when a bad formatter is specified, e.g. [variable|BAD]
   """
 
+class MissingFormatter(CompilationError):
+  """
+  Raised when a bad formatter is specified, e.g. [variable|BAD]
+  """
+
 class ConfigurationError(CompilationError):
   """Bad metacharacters."""
 
@@ -257,6 +262,7 @@ def _ToString(x):
   else:
     return pprint.pformat(x)
 
+
 # See http://google-ctemplate.googlecode.com/svn/trunk/doc/howto.html for more
 # escape types.
 #
@@ -381,6 +387,8 @@ def ParseTemplate(
       # Now we know the directive is a substitution.
       parts = token.split(format_char)
       if len(parts) == 1:
+        if default_formatter is None:
+          raise MissingFormatter('This template requires explicit formatters.')
         # If no formatter is specified, the default is the 'str' formatter,
         # which the user can define however they desire.
         name = token
