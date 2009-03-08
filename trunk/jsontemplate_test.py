@@ -750,16 +750,19 @@ class InternalTemplateTest(testy.PyUnitCompatibleTest):
 
 
 def main(argv):
+  this_dir = os.path.dirname(__file__)
+
+  # e.g. this works on my Ubuntu system
+  default_v8_shell = os.path.join(
+      this_dir, 'javascript', 'v8shell', 'linux-i686', 'shell')
+
   run_params = testy.TEST_RUN_PARAMS + [
-      params.OptionalString(
-          'v8-shell', default='/home/andy/svn/v8-read-only/shell'),
+      params.OptionalString('v8-shell', default=default_v8_shell),
       ]
 
   options = cmdapp.ParseArgv(argv, run_params)
 
   v = _InternalTemplateVerifier()
-
-  this_dir = os.path.dirname(__file__)
 
   python_impl = os.path.join(this_dir, 'python', 'expand.py')
   py_verifier = python_verifier.ExternalVerifier(python_impl)
