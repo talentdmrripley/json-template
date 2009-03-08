@@ -186,6 +186,10 @@ class Template2Test(testy.PyUnitCompatibleTest):
     t = self.Template('Hello {# Comment} There')
     self.verify.Expansion(t, {}, 'Hello  There')
 
+  def testSpace(self):
+    t = self.Template('{.space}{.space}')
+    self.verify.Expansion(t, {}, '  ')
+
   def testOnlyDeclaration(self):
     t = self.Template('{# Comment}')
     self.verify.Expansion(t, {}, '')

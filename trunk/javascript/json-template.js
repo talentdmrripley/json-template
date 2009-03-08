@@ -352,13 +352,15 @@ function _Compile(template_str, options) {
       if (token[0] == '.') {  // Keyword
         token = token.substring(1, token.length);
         log('token3: "'+ token+'"');
-        if (token == 'meta-left') {
-          current_block.Append(meta_left);
-          continue;
-        }
 
-        if (token == 'meta-right') {
-          current_block.Append(meta_right);
+        literal = {
+            'meta-left': meta_left,
+            'meta-right': meta_right,
+            'space': ' ',
+            }[token]
+
+        if (literal !== undefined) {
+          current_block.Append(literal);
           continue;
         }
 
