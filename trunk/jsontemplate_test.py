@@ -652,6 +652,15 @@ People
     self.verify.Expansion(t, d, '\n')
 
 
+def _PythonFormat(format_str):
+  """Use Python % format strings as template format specifiers."""
+  # A little hack for now
+  if format_str.startswith('%'):
+    return lambda value: format_str % value
+  else:
+    return None
+
+
 class InternalTemplateTest(testy.PyUnitCompatibleTest):
   """Tests that can only be run internally."""
 
@@ -659,7 +668,7 @@ class InternalTemplateTest(testy.PyUnitCompatibleTest):
 
   def testAdditionalFormat(self):
     t = _TemplateDef(
-        '{num|%.5f}', more_formatters=template2.PythonFormat)
+        '{num|%.5f}', more_formatters=_PythonFormat)
     self.verify.Expansion(t, {'num': 1.0/3}, '0.33333')
 
   def testFormatterRaisesException(self):

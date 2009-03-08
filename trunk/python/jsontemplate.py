@@ -408,6 +408,11 @@ def ParseTemplate(
   return builder.Root()
 
 
+_OPTION_RE = re.compile(r'^([a-zA-Z\-]+)\s+(.*)')
+# TODO: whitespace mode, etc.
+_OPTION_NAMES = ['meta', 'format-char', 'default-formatter']
+
+
 def FromString(s, _constructor=None):
   f = cStringIO.StringIO(s)
   return FromFile(f, _constructor=_constructor)
@@ -433,10 +438,10 @@ def FromFile(f, _constructor=None):
   # Parse lines until the first one that doesn't look like an option
   while 1:
     line = f.readline()
-    match = Template._OPTION_RE.match(line)
+    match = _OPTION_RE.match(line)
     if match:
       name, value = match.group(1), match.group(2)
-      if name in Template._OPTION_NAMES:
+      if name in _OPTION_NAMES:
         name = name.replace('-', '_')
         value = value.strip()
         if name == 'default_formatter' and value.lower() == 'none':
@@ -483,10 +488,6 @@ class Template(object):
     """
     builder = builder or _ProgramBuilder(more_formatters)
     self._program = ParseTemplate(template_str, builder, **compile_options)
-
-  _OPTION_RE = re.compile(r'^([a-zA-Z\-]+)\s+(.*)')
-  # TODO: whitespace mode, etc.
-  _OPTION_NAMES = ['meta', 'format-char', 'default-formatter']
 
   #
   # Public API
