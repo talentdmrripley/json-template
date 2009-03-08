@@ -474,7 +474,7 @@ class Template(object):
 
   _OPTION_RE = re.compile(r'^([a-zA-Z\-]+)\s+(.*)')
   # TODO: whitespace mode, etc.
-  _OPTION_NAMES = ['meta', 'format-char']
+  _OPTION_NAMES = ['meta', 'format-char', 'default-formatter']
 
   #
   # Public API

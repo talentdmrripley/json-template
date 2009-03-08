@@ -77,7 +77,7 @@ class V8ShellVerifier(testy.StandardVerifier):
         options=json.dumps(options),
         dictionary=json.dumps(dictionary),
         )
-    print test_js
+    #print test_js
 
     temp_js_file = tempfile.NamedTemporaryFile(suffix='.js')
     temp_js_file.write(test_js)

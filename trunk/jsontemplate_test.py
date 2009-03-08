@@ -214,6 +214,10 @@ class Template2Test(testy.PyUnitCompatibleTest):
     t = self.Template('Where is your {name|html}')
     self.verify.Expansion(t, {'name': '<head>'}, 'Where is your &lt;head&gt;')
 
+  def testDefaultFormatter(self):
+    t = self.Template('{name} {val|raw}', default_formatter='html')
+    self.verify.Expansion(t, {'name': '<head>', 'val': '<>'}, '&lt;head&gt; <>')
+
   def testUndefinedVariable(self):
     t = self.Template('Where is your {name|html}')
     self.verify.EvaluationError(template2.UndefinedVariable, t, {})
@@ -762,6 +766,9 @@ def main(argv):
 
   run_params = testy.TEST_RUN_PARAMS + [
       params.OptionalString('v8-shell', default=default_v8_shell),
+      # Until we have better test filtering:
+      params.OptionalBoolean('python'),
+      params.OptionalBoolean('javascript'),
       ]
 
   options = cmdapp.ParseArgv(argv, run_params)
@@ -776,20 +783,24 @@ def main(argv):
   js_verifier = javascript_verifier.V8ShellVerifier(
       options.v8_shell, js_impl, helpers)
 
+  # External versions
+  if options.python:
+    tests = [Template2Test(py_verifier)]
+  elif options.javascript:
+    tests = [Template2Test(js_verifier)]
+  else:
   # TODO: instantiate these more easily
-  testy.RunTests([
-      # Things we can't test externally
-      TokenizeTest(testy.StandardVerifier()),
-      FromStringTest(testy.StandardVerifier()),
-      InternalTemplateTest(v),
+    tests = [
+        # Things we can't test externally
+        TokenizeTest(testy.StandardVerifier()),
+        FromStringTest(testy.StandardVerifier()),
+        InternalTemplateTest(v),
 
-      # Internal version
-      Template2Test(v),
+        # Internal version
+        Template2Test(v),
+        ]
 
-      # External versions
-      Template2Test(py_verifier),
-      Template2Test(js_verifier),
-      ], options)
+  testy.RunTests(tests, options)
 
 
 if __name__ == '__main__':

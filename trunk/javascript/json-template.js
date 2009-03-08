@@ -65,7 +65,8 @@ function ToString(s) {
 var DEFAULT_FORMATTERS = {
   'html': HtmlEscape,
   'htmltag': HtmlTagEscape,
-  'str': ToString
+  'str': ToString,
+  'raw': function(x) {return x;}
 };
 
 
@@ -289,6 +290,7 @@ var _SECTION_RE = /(repeated)?\s*(section)\s+(\S+)?/;
 // compile on the server side.
 function _Compile(template_str, options) {
   var more_formatters = options.more_formatters || {};
+  var default_formatter = options.default_formatter || 'str'; 
 
   function GetFormatter(format_str) {
     var formatter = more_formatters[format_str] ||
@@ -413,7 +415,7 @@ function _Compile(template_str, options) {
       if (parts.length == 1) {
         // If no formatter is specified, the default is the 'str' formatter,
         // which the user can define however they desire.
-        formatters = [GetFormatter('str')];
+        formatters = [GetFormatter(default_formatter)];
         name = token;
       } else {
         formatters = [];
