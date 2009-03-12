@@ -41,6 +41,7 @@ from python import jsontemplate  # module under *direct* test
 # External verifiers:
 from javascript import verifier as javascript_verifier
 from python import verifier as python_verifier
+import doc_generator
 
 # Backward-compatible naming
 template2 = jsontemplate
@@ -779,11 +780,19 @@ def main(argv):
       this_dir, 'javascript', 'v8shell', 'linux-i686', 'shell')
 
   run_params = testy.TEST_RUN_PARAMS + [
-      params.OptionalString('v8-shell', default=default_v8_shell),
+      params.OptionalString(
+          'v8-shell', default=default_v8_shell,
+          help='Location of the v8 shell to run JavaScript tests'),
+
       # Until we have better test filtering:
-      params.OptionalBoolean('python'),
-      params.OptionalBoolean('javascript'),
-      params.OptionalBoolean('all-tests'),
+      params.OptionalBoolean('python', help='Run Python tests'),
+      params.OptionalBoolean('javascript', help='Run JavaScript tests'),
+
+      params.OptionalString(
+          'doc-output-dir', shortcut='d',
+          help='Write generated docs to this directory'),
+
+      params.OptionalBoolean('all-tests', help='Run all tests'),
       ]
 
   options = cmdapp.ParseArgv(argv, run_params)
@@ -816,6 +825,11 @@ def main(argv):
     tests = [Template2Test(py_verifier)]
   elif options.javascript:
     tests = [Template2Test(js_verifier)]
+  elif options.doc_output_dir:
+    docgen = doc_generator.DocGenerator(options.doc_output_dir)
+    # Run the internal tests before generating docs -- to make sure they all
+    # pass!
+    tests = [Template2Test(v), Template2Test(docgen)]
   else:
   # TODO: instantiate these more easily
     tests = internal_tests
