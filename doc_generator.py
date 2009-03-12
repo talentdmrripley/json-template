@@ -21,13 +21,34 @@ This takes test cases assertions and outputs HTML for publishing.
 
 __author__ = 'Andy Chu'
 
+import os
 import sys
 
 from pan.core import json
 from pan.core import records
 from pan.test import testy
 
+from python import jsontemplate
+
 __author__ = 'Andy Chu'
+
+
+# Use jsontemplate to document itself!
+_TEST_CASE_HTML = """
+<table border="1" width="100%">
+  <tr>
+    <td>
+      <pre>{template}</pre>
+    </td>
+    <td>
+      <pre>{dictionary}</pre>
+    </td>
+    <td>
+      <pre>{expanded}</pre>
+    </td>
+  </tr>
+</table>
+"""
 
 
 class DocGenerator(testy.StandardVerifier):
@@ -36,13 +57,36 @@ class DocGenerator(testy.StandardVerifier):
     testy.StandardVerifier.__init__(self)
     self.output_dir = output_dir
 
+    # Counter for unique filenames
+    self.counter = 1
+
+    self.html_template = jsontemplate.Template(
+        _TEST_CASE_HTML, default_formatter='html')
+
   def Expansion(
       self, template_def, dictionary, expected, ignore_whitespace=False):
     """
     Args:
       template_def: ClassDef instance that defines a Template.
     """
-    print 'Expand to %s' % self.output_dir
+    tested_template = jsontemplate.Template(
+        *template_def.args, **template_def.kwargs)
+
+    expanded = tested_template.expand(dictionary)
+
+    html = self.html_template.expand({
+        'template': template_def.args[0],
+        'dictionary': json.dumps(dictionary, indent=2),
+        'expanded': expanded})
+
+    filename = os.path.join(self.output_dir, '%03d.html' % self.counter)
+    f = open(filename, 'w')
+    f.write(html)
+    f.close()
+
+    # TODO: Need a logger?
+    print 'Wrote %s' % filename
+    self.counter += 1
 
   # For now, we don't need anything for errors
 
