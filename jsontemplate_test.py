@@ -541,6 +541,7 @@ http://example.com
 """
     self.verify.Expansion(t, d, expected)
 
+  @testy.labels('documentation')
   def testRepeatedSectionOr(self):
     t = self.Template("""
 {header}
