@@ -94,7 +94,11 @@ _SECTION_RE = re.compile(r'(repeated)?\s*(section)\s+(\S+)')
 
 _token_re_cache = {}
 
-def _MakeTokenRegex(meta_left, meta_right):
+def MakeTokenRegex(meta_left, meta_right):
+  """Return a regular expression for tokenization.
+
+  This is public so the syntax highlighter can use it.
+  """
   key = meta_left, meta_right
   if key not in _token_re_cache:
     # Need () for re.split
@@ -283,6 +287,15 @@ DEFAULT_FORMATTERS = {
     }
 
 
+def SplitMeta(meta):
+  """Split and validate metacharacters."""
+  n = len(meta)
+  if n % 2 == 1:
+    raise ConfigurationError(
+        '%r has an odd number of metacharacters' % meta)
+  return meta[:n/2], meta[n/2:]
+
+
 def ParseTemplate(
     template_str, builder, meta='{}', format_char='|', default_formatter='str'):
   """
@@ -298,14 +311,7 @@ def ParseTemplate(
   This function is public so it can be used by other tools, e.g. a syntax
   checking tool run before submitting a template to source control.
   """
-
-  # Split the metacharacters
-  n = len(meta)
-  if n % 2 == 1:
-    raise ConfigurationError(
-        '%r has an odd number of metacharacters' % meta)
-  meta_left = meta[:n/2]
-  meta_right = meta[n/2:]
+  meta_left, meta_right = SplitMeta(meta)
 
   # : is meant to look like Python 3000 formatting {foo:.3f}.  According to
   # PEP 3101, that's also what .NET uses.
@@ -316,7 +322,7 @@ def ParseTemplate(
         'Only format characters : and | are accepted (got %r)' % format_char)
 
   # Need () for re.split
-  token_re = _MakeTokenRegex(meta_left, meta_right)
+  token_re = MakeTokenRegex(meta_left, meta_right)
   tokens = token_re.split(template_str)
 
   # If we go to -1, then we got too many {end}.  If end at 1, then we're missing

@@ -50,7 +50,7 @@ template2 = jsontemplate
 class TokenizeTest(testy.Test):
 
   def testMakeTokenRegex(self):
-    token_re = template2._MakeTokenRegex('[', ']')
+    token_re = template2.MakeTokenRegex('[', ']')
     tokens = token_re.split("""
 [# Comment#]
 

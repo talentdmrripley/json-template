@@ -28,6 +28,7 @@ from pan.core import json
 from pan.core import records
 from pan.test import testy
 
+from python import highlight
 from python import jsontemplate
 
 __author__ = 'Andy Chu'
@@ -38,7 +39,7 @@ _TEST_CASE_HTML = """
 <table border="1" width="100%">
   <tr>
     <td>
-      <pre>{template}</pre>
+      {highlighted_template|raw}
     </td>
     <td>
       <pre>{dictionary}</pre>
@@ -74,8 +75,10 @@ class DocGenerator(testy.StandardVerifier):
 
     expanded = tested_template.expand(dictionary)
 
+    highlighted_template = highlight.AsHtml(
+        template_def.args[0], **template_def.kwargs)
     html = self.html_template.expand({
-        'template': template_def.args[0],
+        'highlighted_template': highlighted_template,
         'dictionary': json.dumps(dictionary, indent=2),
         'expanded': expanded})
 
