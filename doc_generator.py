@@ -75,8 +75,17 @@ class DocGenerator(testy.StandardVerifier):
 
     expanded = tested_template.expand(dictionary)
 
-    highlighted_template = highlight.AsHtml(
-        template_def.args[0], **template_def.kwargs)
+    kwargs = {}
+
+    meta = template_def.kwargs.get('meta')
+    if meta:
+      kwargs['meta'] = meta
+
+    format_char = template_def.kwargs.get('format_char')
+    if format_char:
+      kwargs['format_char'] = format_char
+
+    highlighted_template = highlight.AsHtml(template_def.args[0], **kwargs)
     html = self.html_template.expand({
         'highlighted_template': highlighted_template,
         'dictionary': json.dumps(dictionary, indent=2),
