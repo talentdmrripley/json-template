@@ -773,6 +773,62 @@ class InternalTemplateTest(testy.PyUnitCompatibleTest):
     t.expand(d)
 
 
+class DocumentationTest(testy.Test):
+  """Test cases added for the sake of documentation."""
+
+  # TODO: The default labels for this test should be 'documentation'
+
+  @testy.labels('documentation')
+  def testSearchResultsExample(self):
+    t = _TemplateDef("""\
+{.section content-results}
+  <h2>Page Content Matches for '{query-string|html}'</h2>
+  <p>
+    <em>{content-results|size} pages, {total-content-matches} matches</em>
+  </p>
+
+  {.repeated section @}
+    <a href="{wiki-url|html}">{wiki-name|html}</a>
+    - <em>{matches|size} matches</em><br> 
+    <ul class="search-results">
+      {.repeated section matches}
+        <p>{line|html}</p>
+      {.end}
+    </ul>
+  {.end}
+{.or}
+  <p><em>(No page content matches)</em></p>
+{.end}
+""")
+
+    d = {
+      "query-string": "foo", 
+      "total-content-matches": 5,
+      "content-results": [
+        {
+          "wiki-name": "Jot",
+          "wiki-url": "/pages/Jot",
+          "matches": [
+            {
+              "line-num": 5,
+              "line": "`Enter page title`Enter URL` - ''foo''", 
+            }
+          ], 
+        }, 
+        { "wiki-url": "/pages/Live_Servers",
+          "wiki-name": "Live Servers",
+          "matches": [
+            {
+              "line-num": 3,
+              "line": "Foo", 
+            }
+          ], 
+        }, 
+      ]
+    }
+    self.verify.Expansion(t, d, '')
+
+
 def main(argv):
   this_dir = os.path.dirname(__file__)
 
@@ -830,7 +886,10 @@ def main(argv):
     docgen = doc_generator.DocGenerator(options.doc_output_dir)
     # Run the internal tests before generating docs -- to make sure they all
     # pass!
-    tests = [Template2Test(v), Template2Test(docgen)]
+    tests = [
+        Template2Test(v), Template2Test(docgen),
+        DocumentationTest(v), DocumentationTest(docgen),
+        ]
   else:
   # TODO: instantiate these more easily
     tests = internal_tests
