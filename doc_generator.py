@@ -39,13 +39,34 @@ _TEST_CASE_HTML = """
 <table border="1" width="100%">
   <tr>
     <td>
+      <b>Template</b>
+    </td>
+    <td>
+      <b>Data Dictionary</b>
+    </td>
+  </tr>
+  <tr>
+    <td>
       {highlighted_template|raw}
     </td>
     <td>
       <pre>{dictionary}</pre>
     </td>
+  </tr>
+  <tr>
+    <td>
+      <b>Output</b>
+    </td>
+    <td>
+      <b>Rendered Output</b>
+    </td>
+  </tr>
+  <tr>
     <td>
       <pre>{expanded}</pre>
+    </td>
+    <td>
+      {expanded|raw}
     </td>
   </tr>
 </table>
