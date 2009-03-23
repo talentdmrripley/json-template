@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# $Id$
+
 """Python implementation of json-template.
 
 Exports:
