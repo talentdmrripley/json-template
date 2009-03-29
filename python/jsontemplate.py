@@ -40,7 +40,17 @@ import urllib  # for urllib.encode
 
 
 class Error(Exception):
-  pass
+
+  def __str__(self):
+    """This helps people debug their templates.
+
+    If a variable isn't defined, then some context is shown in the traceback.
+    TODO: Attach context for other errors.
+    """
+    if hasattr(self, 'near'):
+      return '%s\n\nNear: %s' % (self.args[0], pprint.pformat(self.near))
+    else:
+      return self.args[0]
 
 
 class CompilationError(Error):
@@ -426,6 +436,8 @@ def FromString(s, _constructor=None):
   return FromFile(f, _constructor=_constructor)
 
 
+# TODO: Use RFC822 style parsing instead
+
 def FromFile(f, _constructor=None):
   """Parse a template from a file, using a simple file format.
   
@@ -613,14 +625,21 @@ def _DoSubstitute(args, context, callback):
   
 def _Execute(statements, context, callback):
   """This is recursively called."""
-  for statement in statements:
+  for i, statement in enumerate(statements):
     if isinstance(statement, str):
       callback(statement)
     else:
       # In the case of a substitution, args is a pair (name, formatter).
       # In the case of a section, it's a _Section instance.
-      func, args = statement
-      func(args, context, callback)
+      try:
+        func, args = statement
+        func(args, context, callback)
+      except UndefinedVariable, e:
+        # Show context for statements
+        start = max(0, i-3)
+        end = i+3
+        e.near = statements[start:end]
+        raise
 
 
 def expand(template_str, dictionary, encoding='utf-8', **kwargs):

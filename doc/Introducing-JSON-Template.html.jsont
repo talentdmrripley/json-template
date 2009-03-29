@@ -1,5 +1,5 @@
-meta: {{}}
-default-formatter: raw
+meta {{}}
+default-formatter raw
 
 <p><a href="http://code.google.com/p/json-template/">JSON Template</a> is a minimal
 but powerful templating language, currently implemented in <i>both</i>
