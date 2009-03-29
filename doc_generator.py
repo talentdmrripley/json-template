@@ -109,6 +109,11 @@ class DocGenerator(testy.StandardVerifier):
     self.html_template = jsontemplate.Template(
         template, default_formatter='html')
 
+  def BeforeMethod(self, method):
+    testy.StandardVerifier.BeforeMethod(self, method)
+    # Reset the counter every time we get a method
+    self.counter = 1
+
   def Expansion(
       self, template_def, dictionary, expected, ignore_whitespace=False):
     """
