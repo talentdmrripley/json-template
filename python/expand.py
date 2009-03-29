@@ -30,30 +30,46 @@ import sys
 if __name__ == '__main__':
   sys.path.insert(0, os.path.join(os.path.dirname(sys.argv[0]), '..'))
 
+from pan.core import cmdapp
+from pan.core import params
 from pan.core import json
 from python import jsontemplate
 
 
-class UsageError(Exception):
-  pass
-
+PARAMS = [
+    params.OptionalBoolean(
+        'files', shortcut='f',
+        help='Read from the named files.  The default is to use the arguments '
+        'as strings'),
+    params.RequiredString(
+        'template', shortcut='t', pos=1,
+        help='The template (filename or string)'),
+    params.RequiredString(
+        'json', shortcut='j', pos=2,
+        help='The JSON data dictionary to expand the template with '
+        '(filename or string)'),
+    # TODO: Argh, this doesn't work for command line parsing; only URL parsing.
+    # It would be nice to be able to substitute small values as flags.
+    params.UNDECLARED,
+    ]
 
 def main(argv):
   """Returns an exit code."""
-  if len(argv) != 2:
-    raise UsageError(__doc__)
 
-  template_str = argv[0]
-  dictionary = argv[1]
+  options = cmdapp.ParseArgv(argv[1:], PARAMS)
+
+  if options.files:
+    template_str = open(options.template).read()
+    dictionary = open(options.json).read()
+  else:
+    template_str = options.template
+    dictionary = options.json
+
   dictionary = json.loads(dictionary)
+
   t = jsontemplate.FromString(template_str)
   sys.stdout.write(t.expand(dictionary))
-  return 0
 
 
 if __name__ == '__main__':
-  try:
-    sys.exit(main(sys.argv[1:]))
-  except UsageError, e:
-    print >> sys.stderr, e.args[0]
-    sys.exit(1)
+  sys.exit(main(sys.argv))
