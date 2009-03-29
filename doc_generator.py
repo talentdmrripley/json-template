@@ -73,6 +73,26 @@ _TEST_CASE_HTML = """
 """
 
 
+_BLOG_HTML = """
+Template:
+
+{highlighted_template|raw}
+
+
+Combined with data dictionary:
+
+<pre>{dictionary}</pre>
+
+Gives output:
+
+<pre>{expanded}</pre>
+
+Rendered output:
+
+{expanded|raw}
+"""
+
+
 class DocGenerator(testy.StandardVerifier):
 
   def __init__(self, output_dir):
@@ -82,8 +102,12 @@ class DocGenerator(testy.StandardVerifier):
     # Counter for unique filenames
     self.counter = 1
 
+    if 1:
+      template = _BLOG_HTML
+    else:
+      template = _TEST_CASE_HTML
     self.html_template = jsontemplate.Template(
-        _TEST_CASE_HTML, default_formatter='html')
+        template, default_formatter='html')
 
   def Expansion(
       self, template_def, dictionary, expected, ignore_whitespace=False):
@@ -112,7 +136,9 @@ class DocGenerator(testy.StandardVerifier):
         'dictionary': json.dumps(dictionary, indent=2),
         'expanded': expanded})
 
-    filename = os.path.join(self.output_dir, '%03d.html' % self.counter)
+    filename = '%s-%03d.html' % (self.current_method.__name__, self.counter)
+    filename = os.path.join(self.output_dir, filename)
+
     f = open(filename, 'w')
     f.write(html)
     f.close()
