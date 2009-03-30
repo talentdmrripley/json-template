@@ -28,8 +28,8 @@ version is a straightforward translation of this API.
 
 <ul>
 
-<li>Variables can be <b>substituted</b> by surrounding their name with curly
-braces (<code>{}</code>)</li>
+<li>A variable can be <b>substituted</b> by surrounding its name with curly
+braces: <code>{}</code></li>
 
 <li>A <b>section</b> is a piece of the template that may be either present or
 absent in the output -- something you would decide using an <b>if statement</b>
@@ -54,29 +54,32 @@ languages.</li>
 
 <h3>Motivation</h3>
 
-<p> A few problems with the state of the art:
+<p> There are a few problems with the state of the art:
 
 <ul>
 
   <li>Nearly all template languages are inexpressive and ill-specified
   procedural languages.  That is, they reinvent things like for loops, if
   statements, and expressions poorly.  A notable exception is <a
-  href="http://code.google.com/p/google-ctemplate/">google-ctemplate</a> (which
-  runs <a href="http://google.com/">google.com</a>, no less), and JSON Template
-  is strongly influenced by it.</li>
+  href="http://code.google.com/p/google-ctemplate/">google-ctemplate</a>, a
+  <i>declarative</i> language which runs <a
+  href="http://google.com/">google.com</a>, no less, and JSON Template is
+  strongly influenced by it.</li>
 
   <li>Template languages grow "hairs" over time, and thus become bound to a
   specific implementation and a specific implementation language (e.g. Java,
-  Python).  <a
-  href="http://www.reddit.com/r/programming/comments/7zobf/five_languages_in_seven_lines_or_how_not_to_do/">This
-  </a>is a good example of the "smell" I'm talking about.  </li>
+  Python).  Here is <a
+  href="http://www.reddit.com/r/programming/comments/7zobf/five_languages_in_seven_lines_or_how_not_to_do/">a
+  good example</a> of the "smell" I'm talking about.  </li>
   
   <li>AJAX programming makes client side templating more important.  I'd like to
   use the same system on both the client and the server.</li>
   
   <li><b>Every</b> successful website needs an API.  That's almost the
   definition of success -- people have put their important information in your
-  site, and they need to get it out through means other than a browser.  <a
+  site, and they need to get it out through means other than a browser.
+  However, bolting an API on top of a web app not architected for it can result
+  in fragile code, or at least unwanted duplication. <a
   href="http://json.org/">JSON</a> is a common choice for APIs.</li>
   
 </ul>
@@ -117,7 +120,8 @@ Template</a> is the <b>complement</b> of JSON. When you use a template
 language to express program logic, this one-to-one correspondence between
 human-consumable data and machine-consumable data is hard to achieve.
 
-<p><b>The language is deliberately small.</b>
+<p><b>The language is deliberately small, and it is declarative rather than
+procedural.</b>
 
 <p>It's intended to be <b>easily reimplemented </b>in multiple languages.
 Right now there's a JavaScript and a Python implementation -- each 500-ish lines
@@ -154,10 +158,9 @@ send mail to the <a href="http://groups.google.com/group/json-template">mailing
 list</a>.
 
 <p>As mentioned, I've kept the language minimal on purpose.  There are a couple
-more features that I might want to implement, so feedback is useful.
+more features that I may want to add, so feedback is useful.
 
-
-<p>* The {} syntax for variable substitution seems to be getting popular.  It's
+<p style="font-size: small;">* The {} syntax for variable substitution seems to be getting popular.  It's
 used in <a href="http://www.python.org/dev/peps/pep-3101/">Python 3.0
 string formatting</a>, <a href="http://bitworking.org/news/URI_Templates">URI
 templates</a>, <a href="http://goessner.net/articles/jsont/">JsonT</a>, etc.

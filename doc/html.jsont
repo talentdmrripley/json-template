@@ -10,6 +10,7 @@ default-formatter raw
 <style type=text/css>
 .literal {
   background-color: #EEE;
+  padding: 0.5em;
 }
 </style>
 </head>
