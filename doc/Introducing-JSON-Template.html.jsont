@@ -31,17 +31,19 @@ version is a straightforward translation of this API.
 <li>A variable can be <b>substituted</b> by surrounding its name with curly
 braces: <code>{}</code></li>
 
-<li>A <b>section</b> is a piece of the template that may be either present or
-absent in the output -- something you would decide using an <b>if statement</b>
-in most template languages.  A <span>section</span> more or less corresponds to
-a JSON <b>node</b> -- that is, either a dictionary, list, or atom (string, int,
-etc.).  In the example, the section is only shown if the key
-<code>content-results</code> appears in the dictionary.</li>
+<li>Template "directives" start with a period: <code>.</code></li>
 
-<li>A <b>repeated section</b> is a piece of the template that may be present 0 or
-more times in the output.  It more or less corresponds to a JSON <b>array</b> --
-what you would iterate over using a 'for loop' for in most template
-languages.</li>
+<li>In place of for loops and if statements, the basic idea is that the template
+<b>declares</b> <code>section</code>s and <code>repeated section</code>s.  The
+sections are named after <b>keys</b> in the JSON data dictionary.  The presence
+or absence of the keys in the JSON dictionary implicitly determines if and how
+many times a section is expanded.</li>
+
+<li>If a JSON dictionary key is missing or empty (<code>[]</code>,
+<code>{}</code>, or <code>null</code>), then the <code>{.or}</code> section is
+expanded.
+</li>
+
 
 </ul>
 
