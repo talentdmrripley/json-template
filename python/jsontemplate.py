@@ -426,7 +426,7 @@ def ParseTemplate(
   return builder.Root()
 
 
-_OPTION_RE = re.compile(r'^([a-zA-Z\-]+)\s+(.*)')
+_OPTION_RE = re.compile(r'^([a-zA-Z\-]+):\s*(.*)')
 # TODO: whitespace mode, etc.
 _OPTION_NAMES = ['meta', 'format-char', 'default-formatter']
 
@@ -461,6 +461,11 @@ def FromFile(f, _constructor=None):
     match = _OPTION_RE.match(line)
     if match:
       name, value = match.group(1), match.group(2)
+
+      # Accept something like 'Default-Formatter: raw'.  This syntax is like
+      # HTTP/E-mail headers.
+      name = name.lower()
+
       if name in _OPTION_NAMES:
         name = name.replace('-', '_')
         value = value.strip()

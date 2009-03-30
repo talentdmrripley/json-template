@@ -63,7 +63,7 @@ class ExternalVerifier(testy.StandardVerifier):
     if options:
       lines = []
       for k, v in options.iteritems():
-        lines.append('%s %s\n' % (k.replace('_', '-'), v))
+        lines.append('%s: %s\n' % (k.replace('_', '-'), v))
       header = ''.join(lines) + '\n'
     else:
       header = ''

@@ -90,8 +90,8 @@ class FromStringTest(testy.Test):
 
   def testEmpty(self):
     s = """\
-format-char |
-meta <>
+Format-Char: |
+Meta: <>
 """
     t = template2.FromString(s, _constructor=testy.ClassDef)
     self.verify.Equal(t.args[0], '')
@@ -106,8 +106,8 @@ meta <>
 
   def testBadOptions(self):
     f = """\
-format-char |
-meta <>
+Format-Char: |
+Meta: <>
 BAD STUFF
 """
     self.verify.Raises(
@@ -115,15 +115,15 @@ BAD STUFF
 
   def testTemplate(self):
     f = """\
-format-char |
-meta <>
+format-char: :
+meta: <>
 
 Hello <there>
 """
     t = template2.FromString(f, _constructor=testy.ClassDef)
     self.verify.Equal(t.args[0], 'Hello <there>\n')
     self.verify.Equal(t.kwargs['meta'], '<>')
-    self.verify.Equal(t.kwargs['format_char'], '|')
+    self.verify.Equal(t.kwargs['format_char'], ':')
 
   def testNoOptions(self):
     # Bug fix
