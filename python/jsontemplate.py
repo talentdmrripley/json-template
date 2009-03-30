@@ -522,15 +522,16 @@ class Template(object):
     """Calls a callback with each expanded token."""
     _Execute(self._program.Statements(), _ScopedContext(data_dict), callback)
 
-  def expand(self, data_dict, encoding='utf-8'):
-    """Returns a string.
-
-    By default we encode as utf-8.  If you want a raw unicode instance back,
-    then that's easy to assemble with get with tokenstream()/render().
+  def expand(self, data_dict):
+    """Returns the template expanded with the given data dictionary.
+    
+    The return value could be a str() or unicode() instance, depending on the
+    the type of the template string passed in, and what the types the strings in
+    the dictionary are.
     """
     tokens = []
     self.render(data_dict, tokens.append)
-    return ''.join(t.encode(encoding) for t in tokens)
+    return ''.join(tokens)
 
   def tokenstream(self, data_dict):
     """Yields a list of tokens resulting from expansion.
