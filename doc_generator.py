@@ -170,7 +170,7 @@ class DocGenerator(testy.StandardVerifier):
         'json_str': json_str,
         })
 
-    filename = '%s-%03d.js..html' % (self.current_method.__name__, self.counter)
+    filename = '%s-%03d.js.html' % (self.current_method.__name__, self.counter)
     self._WriteFile(filename, html)
 
   def WriteHighlightedHtml(self, template_def, json_str, expanded):
