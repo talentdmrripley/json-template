@@ -10,7 +10,7 @@ deserves some explanation.  But first here are some examples.
 
 <blockquote>
 <pre>>>> import jsontemplate
->>> jsontemplate.expand('Hello <span style="color: green">{name}</span>', {<span style="color: green">'name'</span>: 'world'})</span>
+>>> jsontemplate.expand('Hello <span style="color: green">{name}</span>', {'<span style="color: green">name</span>': 'world'})</span>
 'Hello world'</pre>
 </blockquote>
 
@@ -40,12 +40,16 @@ languages.</li>
 
 <p>These few constructs are surprisingly powerful.
 
-<p>This example uses <i>most </i>of the language, but not all:
+<p>The following example uses <i>most</i> of the language, but not all.
 
 
-Template:
+<p><b>A template string ...</b></p>
 
-<pre><span style="color: blue;">{.section content-results}
+<span class="literal">
+<pre>
+<span style="color: red;">{# This is a comment, and it will be removed from the output.}
+</span>
+<span style="color: blue;">{.section content-results}
 </span>  &lt;h2&gt;Page Content Matches for '<span style="color: green;">{query-string|html}</span>'&lt;/h2&gt;
   &lt;p&gt;
     &lt;em&gt;<span style="color: green;">{content-results|size}</span> pages, <span style="color: green;">{total-content-matches}</span> matches&lt;/em&gt;
@@ -64,11 +68,11 @@ Template:
 </span>  &lt;p&gt;&lt;em&gt;(No page content matches)&lt;/em&gt;&lt;/p&gt;
 <span style="color: blue;">{.end}
 </span></pre>
+</span>
 
+<p><b>... Combined with a data dictionary ...</b></p>
 
-Combined with data dictionary:
-
-<pre>{
+<pre class="literal">{
   "content-results": [
     {
       "matches": [
@@ -95,9 +99,11 @@ Combined with data dictionary:
   "total-content-matches": 5
 }</pre>
 
-Gives output:
+<p><b>... Gives output:</b></p>
 
-<pre>  &lt;h2&gt;Page Content Matches for 'foo'&lt;/h2&gt;
+<pre class="literal">
+
+  &lt;h2&gt;Page Content Matches for 'foo'&lt;/h2&gt;
   &lt;p&gt;
     &lt;em&gt;2 pages, 5 matches&lt;/em&gt;
   &lt;/p&gt;
@@ -114,7 +120,10 @@ Gives output:
           &lt;/ul&gt;
   </pre>
 
-Rendered output:
+<p><b>Here is the rendered output:</b></p>
+
+<span class="literal">
+
 
   <h2>Page Content Matches for 'foo'</h2>
   <p>
@@ -132,6 +141,7 @@ Rendered output:
               <p>Foo</p>
           </ul>
   
+</span>
 
 
 

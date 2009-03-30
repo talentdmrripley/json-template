@@ -74,22 +74,25 @@ _TEST_CASE_HTML = """
 
 
 _BLOG_HTML = """
-Template:
+<p><b>A template string ...</b></p>
 
+<span class="literal">
 {highlighted_template|raw}
+</span>
 
+<p><b>... Combined with a data dictionary ...</b></p>
 
-Combined with data dictionary:
+<pre class="literal">{dictionary}</pre>
 
-<pre>{dictionary}</pre>
+<p><b>... Gives output:</b></p>
 
-Gives output:
+<pre class="literal">{expanded}</pre>
 
-<pre>{expanded}</pre>
+<p><b>Here is the rendered output:</b></p>
 
-Rendered output:
-
+<span class="literal">
 {expanded|raw}
+</span>
 """
 
 

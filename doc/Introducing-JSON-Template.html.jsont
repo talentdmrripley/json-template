@@ -13,7 +13,7 @@ deserves some explanation.  But first here are some examples.
 
 <blockquote>
 <pre>>>> import jsontemplate
->>> jsontemplate.expand('Hello <span style="color: green">{name}</span>', {<span style="color: green">'name'</span>: 'world'})</span>
+>>> jsontemplate.expand('Hello <span style="color: green">{name}</span>', {'<span style="color: green">name</span>': 'world'})</span>
 'Hello world'</pre>
 </blockquote>
 
@@ -43,7 +43,7 @@ languages.</li>
 
 <p>These few constructs are surprisingly powerful.
 
-<p>This example uses <i>most </i>of the language, but not all:
+<p>The following example uses <i>most</i> of the language, but not all.
 
 {{example1}}
 

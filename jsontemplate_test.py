@@ -781,6 +781,9 @@ class DocumentationTest(testy.Test):
   @testy.labels('documentation')
   def testSearchResultsExample(self):
     t = _TemplateDef("""\
+
+{# This is a comment, and it will be removed from the output.}
+
 {.section content-results}
   <h2>Page Content Matches for '{query-string|html}'</h2>
   <p>
