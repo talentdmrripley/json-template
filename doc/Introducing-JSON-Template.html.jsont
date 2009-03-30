@@ -137,9 +137,17 @@ these tests.
 <ul>
 <li>Comes with a deafult set of "formatters", so it's easy to get
 escaping/security right.</li>
+
 <li>Extensible with your own application-specific formatters</li>
+
 <li>A small degree of customizable syntax makes it appropriate for many problem
 domains (not just web programming).</li>
+
+<li>Fast and hackable implementation.  Tokenization, parsing, compilation, and
+template expansion are all cleanly separated in the code.  (Like many template
+languages, instantiating a <code>jsontemplate.Template</code> object compiles
+the template string, and it can be subsequently re-expanded with different data
+dictionaries without parsing.)</li>
 
 </ul>
 
