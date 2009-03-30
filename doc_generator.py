@@ -96,6 +96,28 @@ _BLOG_HTML = """
 """
 
 
+_JS_EXAMPLE = """\
+<html>
+  <head>
+    <script type="text/javascript" src="../javascript/json-template.js">
+    </script>
+    <script type="text/javascript">
+    function write() {
+      var t = Template({template_str});
+      var s = t.expand({json_str});
+      document.getElementById("replace").innerHTML = s;
+    }
+    </script>
+  </head>
+  <body onload="write();">
+    <h4>Here is the same example rendered in JavaScript.  <b>View Source</b> to
+    see how it works.</h4>
+    <div id="replace"></div>
+  </body>
+</html>
+"""
+
+
 class DocGenerator(testy.StandardVerifier):
 
   def __init__(self, output_dir):
@@ -112,6 +134,10 @@ class DocGenerator(testy.StandardVerifier):
     self.html_template = jsontemplate.Template(
         template, default_formatter='html')
 
+    # Don't need any escaping here.
+    self.js_template = jsontemplate.Template(
+        _JS_EXAMPLE, default_formatter='raw')
+
   def BeforeMethod(self, method):
     testy.StandardVerifier.BeforeMethod(self, method)
     # Reset the counter every time we get a method
@@ -127,6 +153,28 @@ class DocGenerator(testy.StandardVerifier):
         *template_def.args, **template_def.kwargs)
 
     expanded = tested_template.expand(dictionary)
+    json_str = json.dumps(dictionary, indent=2)
+
+    self.WriteHighlightedHtml(template_def, json_str, expanded)
+    self.WriteJavaScriptExample(template_def, json_str, expanded)
+    self.counter += 1
+
+  def WriteJavaScriptExample(self, template_def, json_str, expanded):
+    """Write a working JavaScript example that can be loaded in the browser."""
+
+    # TODO: Could use expanded to verify the server side against the client side
+    # expansion?  But I already have working unit tests for both.
+
+    html = self.js_template.expand({
+        'template_str': json.dumps(template_def.args[0]),
+        'json_str': json_str,
+        })
+
+    filename = '%s-%03d.js..html' % (self.current_method.__name__, self.counter)
+    self._WriteFile(filename, html)
+
+  def WriteHighlightedHtml(self, template_def, json_str, expanded):
+    """Write a fragment of HTML to document this test case."""
 
     kwargs = {}
 
@@ -141,19 +189,22 @@ class DocGenerator(testy.StandardVerifier):
     highlighted_template = highlight.AsHtml(template_def.args[0], **kwargs)
     html = self.html_template.expand({
         'highlighted_template': highlighted_template,
-        'dictionary': json.dumps(dictionary, indent=2),
+        'dictionary': json_str,
         'expanded': expanded})
 
     filename = '%s-%03d.html' % (self.current_method.__name__, self.counter)
+    self._WriteFile(filename, html)
+
+  def _WriteFile(self, filename, contents):
     filename = os.path.join(self.output_dir, filename)
 
     f = open(filename, 'w')
-    f.write(html)
+    f.write(contents)
     f.close()
 
     # TODO: Need a logger?
     print 'Wrote %s' % filename
-    self.counter += 1
+
 
   # For now, we don't need anything for errors
 

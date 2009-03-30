@@ -1,5 +1,5 @@
-meta {{}}
-default-formatter raw
+meta: {{}}
+default-formatter: raw
 
 <h1>Introducing JSON Template</h1>
 

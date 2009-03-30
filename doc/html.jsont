@@ -1,5 +1,5 @@
-meta {{{}}}
-default-formatter raw
+meta: {{{}}}
+default-formatter: raw
 
 {{{# A simple template for HTML docs}}}
 <!DOCTYPE HTML>
