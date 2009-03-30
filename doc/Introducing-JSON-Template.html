@@ -1,3 +1,22 @@
+<!DOCTYPE HTML>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Introducing JSON Template</title>
+<style type=text/css>
+.literal {
+  background-color: #EEE;
+}
+</style>
+</head>
+<body>
+<table>
+  <tr>
+    <td>
+    </td>
+    <td width="40%">
+<h1>Introducing JSON Template</h1>
+
 <p><a href="http://code.google.com/p/json-template/">JSON Template</a> is a minimal
 but powerful templating language, currently implemented in <i>both</i>
 <a href="http://python.org">Python</a> and 
@@ -19,17 +38,19 @@ version is a straightforward translation of this API.
 
 <h3>Full Example</h3>
 
-<p>To read this example, it helps to know the following:
+<p>To read this example, keep in mind the following:
 
 <ul>
 
-<li>Variables can be substituted by surrounding their name with curly braces
-(<code>{}</code>)</li>
+<li>Variables can be <b>substituted</b> by surrounding their name with curly
+braces (<code>{}</code>)</li>
 
 <li>A <b>section</b> is a piece of the template that may be either present or
 absent in the output -- something you would decide using an <b>if statement</b>
 in most template languages.  A <span>section</span> more or less corresponds to
-a JSON <b>dictionary</b>.</li>
+a JSON <b>node</b> -- that is, either a dictionary, list, or atom (string, int,
+etc.).  In the example, the section is only shown if the key
+<code>content-results</code> appears in the dictionary.</li>
 
 <li>A <b>repeated section</b> is a piece of the template that may be present 0 or
 more times in the output.  It more or less corresponds to a JSON <b>array</b> --
@@ -254,4 +275,13 @@ more features that I might want to implement, so feedback is useful.
 used in <a href="http://www.python.org/dev/peps/pep-3101/">Python 3.0
 string formatting</a>, <a href="http://bitworking.org/news/URI_Templates">URI
 templates</a>, <a href="http://goessner.net/articles/jsont/">JsonT</a>, etc.
+
+
+   </td> 
+    <td>
+    </td>
+  </tr>
+</table>
+</body>
+</html>
 

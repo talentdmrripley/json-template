@@ -23,19 +23,33 @@ def main(argv):
   subprocess.call(argv)
 
   dictionary = json.dumps({
-    'example1': 
-    open('generated_docs/testSearchResultsExample-001.html').read(),
-    })
+      'example1': 
+      open('generated_docs/testSearchResultsExample-001.html').read(),
+      })
 
   argv = [
       'python/expand.py', 
       open('doc/Introducing-JSON-Template.html.jsont').read(),
       dictionary]
   p = subprocess.Popen(argv, stdout=subprocess.PIPE)
-  contents = p.stdout.read()
+  body = p.stdout.read()
   p.wait()
 
-  open('doc/Introducing-JSON-Template.html', 'w').write(contents)
+  dictionary = json.dumps({
+      # TODO: Could get this from the filename
+      'title': 'Introducing JSON Template',
+      'body': body,
+      })
+
+  argv = [
+      'python/expand.py', 
+      open('doc/html.jsont').read(),
+      dictionary]
+  p = subprocess.Popen(argv, stdout=subprocess.PIPE)
+  body = p.stdout.read()
+  p.wait()
+
+  open('doc/Introducing-JSON-Template.html', 'w').write(body)
 
 
 if __name__ == '__main__':
