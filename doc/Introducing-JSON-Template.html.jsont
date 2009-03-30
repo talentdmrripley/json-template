@@ -115,7 +115,7 @@ sites:
 
 <ol>
 
-<li>Create a JSON structure dictionary in response to an HTTP request.</li>
+<li>Create a JSON structure in response to an HTTP request.</li>
 
 <li>If say <code>?format=json</code> is in the
 URL, then output the raw JSON.  </li><li>If not, combine the JSON with a
@@ -141,7 +141,7 @@ these tests.
 <h3>More Features</h3>
 
 <ul>
-<li>Comes with a deafult set of "formatters", so it's easy to get
+<li>Comes with a default set of "formatters", so it's easy to get
 escaping/security right.</li>
 
 <li>Extensible with your own application-specific formatters</li>
