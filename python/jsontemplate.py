@@ -648,11 +648,11 @@ def _Execute(statements, context, callback):
         raise
 
 
-def expand(template_str, dictionary, encoding='utf-8', **kwargs):
+def expand(template_str, dictionary, **kwargs):
   """Expands a template string with a data dictionary.
 
   This is useful for cases where you don't care about saving the result of
   compilation (similar to re.match('.*', s) vs DOT_STAR.match(s))
   """
   t = Template(template_str, **kwargs)
-  return t.expand(dictionary, encoding=encoding)
+  return t.expand(dictionary)

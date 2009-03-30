@@ -772,6 +772,12 @@ class InternalTemplateTest(testy.PyUnitCompatibleTest):
     # Bug fix
     t.expand(d)
 
+  def testExpand(self):
+    """Test the free function expand."""
+    self.assertEqual(
+        jsontemplate.expand('Hello {name}', {'name': 'World'}),
+        'Hello World')
+
 
 class DocumentationTest(testy.Test):
   """Test cases added for the sake of documentation."""
