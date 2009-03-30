@@ -24,7 +24,7 @@ def main(argv):
 
   dictionary = json.dumps({
       'example1': 
-      open('generated_docs/testSearchResultsExample-001.html').read(),
+      open('generated_docs/testTableExample-001.html').read(),
       })
 
   argv = [

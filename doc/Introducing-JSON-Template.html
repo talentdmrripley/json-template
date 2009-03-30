@@ -70,25 +70,21 @@ expanded.
 <p><b>A template string ...</b></p>
 
 <div class="literal">
-<pre>
-<span style="color: red;">{# This is a comment, and it will be removed from the output.}
+<pre><span style="color: red;">{# This is a comment and will be removed from the output.}
 </span>
-<span style="color: blue;">{.section content-results}
-</span>  &lt;h2&gt;Page Content Matches for '<span style="color: green;">{query-string|html}</span>'&lt;/h2&gt;
-  &lt;p&gt;
-    &lt;em&gt;<span style="color: green;">{content-results|size}</span> pages, <span style="color: green;">{total-content-matches}</span> matches&lt;/em&gt;
-  &lt;/p&gt;
+<span style="color: blue;">{.section songs}
+</span>  &lt;h2&gt;Songs in '<span style="color: green;">{playlist-name}</span>'&lt;/h2&gt;
 
+  &lt;table width="100%"&gt;
   <span style="color: blue;">{.repeated section @}
-</span>    &lt;a href="<span style="color: green;">{wiki-url|html}</span>"&gt;<span style="color: green;">{wiki-name|html}</span>&lt;/a&gt;
-    - &lt;em&gt;<span style="color: green;">{matches|size}</span> matches&lt;/em&gt;&lt;br&gt; 
-    &lt;ul class="search-results"&gt;
-      <span style="color: blue;">{.repeated section matches}
-</span>        &lt;p&gt;<span style="color: green;">{line|html}</span>&lt;/p&gt;
-      <span style="color: blue;">{.end}
-</span>    &lt;/ul&gt;
+</span>    &lt;tr&gt;
+      &lt;td&gt;&lt;a href="<span style="color: green;">{url-base|htmltag}</span><span style="color: green;">{url|htmltag}</span>"&gt;Play&lt;/a&gt;
+      &lt;td&gt;&lt;i&gt;<span style="color: green;">{title}</span>&lt;/i&gt;&lt;/td&gt;
+      &lt;td&gt;<span style="color: green;">{artist}</span>&lt;/td&gt;
+    &lt;/tr&gt;
   <span style="color: blue;">{.end}
-</span><span style="color: blue;">{.or}
+</span>  &lt;/table&gt;
+<span style="color: blue;">{.or}
 </span>  &lt;p&gt;&lt;em&gt;(No page content matches)&lt;/em&gt;&lt;/p&gt;
 <span style="color: blue;">{.end}
 </span></pre>
@@ -97,74 +93,60 @@ expanded.
 <p><b>... combined with a data dictionary ...</b></p>
 
 <pre class="literal">{
-  "content-results": [
+  "url-base": "http://example.com/music/", 
+  "playlist-name": "Epic Playlist", 
+  "songs": [
     {
-      "matches": [
-        {
-          "line-num": 5, 
-          "line": "`Enter page title`Enter URL` - ''foo''"
-        }
-      ], 
-      "wiki-name": "Jot", 
-      "wiki-url": "/pages/Jot"
+      "url": "1.mp3", 
+      "artist": "Grayceon", 
+      "title": "Sounds Like Thunder"
     }, 
     {
-      "matches": [
-        {
-          "line-num": 3, 
-          "line": "Foo"
-        }
-      ], 
-      "wiki-name": "Live Servers", 
-      "wiki-url": "/pages/Live_Servers"
+      "url": "2.mp3", 
+      "artist": "Thou", 
+      "title": "Their Hooves Carve Craters in the Earth"
     }
-  ], 
-  "query-string": "foo", 
-  "total-content-matches": 5
+  ]
 }</pre>
 
 <p><b>... gives output:</b></p>
 
 <pre class="literal">
+  &lt;h2&gt;Songs in 'Epic Playlist'&lt;/h2&gt;
 
-  &lt;h2&gt;Page Content Matches for 'foo'&lt;/h2&gt;
-  &lt;p&gt;
-    &lt;em&gt;2 pages, 5 matches&lt;/em&gt;
-  &lt;/p&gt;
-
-      &lt;a href="/pages/Jot"&gt;Jot&lt;/a&gt;
-    - &lt;em&gt;1 matches&lt;/em&gt;&lt;br&gt; 
-    &lt;ul class="search-results"&gt;
-              &lt;p&gt;`Enter page title`Enter URL` - ''foo''&lt;/p&gt;
-          &lt;/ul&gt;
-      &lt;a href="/pages/Live_Servers"&gt;Live Servers&lt;/a&gt;
-    - &lt;em&gt;1 matches&lt;/em&gt;&lt;br&gt; 
-    &lt;ul class="search-results"&gt;
-              &lt;p&gt;Foo&lt;/p&gt;
-          &lt;/ul&gt;
-  </pre>
+  &lt;table width="100%"&gt;
+      &lt;tr&gt;
+      &lt;td&gt;&lt;a href="http://example.com/music/1.mp3"&gt;Play&lt;/a&gt;
+      &lt;td&gt;&lt;i&gt;Sounds Like Thunder&lt;/i&gt;&lt;/td&gt;
+      &lt;td&gt;Grayceon&lt;/td&gt;
+    &lt;/tr&gt;
+      &lt;tr&gt;
+      &lt;td&gt;&lt;a href="http://example.com/music/2.mp3"&gt;Play&lt;/a&gt;
+      &lt;td&gt;&lt;i&gt;Their Hooves Carve Craters in the Earth&lt;/i&gt;&lt;/td&gt;
+      &lt;td&gt;Thou&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;/table&gt;
+</pre>
 
 <p><b>Here is the rendered output:</b></p>
 
 <div class="literal">
 
+  <h2>Songs in 'Epic Playlist'</h2>
 
-  <h2>Page Content Matches for 'foo'</h2>
-  <p>
-    <em>2 pages, 5 matches</em>
-  </p>
+  <table width="100%">
+      <tr>
+      <td><a href="http://example.com/music/1.mp3">Play</a>
+      <td><i>Sounds Like Thunder</i></td>
+      <td>Grayceon</td>
+    </tr>
+      <tr>
+      <td><a href="http://example.com/music/2.mp3">Play</a>
+      <td><i>Their Hooves Carve Craters in the Earth</i></td>
+      <td>Thou</td>
+    </tr>
+    </table>
 
-      <a href="/pages/Jot">Jot</a>
-    - <em>1 matches</em><br> 
-    <ul class="search-results">
-              <p>`Enter page title`Enter URL` - ''foo''</p>
-          </ul>
-      <a href="/pages/Live_Servers">Live Servers</a>
-    - <em>1 matches</em><br> 
-    <ul class="search-results">
-              <p>Foo</p>
-          </ul>
-  
 </div>
 
 

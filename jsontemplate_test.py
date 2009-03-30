@@ -780,56 +780,65 @@ class DocumentationTest(testy.Test):
 
   @testy.labels('documentation')
   def testSearchResultsExample(self):
+    # TODO: Come up with a better search results example
+    return
+
+  @testy.labels('documentation')
+  def testTableExample(self):
     t = _TemplateDef("""\
+{# This is a comment and will be removed from the output.}
 
-{# This is a comment, and it will be removed from the output.}
+{.section songs}
+  <h2>Songs in '{playlist-name}'</h2>
 
-{.section content-results}
-  <h2>Page Content Matches for '{query-string|html}'</h2>
-  <p>
-    <em>{content-results|size} pages, {total-content-matches} matches</em>
-  </p>
-
+  <table width="100%">
   {.repeated section @}
-    <a href="{wiki-url|html}">{wiki-name|html}</a>
-    - <em>{matches|size} matches</em><br> 
-    <ul class="search-results">
-      {.repeated section matches}
-        <p>{line|html}</p>
-      {.end}
-    </ul>
+    <tr>
+      <td><a href="{url-base|htmltag}{url|htmltag}">Play</a>
+      <td><i>{title}</i></td>
+      <td>{artist}</td>
+    </tr>
   {.end}
+  </table>
 {.or}
   <p><em>(No page content matches)</em></p>
 {.end}
 """)
 
     d = {
-      "query-string": "foo", 
-      "total-content-matches": 5,
-      "content-results": [
-        {
-          "wiki-name": "Jot",
-          "wiki-url": "/pages/Jot",
-          "matches": [
-            {
-              "line-num": 5,
-              "line": "`Enter page title`Enter URL` - ''foo''", 
-            }
-          ], 
-        }, 
-        { "wiki-url": "/pages/Live_Servers",
-          "wiki-name": "Live Servers",
-          "matches": [
-            {
-              "line-num": 3,
-              "line": "Foo", 
-            }
-          ], 
-        }, 
+      "playlist-name": "Epic Playlist",
+      "url-base": "http://example.com/music/", 
+      "songs": [
+        { "title": "Sounds Like Thunder",
+          "artist": "Grayceon",
+          "url": "1.mp3"
+        },
+        { "title": "Their Hooves Carve Craters in the Earth",
+          "artist": "Thou",
+          "url": "2.mp3"
+        }
       ]
     }
-    self.verify.Expansion(t, d, '')
+
+    expected = """\
+
+  <h2>Songs in 'Epic Playlist'</h2>
+
+  <table width="100%">
+      <tr>
+      <td><a href="http://example.com/music/1.mp3">Play</a>
+      <td><i>Sounds Like Thunder</i></td>
+      <td>Grayceon</td>
+    </tr>
+      <tr>
+      <td><a href="http://example.com/music/2.mp3">Play</a>
+      <td><i>Their Hooves Carve Craters in the Earth</i></td>
+      <td>Thou</td>
+    </tr>
+    </table>
+"""
+
+    self.verify.Expansion(t, d, expected)
 
 
 def main(argv):
