@@ -43,6 +43,98 @@ languages.</li>
 <p>This example uses <i>most </i>of the language, but not all:
 
 
+Template:
+
+<pre><span style="color: blue;">{.section content-results}
+</span>  &lt;h2&gt;Page Content Matches for '<span style="color: green;">{query-string|html}</span>'&lt;/h2&gt;
+  &lt;p&gt;
+    &lt;em&gt;<span style="color: green;">{content-results|size}</span> pages, <span style="color: green;">{total-content-matches}</span> matches&lt;/em&gt;
+  &lt;/p&gt;
+
+  <span style="color: blue;">{.repeated section @}
+</span>    &lt;a href="<span style="color: green;">{wiki-url|html}</span>"&gt;<span style="color: green;">{wiki-name|html}</span>&lt;/a&gt;
+    - &lt;em&gt;<span style="color: green;">{matches|size}</span> matches&lt;/em&gt;&lt;br&gt; 
+    &lt;ul class="search-results"&gt;
+      <span style="color: blue;">{.repeated section matches}
+</span>        &lt;p&gt;<span style="color: green;">{line|html}</span>&lt;/p&gt;
+      <span style="color: blue;">{.end}
+</span>    &lt;/ul&gt;
+  <span style="color: blue;">{.end}
+</span><span style="color: blue;">{.or}
+</span>  &lt;p&gt;&lt;em&gt;(No page content matches)&lt;/em&gt;&lt;/p&gt;
+<span style="color: blue;">{.end}
+</span></pre>
+
+
+Combined with data dictionary:
+
+<pre>{
+  "content-results": [
+    {
+      "matches": [
+        {
+          "line-num": 5, 
+          "line": "`Enter page title`Enter URL` - ''foo''"
+        }
+      ], 
+      "wiki-name": "Jot", 
+      "wiki-url": "/pages/Jot"
+    }, 
+    {
+      "matches": [
+        {
+          "line-num": 3, 
+          "line": "Foo"
+        }
+      ], 
+      "wiki-name": "Live Servers", 
+      "wiki-url": "/pages/Live_Servers"
+    }
+  ], 
+  "query-string": "foo", 
+  "total-content-matches": 5
+}</pre>
+
+Gives output:
+
+<pre>  &lt;h2&gt;Page Content Matches for 'foo'&lt;/h2&gt;
+  &lt;p&gt;
+    &lt;em&gt;2 pages, 5 matches&lt;/em&gt;
+  &lt;/p&gt;
+
+      &lt;a href="/pages/Jot"&gt;Jot&lt;/a&gt;
+    - &lt;em&gt;1 matches&lt;/em&gt;&lt;br&gt; 
+    &lt;ul class="search-results"&gt;
+              &lt;p&gt;`Enter page title`Enter URL` - ''foo''&lt;/p&gt;
+          &lt;/ul&gt;
+      &lt;a href="/pages/Live_Servers"&gt;Live Servers&lt;/a&gt;
+    - &lt;em&gt;1 matches&lt;/em&gt;&lt;br&gt; 
+    &lt;ul class="search-results"&gt;
+              &lt;p&gt;Foo&lt;/p&gt;
+          &lt;/ul&gt;
+  </pre>
+
+Rendered output:
+
+  <h2>Page Content Matches for 'foo'</h2>
+  <p>
+    <em>2 pages, 5 matches</em>
+  </p>
+
+      <a href="/pages/Jot">Jot</a>
+    - <em>1 matches</em><br> 
+    <ul class="search-results">
+              <p>`Enter page title`Enter URL` - ''foo''</p>
+          </ul>
+      <a href="/pages/Live_Servers">Live Servers</a>
+    - <em>1 matches</em><br> 
+    <ul class="search-results">
+              <p>Foo</p>
+          </ul>
+  
+
+
+
 <h3>Motivation</h3>
 
 <p> A few problems with the state of the art:

@@ -17,7 +17,10 @@ from pan.core import json
 
 
 def main(argv):
-  """Returns an exit code."""
+
+  argv = [
+      './jsontemplate_test.py', '-l' 'documentation', '-d', 'generated_docs']
+  subprocess.call(argv)
 
   dictionary = json.dumps({
     'example1': 
@@ -28,7 +31,11 @@ def main(argv):
       'python/expand.py', 
       open('doc/Introducing-JSON-Template.html.jsont').read(),
       dictionary]
-  subprocess.call(argv)
+  p = subprocess.Popen(argv, stdout=subprocess.PIPE)
+  contents = p.stdout.read()
+  p.wait()
+
+  open('doc/Introducing-JSON-Template.html', 'w').write(contents)
 
 
 if __name__ == '__main__':
