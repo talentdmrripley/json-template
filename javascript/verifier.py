@@ -29,7 +29,7 @@ from pan.test import testy
 
 _TEST_JS = """
 try {
-  var t = Template(%(template)s, %(options)s);
+  var t = jsontemplate.Template(%(template)s, %(options)s);
   var s = t.expand(%(dictionary)s);
   print(s);
 } catch(e) {

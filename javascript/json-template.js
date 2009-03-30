@@ -18,12 +18,16 @@
 // JavaScript implementation of json-template.
 //
 
-// TODO: Need some kind of module system
-
 // This is predefined in tests, shouldn't be defined anywhere else.  TODO: Do
 // something nicer.
 var log = log || function() {};
 var repr = repr || function() {};
+
+
+// The "module" exported by this script is called "jsontemplate":
+
+var jsontemplate = function() {
+
 
 // Regex escaping for common metacharacters (note that JavaScript needs 2 \\ --
 // no raw strings!
@@ -240,7 +244,6 @@ function _DoSection(args, context, callback) {
     _Execute(block.Statements('or'), context, callback);
   }
 }
-
 
 
 function _DoRepeatedSection(args, context, callback) {
@@ -483,3 +486,10 @@ function Template(template_str, options) {
     }
   };
 }
+
+
+// We just export one name for now, the Template "class".
+
+return {Template: Template}
+
+}();

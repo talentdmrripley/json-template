@@ -7,6 +7,7 @@ __author__ = 'Andy Chu'
 
 
 import os
+import shutil
 import sys
 import subprocess
 
@@ -21,6 +22,8 @@ def main(argv):
   argv = [
       './jsontemplate_test.py', '-l' 'documentation', '-d', 'generated_docs']
   subprocess.call(argv)
+
+  shutil.copy('generated_docs/testTableExample-001.js.html', 'doc/')
 
   dictionary = json.dumps({
       'example1': 

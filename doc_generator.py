@@ -103,7 +103,7 @@ _JS_EXAMPLE = """\
     </script>
     <script type="text/javascript">
     function write() {
-      var t = Template({template_str});
+      var t = jsontemplate.Template({template_str});
       var s = t.expand({json_str});
       document.getElementById("replace").innerHTML = s;
     }
