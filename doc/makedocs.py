@@ -20,18 +20,18 @@ from pan.core import json
 def main(argv):
 
   argv = [
-      './jsontemplate_test.py', '-l' 'documentation', '-d', 'generated_docs']
+      './jsontemplate_test.py', '-l' 'documentation', '-d', 'test-cases']
   subprocess.call(argv)
 
-  shutil.copy('generated_docs/testTableExample-001.js.html', 'doc/')
+  shutil.copy('test-cases/testTableExample-001.js.html', 'doc/')
 
   dictionary = json.dumps({
-      'example1': 
-      open('generated_docs/testTableExample-001.html').read(),
+      'example1':
+      open('test-cases/testTableExample-001.html').read(),
       })
 
   argv = [
-      'python/expand.py', 
+      'python/expand.py',
       open('doc/Introducing-JSON-Template.html.jsont').read(),
       dictionary]
   p = subprocess.Popen(argv, stdout=subprocess.PIPE)
@@ -45,7 +45,7 @@ def main(argv):
       })
 
   argv = [
-      'python/expand.py', 
+      'python/expand.py',
       open('doc/html.jsont').read(),
       dictionary]
   p = subprocess.Popen(argv, stdout=subprocess.PIPE)
@@ -63,7 +63,8 @@ def main(argv):
       '--name', 'JSON Template',
       '-o', 'epydoc']
   subprocess.call(argv)
-  print 'Epydoc generated in epydoc/ -- now rsync it'
+
+  print 'Docs generated in epydoc/ and test-cases/ -- now rsync it'
 
 
 if __name__ == '__main__':
