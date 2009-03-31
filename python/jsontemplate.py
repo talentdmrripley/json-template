@@ -20,6 +20,13 @@
 
 JSON Template is a minimal and powerful templating language for transforming a
 JSON dictionary to arbitrary text.
+
+To use this module, you will typically use the Template constructor, and catch
+various exceptions thrown.  You may also want to use the FromFile/FromString
+methods, which allow Template constructor options to be embedded in the template
+string itself.
+
+Other functions are exposed for tools which may want to process templates.
 """
 
 __author__ = 'Andy Chu'

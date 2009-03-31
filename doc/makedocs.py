@@ -59,8 +59,9 @@ def main(argv):
   # markup.
   argv = [
       'epydoc', 'python/jsontemplate.py', '--html', '-v',
-      '--docformat=plaintext', '--no-private', '-o',
-      'epydoc']
+      '--docformat=plaintext', '--no-private', '--include-log', '--no-frames',
+      '--name', 'JSON Template',
+      '-o', 'epydoc']
   subprocess.call(argv)
   print 'Epydoc generated in epydoc/ -- now rsync it'
 
