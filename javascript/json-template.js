@@ -302,10 +302,11 @@ function _Compile(template_str, options) {
 
   // We want to allow an explicit null value for default_formatter, which means
   // that an error is raised if no formatter is specified.
+  var default_formatter;
   if (options.default_formatter === undefined) {
-    var default_formatter = 'str'; 
+    default_formatter = 'str'; 
   } else {
-    var default_formatter = options.default_formatter;
+    default_formatter = options.default_formatter;
   }
 
   function GetFormatter(format_str) {
@@ -374,7 +375,7 @@ function _Compile(template_str, options) {
         var literal = {
             'meta-left': meta_left,
             'meta-right': meta_right,
-            'space': ' ',
+            'space': ' '
             }[token];
 
         if (literal !== undefined) {
@@ -490,6 +491,6 @@ function Template(template_str, options) {
 
 // We just export one name for now, the Template "class".
 
-return {Template: Template}
+return {Template: Template};
 
 }();
