@@ -54,6 +54,16 @@ def main(argv):
 
   open('doc/Introducing-JSON-Template.html', 'w').write(body)
 
+  # Required epydoc to be installed
+  # Don't show private variables, and don't assume the docstrings have epydoc
+  # markup.
+  argv = [
+      'epydoc', 'python/jsontemplate.py', '--html', '-v',
+      '--docformat=plaintext', '--no-private', '-o',
+      'epydoc']
+  subprocess.call(argv)
+  print 'Epydoc generated in epydoc/ -- now rsync it'
+
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv))
