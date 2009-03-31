@@ -129,12 +129,11 @@ class DocGenerator(testy.StandardVerifier):
     # Counter for unique filenames
     self.counter = 1
 
-    if 1:
-      template = _BLOG_HTML
-    else:
-      template = _TEST_CASE_HTML
+    self.blog_template = jsontemplate.Template(
+        _BLOG_HTML, default_formatter='html')
+
     self.html_template = jsontemplate.Template(
-        template, default_formatter='html')
+        _TEST_CASE_HTML, default_formatter='html')
 
     # Don't need any escaping here.
     self.js_template = jsontemplate.Template(
@@ -158,10 +157,15 @@ class DocGenerator(testy.StandardVerifier):
     json_str = json.dumps(dictionary, indent=2)
 
     self.WriteHighlightedHtml(template_def, json_str, expanded)
-    self.WriteJavaScriptExample(template_def, json_str, expanded)
+
+    # Mark test methods with the live-js label to generate the Live JavaScript
+    # example.
+    if testy.HasLabel(self.current_method, 'live-js'):
+      self.WriteLiveJavaScriptExample(template_def, json_str, expanded)
+
     self.counter += 1
 
-  def WriteJavaScriptExample(self, template_def, json_str, expanded):
+  def WriteLiveJavaScriptExample(self, template_def, json_str, expanded):
     """Write a working JavaScript example that can be loaded in the browser."""
 
     # TODO: Could use expanded to verify the server side against the client side
@@ -172,7 +176,7 @@ class DocGenerator(testy.StandardVerifier):
         'json_str': json_str,
         })
 
-    filename = '%s-%03d.js.html' % (self.current_method.__name__, self.counter)
+    filename = '%s-%02d.js.html' % (self.current_method.__name__, self.counter)
     self._WriteFile(filename, html)
 
   def WriteHighlightedHtml(self, template_def, json_str, expanded):
@@ -189,12 +193,18 @@ class DocGenerator(testy.StandardVerifier):
       kwargs['format_char'] = format_char
 
     highlighted_template = highlight.AsHtml(template_def.args[0], **kwargs)
-    html = self.html_template.expand({
+
+    if testy.HasLabel(self.current_method, 'blog-format'):
+      template = self.blog_template
+    else:
+      template = self.html_template
+
+    html = template.expand({
         'highlighted_template': highlighted_template,
         'dictionary': json_str,
         'expanded': expanded})
 
-    filename = '%s-%03d.html' % (self.current_method.__name__, self.counter)
+    filename = '%s-%02d.html' % (self.current_method.__name__, self.counter)
     self._WriteFile(filename, html)
 
   def _WriteFile(self, filename, contents):

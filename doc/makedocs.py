@@ -19,15 +19,15 @@ from pan.core import json
 
 def main(argv):
 
-  argv = [
-      './jsontemplate_test.py', '-l' 'documentation', '-d', 'test-cases']
+  # For now, leave off '-l' 'documentation', 
+  argv = ['./jsontemplate_test.py', '-d', 'test-cases']
   subprocess.call(argv)
 
-  shutil.copy('test-cases/testTableExample-001.js.html', 'doc/')
+  shutil.copy('test-cases/testTableExample-01.js.html', 'doc/')
 
   dictionary = json.dumps({
       'example1':
-      open('test-cases/testTableExample-001.html').read(),
+      open('test-cases/testTableExample-01.html').read(),
       })
 
   argv = [

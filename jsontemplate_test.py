@@ -791,7 +791,7 @@ class DocumentationTest(testy.Test):
     # TODO: Come up with a better search results example
     return
 
-  @testy.labels('documentation')
+  @testy.labels('documentation', 'live-js', 'blog-format')
   def testTableExample(self):
     t = _TemplateDef("""\
 {# This is a comment and will be removed from the output.}
