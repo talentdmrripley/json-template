@@ -654,6 +654,8 @@ People
     self.verify.Expansion(t, d, '\n')
 
 
+# TODO: This can be an example in the documentation about how to use custom
+# formatters.
 def _PythonFormat(format_str):
   """Use Python % format strings as template format specifiers."""
   # A little hack for now

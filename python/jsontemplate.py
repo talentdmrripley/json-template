@@ -18,12 +18,8 @@
 
 """Python implementation of json-template.
 
-Exports:
-  class Template 
-  function expand
-
-Exceptions:
-  All exceptions have the base class Error.
+JSON Template is a minimal and powerful templating language for transforming a
+JSON dictionary to arbitrary text.
 """
 
 __author__ = 'Andy Chu'
@@ -40,6 +36,11 @@ import urllib  # for urllib.encode
 
 
 class Error(Exception):
+  """Base class for all exceptions in this module.
+
+  Thus you can "except jsontemplate.Error: to catch all exceptions thrown by
+  this module.
+  """
 
   def __str__(self):
     """This helps people debug their templates.
@@ -60,8 +61,8 @@ class CompilationError(Error):
 class EvaluationError(Error):
   """Base class for errors that happen when expanding the template.
 
-  That is, this class of errors generally involve the data dictionary or the
-  execution of the formatters.
+  This class of errors generally involve the data dictionary or the execution of
+  the formatters.
   """
   def __init__(self, msg, original_exception=None):
     Error.__init__(self, msg)
@@ -69,72 +70,40 @@ class EvaluationError(Error):
 
 
 class BadFormatter(CompilationError):
-  """
-  Raised when a bad formatter is specified, e.g. [variable|BAD]
-  """
+  """A bad formatter was specified, e.g. {variable|BAD}"""
 
 class MissingFormatter(CompilationError):
   """
-  Raised when a bad formatter is specified, e.g. [variable|BAD]
+  Raised when formatters are required, and a variable is missing a formatter.
   """
 
 class ConfigurationError(CompilationError):
-  """Bad metacharacters."""
-
+  """
+  Raised when the Template options are invalid and it can't even be compiled.
+  """
 
 class TemplateSyntaxError(CompilationError):
   """Syntax error in the template text."""
 
-
 class UndefinedVariable(EvaluationError):
-  """
-  Raised when evaluating a template that contains variable not defined by the
-  data dictionary.
-  """
-
-
-def PythonFormat(format_str):
-  """Use Python % format strings as template format specifiers."""
-  # A little hack for now
-  if format_str.startswith('%'):
-    return lambda value: format_str % value
-  else:
-    return None
+  """The template contains a variable not defined by the data dictionary."""
 
 
 _SECTION_RE = re.compile(r'(repeated)?\s*(section)\s+(\S+)')
 
-_token_re_cache = {}
-
-def MakeTokenRegex(meta_left, meta_right):
-  """Return a regular expression for tokenization.
-
-  This is public so the syntax highlighter can use it.
-  """
-  key = meta_left, meta_right
-  if key not in _token_re_cache:
-    # Need () for re.split
-    _token_re_cache[key] = re.compile(
-        r'(' +
-        re.escape(meta_left) +
-        # For simplicity, we allow all characters except newlines inside
-        # metacharacters ({} / [])
-        r'.+?' +
-        re.escape(meta_right) +
-        # Some declarations also include the newline at the end -- that is, we
-        # don't expand the newline in that case
-        r'\n?)')
-  return _token_re_cache[key]
-
 
 class _ProgramBuilder(object):
+  """
+  Receives method calls from the parser, and constructs a tree of _Section()
+  instances.
+  """
 
   def __init__(self, more_formatters):
     """
     Args:
       more_formatters: A function which returns a function to apply to the
           value, given a format string.  It can return None, in which case the
-          DEFAULT_FORMATTERS dictionary is consulted.
+          _DEFAULT_FORMATTERS dictionary is consulted.
     """
     self.current_block = _Section()
     self.stack = [self.current_block]
@@ -148,10 +117,11 @@ class _ProgramBuilder(object):
     self.current_block.Append(statement)
 
   def _GetFormatter(self, format_str):
-    """The user's formatters are consulted first, then the default
-    formatters."""
+    """
+    The user's formatters are consulted first, then the default formatters.
+    """
     formatter = (
-        self.more_formatters(format_str) or DEFAULT_FORMATTERS.get(format_str))
+        self.more_formatters(format_str) or _DEFAULT_FORMATTERS.get(format_str))
 
     if formatter:
       return formatter
@@ -163,9 +133,8 @@ class _ProgramBuilder(object):
     self.current_block.Append((_DoSubstitute, (name, formatters)))
 
   def NewSection(self, repeated, section_name):
-    """
-    For sections or repeated sections.
-    """
+    """For sections or repeated sections."""
+
     new_block = _Section(section_name)
     if repeated:
       func = _DoRepeatedSection
@@ -192,6 +161,7 @@ class _ProgramBuilder(object):
 
 
 class _Section(object):
+  """Represents a (repeated) section."""
 
   def __init__(self, section_name=None):
     """
@@ -228,7 +198,7 @@ class _ScopedContext(object):
 
   def __init__(self, context):
     self.stack = [context]
-    
+
   def PushSection(self, name):
     new_context = self.stack[-1].get(name)
     self.stack.append(new_context)
@@ -282,9 +252,11 @@ def _ToString(x):
 # See http://google-ctemplate.googlecode.com/svn/trunk/doc/howto.html for more
 # escape types.
 #
+# Also, we might want to take a look at Django filters.
+#
 # This is a *public* constant, so that callers can use it construct their own
 # formatter lookup dictionaries, and pass them in to Template.
-DEFAULT_FORMATTERS = {
+_DEFAULT_FORMATTERS = {
     'html': cgi.escape,
     'htmltag': lambda x: cgi.escape(x, quote=True),
     'raw': lambda x: x,
@@ -300,7 +272,12 @@ DEFAULT_FORMATTERS = {
 
 
 def SplitMeta(meta):
-  """Split and validate metacharacters."""
+  """Split and validate metacharacters.
+
+  Example: '{}' -> ('{', '}')
+
+  This is public so the syntax highlighter and other tools can use it.
+  """
   n = len(meta)
   if n % 2 == 1:
     raise ConfigurationError(
@@ -308,17 +285,49 @@ def SplitMeta(meta):
   return meta[:n/2], meta[n/2:]
 
 
+_token_re_cache = {}
+
+def MakeTokenRegex(meta_left, meta_right):
+  """Return a (compiled) regular expression for tokenization.
+
+  Args:
+    meta_left, meta_right: e.g. '{' and '}'
+
+  - The regular expressions are memoized.
+  - This function is public so the syntax highlighter can use it.
+  """
+  key = meta_left, meta_right
+  if key not in _token_re_cache:
+    # Need () for re.split
+    _token_re_cache[key] = re.compile(
+        r'(' +
+        re.escape(meta_left) +
+        # For simplicity, we allow all characters except newlines inside
+        # metacharacters ({} / [])
+        r'.+?' +
+        re.escape(meta_right) +
+        # Some declarations also include the newline at the end -- that is, we
+        # don't expand the newline in that case
+        r'\n?)')
+  return _token_re_cache[key]
+
+
 def ParseTemplate(
     template_str, builder, meta='{}', format_char='|', default_formatter='str'):
-  """
+  """Parse the template string, calling methods on the program 'builder'.
+
   Args:
     template_str: The template string.  It should not have any compilation
-        options in the header -- those are parsed by FromString/FromFile.
+        options in the header -- those are parsed by FromString/FromFile
     builder: Something with the interface of _ProgramBuilder
-    meta: metacharacters to use.
-    default_formatter: The formatter to use if none is specified in the
-        template.  The 'str' formatter is the default default -- it just tries
+    meta: The metacharacters to use
+    default_formatter: The formatter to use for substitutions that are missing a
+        formatter.  The 'str' formatter the "default default" -- it just tries
         to convert the context value to a string in some unspecified manner.
+
+  Raises:
+    If the default_formatter is None, and a variable is missing a formatter,
+    then MissingFormatter is raised.
 
   This function is public so it can be used by other tools, e.g. a syntax
   checking tool run before submitting a template to source control.
@@ -363,7 +372,7 @@ def ParseTemplate(
 
       # It's a comment
       if token.startswith('#'):
-        continue  
+        continue
 
       # It's a "keyword" directive
       if token.startswith('.'):
@@ -432,24 +441,33 @@ _OPTION_NAMES = ['meta', 'format-char', 'default-formatter']
 
 
 def FromString(s, _constructor=None):
+  """Like FromFile, but takes a string."""
+
   f = cStringIO.StringIO(s)
   return FromFile(f, _constructor=_constructor)
 
 
-# TODO: Use RFC822 style parsing instead
-
 def FromFile(f, _constructor=None):
   """Parse a template from a file, using a simple file format.
-  
-  This is useful when you want to include template options in a file, rather
-  than in source code.
 
-  The first lines of the file can specify template options, such as the
-  metacharacters to use.  One blank line must separate the options from the
-  template body.
+  This is useful when you want to include template options in a data file,
+  rather than in the source code.
+
+  The format is similar to HTTP or E-mail headers.  The first lines of the file
+  can specify template options, such as the metacharacters to use.  One blank
+  line must separate the options from the template body.
+
+  Example:
+
+    default-formatter: none
+    meta: {{}}
+    format-char: :
+    <blank line required>
+    Template goes here: {{variable:html}}
 
   Args:
-    f: A file handle to read from.  Caller is responsible for closing it.
+    f: A file handle to read from.  Caller is responsible for opening and
+    closing it.
   """
   _constructor = _constructor or Template
 
@@ -491,25 +509,33 @@ def FromFile(f, _constructor=None):
 
 
 class Template(object):
-  """
-  Don't go crazy with metacharacters.  {}, [], or <> (in order of preference)
-  should cover nearly any circumstance, e.g. generating HTML, XML, JavaScript, C
-  programs, text files, etc.
+  """Represents a compiled template.
 
-  How this works:
-    Like many template systems, the template string is compiled into a program,
-    and then it can be expanded any number of times.  For a web server, this
-    makes it easy to compile the templates once at server startup, and have fast
-    expansion for request handling.
+  Like many template systems, the template string is compiled into a program,
+  and then it can be expanded any number of times.  For example, in a web app,
+  you can compile the templates once at server startup, and use the expand()
+  method at request handling time.  expand() uses the compiled representation.
 
-  TODO: more docs.
+  There are various options for controlling parsing -- see ParseTemplate.  Don't
+  go crazy with metacharacters.  {}, [], {{}} or <> should cover nearly any
+  circumstance, e.g. generating HTML, CSS XML, JavaScript, C programs, text
+  files, etc.
   """
 
   def __init__(
       self, template_str, builder=None, more_formatters=lambda x: None,
       **compile_options):
     """
-    See ParseTemplate for options.
+    Args:
+      template_str: The template string.
+      more_formatters: A function which maps format strings to
+          *other functions*.  The resulting functions should take a data
+          dictionary value (a JSON atom, or a dictionary itself), and return a
+          string to be shown on the page.  These are often used for HTML
+          escaping, etc.  There is a default set of formatters available if
+          more_formatters is not passed.
+
+    It also accepts all the compile options that ParseTemplate does.
     """
     builder = builder or _ProgramBuilder(more_formatters)
     self._program = ParseTemplate(template_str, builder, **compile_options)
@@ -519,15 +545,30 @@ class Template(object):
   #
 
   def render(self, data_dict, callback):
-    """Calls a callback with each expanded token."""
+    """Low level method to expands the template piece by piece.
+
+    Args:
+      data_dict: The JSON data dictionary.
+      callback: A callback which should be called with each expanded token.
+
+    Example: You can pass 'f.write' as the callback to write directly to a file
+    handle.
+    """
     _Execute(self._program.Statements(), _ScopedContext(data_dict), callback)
 
   def expand(self, data_dict):
-    """Returns the template expanded with the given data dictionary.
-    
-    The return value could be a str() or unicode() instance, depending on the
-    the type of the template string passed in, and what the types the strings in
-    the dictionary are.
+    """Expands the template with the given data dictionary, returning a string.
+
+    This is a small wrapper around render(), and is the most convenient
+    interface.
+
+    Args:
+      data_dict: The JSON data dictionary.
+
+    Returns:
+      The return value could be a str() or unicode() instance, depending on the
+      the type of the template string passed in, and what the types the strings
+      in the dictionary are.
     """
     tokens = []
     self.render(data_dict, tokens.append)
@@ -536,7 +577,8 @@ class Template(object):
   def tokenstream(self, data_dict):
     """Yields a list of tokens resulting from expansion.
 
-    This may be useful for WSGI apps.
+    This may be useful for WSGI apps.  NOTE: In the current implementation, the
+    entire expanded template must be stored memory.
 
     NOTE: This is a generator, but JavaScript doesn't have generators.
     """
@@ -548,11 +590,11 @@ class Template(object):
 
 
 def _DoRepeatedSection(args, context, callback):
-  """[repeated section foo]"""
+  """{repeated section foo}"""
 
   block = args
 
-  if block.section_name == '@': 
+  if block.section_name == '@':
     # If the name is @, we stay in the enclosing context, but assume it's a
     # list, and repeat this block many times.
     items = context.CursorValue()
@@ -586,7 +628,7 @@ def _DoRepeatedSection(args, context, callback):
 
 
 def _DoSection(args, context, callback):
-  """[section foo]"""
+  """{section foo}"""
 
   block = args
   # If a section isn't present in the dictionary, or is None, then don't show it
@@ -600,6 +642,8 @@ def _DoSection(args, context, callback):
 
 
 def _DoSubstitute(args, context, callback):
+  """Variable substitution, e.g. {foo}"""
+
   name, formatters = args
 
   # So we can have {.section is_new}new since {@}{.end}.  Hopefully this idiom
@@ -628,9 +672,16 @@ def _DoSubstitute(args, context, callback):
     raise EvaluationError('Evaluating %r gave None value' % name)
   callback(value)
 
-  
+
 def _Execute(statements, context, callback):
-  """This is recursively called."""
+  """Execute a bunch of template statements in a ScopedContext.
+
+  Args:
+    callback: Strings are "written" to this callback function.
+
+  This is called in a mutually recursive fashion.
+  """
+
   for i, statement in enumerate(statements):
     if isinstance(statement, str):
       callback(statement)
@@ -649,7 +700,7 @@ def _Execute(statements, context, callback):
 
 
 def expand(template_str, dictionary, **kwargs):
-  """Expands a template string with a data dictionary.
+  """Free function to expands a template string with a data dictionary.
 
   This is useful for cases where you don't care about saving the result of
   compilation (similar to re.match('.*', s) vs DOT_STAR.match(s))
