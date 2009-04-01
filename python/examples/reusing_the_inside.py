@@ -65,8 +65,6 @@ default-formatter: html
 </center>
 """)
 
-# TODO: u
-
 
 # Now we define a wrapper for templates that can render user profiles.
 #
