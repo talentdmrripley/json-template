@@ -88,8 +88,19 @@ default-formatter: html
 
 
 def MoreFormatters(formatter_name):
-  if formatter_name == 'user-profile-as-html':
-    # This is a function, more specifically, 'bound method'
+
+  # TIP: Name formatters to be read with "as" in the middle.  They should be
+  # nouns that describe what is returned:
+  #
+  # "itchy profile node as a user profile"
+  # "name as html"
+  # "query as html-attr-value"
+  #
+  # We want to write things as {itchy_profile|user-profile}, so:
+
+  if formatter_name == 'user-profile':
+    # We are returning a function (or more specifically a 'bound method' in
+    # Python)
     #
     # Note that this function will only work on valid profiles, which are
     # dictionaries.
@@ -126,9 +137,8 @@ def TemplateThatCanRenderProfiles(template_str):
 #    c. Now we are in a repeated section, and the cursor traverses over the
 #    individual items in the JSON array.
 #
-# 3. JSON template allows you to define your own formatters.  So each cursor
-# value in the repeated section is formatted using 'user-profile-as-html'.
-# We'll see the definition of this next.
+# 3. We are formatting the cursor values in the repeated section (which are
+# dictionaries in this case) as a user profile.
 
 PAGE_ONE_TEMPLATE = TemplateThatCanRenderProfiles("""\
 <b>{title}</b>
@@ -136,7 +146,7 @@ PAGE_ONE_TEMPLATE = TemplateThatCanRenderProfiles("""\
 {.section profiles}
   <table border=1 width="100%"><tr>
   {.repeated section @}
-    <td>{@|user-profile-as-html}</td>
+    <td>{@|user-profile}</td>
   {.end}
   </tr></table>
 {.end}
@@ -165,15 +175,17 @@ Easy.
 """)
 
 # Now on page two, we just show the profile itself, along with the *literal
-# HTML* of the profile, "for debugging purposes".  This demonstrates chaining of
-# formatters.
+# HTML* of the profile, "for debugging purposes".  This demonstrates *chaining*
+# of formatters.
+#
+# Can be read: "the profile formatted as a user profile, as escaped HTML"
 
 PAGE_TWO_TEMPLATE = TemplateThatCanRenderProfiles("""\
-{profile|user-profile-as-html}
+{profile|user-profile}
 
 <p>Here is the HTML for the profile above:</p>
 
-<pre>{profile|user-profile-as-html|html}</pre>
+<pre>{profile|user-profile|html}</pre>
 """)
 
 
