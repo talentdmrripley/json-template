@@ -73,6 +73,9 @@ def Site(path_info):
   return HTML_TEMPLATE.expand({'body': body, 'title': title})
 
 
+# Now go back to the 'Design Minimalism' blog post (linked from
+# http://code.google.com/p/json-template/).
+
 def main():
   """Returns an exit code."""
 
