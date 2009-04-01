@@ -36,7 +36,13 @@ __author__ = 'Andy Chu'
 
 # Use jsontemplate to document itself!
 _TEST_CASE_HTML = """
-<table border="1" width="100%">
+<style type=text/css>
+tr td {
+  background-color: #DDD;
+  padding: 0.5em;
+}
+</style>
+<table width="100%" cellspacing="10">
   <tr>
     <td>
       <b>Template</b>
@@ -44,32 +50,26 @@ _TEST_CASE_HTML = """
     <td>
       <b>Data Dictionary</b>
     </td>
+    <td>
+      <b>Output</b>
+    </td>
   </tr>
-  <tr>
+  <tr class="literal">
     <td>
       {highlighted_template|raw}
     </td>
     <td>
       <pre>{dictionary}</pre>
     </td>
-  </tr>
-  <tr>
-    <td>
-      <b>Output</b>
-    </td>
-    <td>
-      <b>Rendered Output</b>
-    </td>
-  </tr>
-  <tr>
     <td>
       <pre>{expanded}</pre>
     </td>
-    <td>
-      {expanded|raw}
-    </td>
-  </tr>
 </table>
+
+<p><i>This HTML fragment was automatically generated from the <a
+href="http://json-template.googlecode.com/svn/trunk/jsontemplate_test.py">test
+cases</a> for <a href="http://code.google.com/p/json-template">JSON
+Template</a>.  </p>
 """
 
 
