@@ -343,8 +343,9 @@ def CompileTemplate(
     The compiled program (obtained from the builder)
 
   Raises:
-    If the default_formatter is None, and a variable is missing a formatter,
-    then MissingFormatter is raised.
+    The various subclasses of CompilationError.  For example, if
+    default_formatter=None, and a variable is missing a formatter, then
+    MissingFormatter is raised.
 
   This function is public so it can be used by other tools, e.g. a syntax
   checking tool run before submitting a template to source control.
@@ -596,7 +597,6 @@ class Template(object):
     self.render(data_dict, tokens.append)
     for token in tokens:
       yield token
-
 
 
 def _DoRepeatedSection(args, context, callback):
