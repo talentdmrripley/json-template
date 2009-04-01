@@ -143,16 +143,27 @@ PAGE_ONE_TEMPLATE = TemplateThatCanRenderProfiles("""\
   </tr></table>
 {.end}
 
+
+<!-- You don't need to read this part yet -->
+
 <p>
-OK that worked well.  We have two profiles on the page, without mentioning the
-details of how format profiles in the template for this page.  That logic is
-encapsulated and can be shared across multiple pages.
+OK that worked well.  We have multiple profiles on the page, without mentioning
+the details of how format profiles in the template for this page.  That logic is
+<b>encapsulated</b> in its own template and can be <b>reused</b> across multiple
+pages.  </p>
+
+<p>Oh yeah, and to demonstrate that we also enabled <code>printf</code>-style
+formatting in <code>MoreFormatters</code>, here we format the variable
+<code>ONE_THIRD</code> to two significant places, using the syntax
+<code>{.meta-left}ONE_THIRD|%.2f{.meta-right}</code>:
+</p>
+<p>
+<b>{ONE_THIRD|%.2f}</b>.
 </p>
 
-<p>Oh yeah, and to demonstrate <code>MoreFormatters</code>, here we need to
-format the variable <code>ONE_THIRD</code> to two significant places, using the
-syntax <code>{.meta-left}ONE_THIRD|%.2f{.meta-right}</code>: {ONE_THIRD|%.2f}.
-Easy.  </p>
+<p>
+Easy.
+</p>
 """)
 
 # Now on page two, we just show the profile itself, along with the *literal

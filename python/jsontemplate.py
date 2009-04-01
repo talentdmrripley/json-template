@@ -270,7 +270,13 @@ _DEFAULT_FORMATTERS = {
     # Used for the length of a list.  Can be used for the size of a dictionary
     # too, though I haven't run into that use case.
     'size': lambda value: str(len(value)),
-    'url-params': urllib.urlencode,  # param is a dictionary
+
+    # The argument is a dictionary, and we get a a=1&b=2 string back.
+    'url-params': urllib.urlencode,  
+
+    # The argument is an atom, and it takes 'Search query?' -> 'Search+query%3F'
+    'url-param-value': urllib.quote_plus,  # param is an atom
+
     # The default formatter, when no other default is specifier.  For debugging,
     # this could be lambda x: json.dumps(x, indent=2), but here we want to be
     # compatible to Python 2.4.
