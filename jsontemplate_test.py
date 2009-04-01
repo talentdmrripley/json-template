@@ -774,11 +774,21 @@ class InternalTemplateTest(testy.PyUnitCompatibleTest):
     # Bug fix
     t.expand(d)
 
+  #
+  # Tests for public functions
+  #
+
   def testExpand(self):
     """Test the free function expand."""
     self.assertEqual(
         jsontemplate.expand('Hello {name}', {'name': 'World'}),
         'Hello World')
+
+  def testCompileTemplate(self):
+    program = jsontemplate.CompileTemplate('{}')
+    # If no builder is passed, them CompileTemplate should return a _Section
+    # instance (the root of the program)
+    self.assertEqual(type(program), jsontemplate._Section)
 
 
 class DocumentationTest(testy.Test):

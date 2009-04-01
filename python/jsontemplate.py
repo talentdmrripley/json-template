@@ -319,18 +319,28 @@ def MakeTokenRegex(meta_left, meta_right):
   return _token_re_cache[key]
 
 
-def ParseTemplate(
-    template_str, builder, meta='{}', format_char='|', default_formatter='str'):
-  """Parse the template string, calling methods on the program 'builder'.
+def CompileTemplate(
+    template_str, builder=None, meta='{}', format_char='|',
+    more_formatters=lambda x: None, default_formatter='str'):
+  """Compile the template string, calling methods on the 'program builder'.
 
   Args:
     template_str: The template string.  It should not have any compilation
         options in the header -- those are parsed by FromString/FromFile
     builder: Something with the interface of _ProgramBuilder
     meta: The metacharacters to use
+    more_formatters: A function which maps format strings to
+        *other functions*.  The resulting functions should take a data
+        dictionary value (a JSON atom, or a dictionary itself), and return a
+        string to be shown on the page.  These are often used for HTML escaping,
+        etc.  There is a default set of formatters available if more_formatters
+        is not passed.
     default_formatter: The formatter to use for substitutions that are missing a
         formatter.  The 'str' formatter the "default default" -- it just tries
         to convert the context value to a string in some unspecified manner.
+
+  Returns:
+    The compiled program (obtained from the builder)
 
   Raises:
     If the default_formatter is None, and a variable is missing a formatter,
@@ -339,6 +349,7 @@ def ParseTemplate(
   This function is public so it can be used by other tools, e.g. a syntax
   checking tool run before submitting a template to source control.
   """
+  builder = builder or _ProgramBuilder(more_formatters)
   meta_left, meta_right = SplitMeta(meta)
 
   # : is meant to look like Python 3000 formatting {foo:.3f}.  According to
@@ -523,29 +534,21 @@ class Template(object):
   you can compile the templates once at server startup, and use the expand()
   method at request handling time.  expand() uses the compiled representation.
 
-  There are various options for controlling parsing -- see ParseTemplate.  Don't
-  go crazy with metacharacters.  {}, [], {{}} or <> should cover nearly any
-  circumstance, e.g. generating HTML, CSS XML, JavaScript, C programs, text
+  There are various options for controlling parsing -- see CompileTemplate.
+  Don't go crazy with metacharacters.  {}, [], {{}} or <> should cover nearly
+  any circumstance, e.g. generating HTML, CSS XML, JavaScript, C programs, text
   files, etc.
   """
 
-  def __init__(
-      self, template_str, builder=None, more_formatters=lambda x: None,
-      **compile_options):
+  def __init__(self, template_str, builder=None, **compile_options):
     """
     Args:
       template_str: The template string.
-      more_formatters: A function which maps format strings to
-          *other functions*.  The resulting functions should take a data
-          dictionary value (a JSON atom, or a dictionary itself), and return a
-          string to be shown on the page.  These are often used for HTML
-          escaping, etc.  There is a default set of formatters available if
-          more_formatters is not passed.
 
-    It also accepts all the compile options that ParseTemplate does.
+    It also accepts all the compile options that CompileTemplate does.
     """
-    builder = builder or _ProgramBuilder(more_formatters)
-    self._program = ParseTemplate(template_str, builder, **compile_options)
+    self._program = CompileTemplate(
+        template_str, builder=builder, **compile_options)
 
   #
   # Public API
