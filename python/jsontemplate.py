@@ -256,6 +256,9 @@ def _ToString(x):
     return pprint.pformat(x)
 
 
+def _HtmlAttrValue(x):
+  return cgi.escape(x, quote=True)
+
 # See http://google-ctemplate.googlecode.com/svn/trunk/doc/howto.html for more
 # escape types.
 #
@@ -265,7 +268,14 @@ def _ToString(x):
 # formatter lookup dictionaries, and pass them in to Template.
 _DEFAULT_FORMATTERS = {
     'html': cgi.escape,
-    'htmltag': lambda x: cgi.escape(x, quote=True),
+
+    # The 'htmltag' name is deprecated.  The html-attr-value name is preferred
+    # because it can be read with "as":
+    #   {url|html-attr-value} means:
+    #   "substitute 'url' as an HTML attribute value"
+    'html-attr-value': _HtmlAttrValue,
+    'htmltag': _HtmlAttrValue,
+
     'raw': lambda x: x,
     # Used for the length of a list.  Can be used for the size of a dictionary
     # too, though I haven't run into that use case.

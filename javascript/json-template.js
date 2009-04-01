@@ -75,6 +75,7 @@ function ToString(s) {
 var DEFAULT_FORMATTERS = {
   'html': HtmlEscape,
   'htmltag': HtmlTagEscape,
+  'html-attr-value': HtmlTagEscape,
   'str': ToString,
   'raw': function(x) {return x;}
 };

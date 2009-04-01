@@ -215,6 +215,10 @@ class Template2Test(testy.PyUnitCompatibleTest):
     t = self.Template('Where is your {name|html}')
     self.verify.Expansion(t, {'name': '<head>'}, 'Where is your &lt;head&gt;')
 
+  def testHtmlAttrValueFormatter(self):
+    t = self.Template('<a href="{url|html-attr-value}">')
+    self.verify.Expansion(t, {'url': '"<>&'}, '<a href="&quot;&lt;&gt;&amp;">')
+
   def testDefaultFormatter(self):
     t = self.Template('{name} {val|raw}', default_formatter='html')
     self.verify.Expansion(t, {'name': '<head>', 'val': '<>'}, '&lt;head&gt; <>')
