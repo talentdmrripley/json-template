@@ -65,12 +65,8 @@ def main(argv):
     # Pretty print
     if post['pretty_print']:
       dictionary['include-js'] = [_PRETTYPRINT_BASE + 'prettify.js']
-      dictionary['fancy-css'] = [
-          {'href': _PRETTYPRINT_BASE + 'prettify.css', 'media': 'print'},
-          ]
+      dictionary['include-css'] = [_PRETTYPRINT_BASE + 'prettify.css']
       dictionary['onload-js'] = 'prettyPrint();'
-
-    print json.dumps(dictionary, indent=2)
 
     body = jsontemplate.FromFile(
         open('doc/html.jsont')).expand(dictionary)
