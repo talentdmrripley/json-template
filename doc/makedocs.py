@@ -24,12 +24,9 @@ from pan.core import json
 _PRETTYPRINT_BASE = 'http://google-code-prettify.googlecode.com/svn/trunk/src/'
 
 TOC_TEMPLATE = """
-<ul>
-<h4>Contents</h4>
 {.repeated section headings}
   <a href="#{target}">{name}</a><br>
 {.end}
-</ul>
 """
 
 _HEADING_RE = re.compile(

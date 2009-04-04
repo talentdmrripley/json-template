@@ -22,8 +22,10 @@ same problem, but <i>without</i> any new features.  I'll then use this as a
 general illustration of the principle of <b>design minimalism</b>.
 </p>
 
+<h3>Contents</h3>
+<ul>
 {{table-of-contents}}
-
+</ul>
 
 <a name="section1"><h3>Two Template Reuse Patterns</h3></a>
 
