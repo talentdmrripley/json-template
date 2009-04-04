@@ -300,11 +300,11 @@ The <code>{.meta-left}</code> and <code>{.meta-right}</code> constructs are
 admittedly awkard, but customizable metacharacters let you avoid them easily.
 Moreover, any characters will be awkward for generating <i>some</i> kind of
 content (e.g. <code>&lt;&gt;</code> for HTML, <code>{}</code> and
-<code>[]</code> for C, etc.).  Moreover, generating <i>templates</i> from other
-templates is not uncommon, so there you'll have ugliness no matter what fixed
-characters you choose (how does it look generating a Django template from
-another Django template?).  So we sacrifice a little consistency and allow this
-small degree of customizability.
+<code>[]</code> for C, etc.).  In particular, generating <i>templates</i> from
+other templates is not uncommon, so there you'll have ugliness no matter what
+<i>fixed</i> characters you choose (how does it look generating a Django
+template from another Django template?).  So we sacrifice a little consistency
+and allow this small degree of customizability.
 </p>
 
 <p>
