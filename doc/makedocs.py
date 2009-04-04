@@ -12,8 +12,9 @@ import sys
 import subprocess
 
 if __name__ == '__main__':
-  sys.path.insert(0, os.path.join(os.path.dirname(sys.argv[0]), '../..'))
+  sys.path.insert(0, os.path.join(os.path.dirname(sys.argv[0]), '..'))
 
+from python import jsontemplate
 from pan.core import json
 
 
@@ -25,32 +26,22 @@ def main(argv):
 
   shutil.copy('test-cases/testTableExample-01.js.html', 'doc/')
 
-  dictionary = json.dumps({
+  dictionary = {
       'example1':
       open('test-cases/testTableExample-01.html').read(),
-      })
+      }
 
-  argv = [
-      'python/expand.py',
-      open('doc/Introducing-JSON-Template.html.jsont').read(),
-      dictionary]
-  p = subprocess.Popen(argv, stdout=subprocess.PIPE)
-  body = p.stdout.read()
-  p.wait()
+  body = jsontemplate.FromFile(
+      open('doc/Introducing-JSON-Template.html.jsont')).expand(dictionary)
 
-  dictionary = json.dumps({
+  dictionary = {
       # TODO: Could get this from the filename
       'title': 'Introducing JSON Template',
       'body': body,
-      })
+      }
 
-  argv = [
-      'python/expand.py',
-      open('doc/html.jsont').read(),
-      dictionary]
-  p = subprocess.Popen(argv, stdout=subprocess.PIPE)
-  body = p.stdout.read()
-  p.wait()
+  body = jsontemplate.FromFile(
+      open('doc/html.jsont')).expand(dictionary)
 
   open('doc/Introducing-JSON-Template.html', 'w').write(body)
 

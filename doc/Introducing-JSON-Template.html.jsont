@@ -133,7 +133,7 @@ procedural.</b>
 
 <p>It's intended to be <b>easily reimplemented </b>in multiple languages.
 Right now there's a JavaScript and a Python implementation -- each 500-ish lines
-of code in a single file -- with with <b>no dependencies</b>.  And they both
+of code in a single file -- with <b>no dependencies</b>.  And they both
 <b>pass the same tests</b>!  I'm hoping that people will contribute more
 implementations (Java, Ruby, PHP, etc.), which can be easily verified against
 these tests.
