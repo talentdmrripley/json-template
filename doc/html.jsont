@@ -2,19 +2,38 @@ meta: {{{}}}
 default-formatter: raw
 
 {{{# A simple template for HTML docs}}}
+{{{# TODO: All these braces are ugly, and I don't need them! }}}
+
 <!DOCTYPE HTML>
 <html lang=en>
+
 <head>
 <meta charset=utf-8>
 <title>{{{title}}}</title>
+
+{{{.repeated section include-js}}}
+  <script type='text/javascript' src="{{{@|html-attr-value}}}"></script>
+{{{.end}}}
+
+{{{.repeated section include-css}}}
+  <link rel="stylesheet" type="text/css"
+        href="{{{@|html-attr-value}}}" />
+{{{.end}}}
+
 <style type=text/css>
+/* Literals are blocks, maybe not the best name */
 .literal {
   background-color: #EEE;
   padding: 0.5em;
 }
+/* Inline code */
+code {
+  color: green;
+}
 </style>
 </head>
-<body>
+
+<body onload="{{{.section onload-js}}} {{{@}}} {{{.end}}}">
 <table>
   <tr>
     <td>
@@ -27,5 +46,6 @@ default-formatter: raw
   </tr>
 </table>
 </body>
+
 </html>
 

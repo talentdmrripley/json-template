@@ -19,25 +19,28 @@ from python import jsontemplate
 from pan.core import json
 
 
+# TDOO: don't hotlink it
+_PRETTYPRINT_BASE = 'http://google-code-prettify.googlecode.com/svn/trunk/src/'
+
+
 def BlogPosts(directory):
   assert directory.endswith('/')
 
-  introducing_dict = {
-      'example1':
-      open('test-cases/testTableExample-01.html').read(),
-      }
-  
   posts = []
   for filename in glob.glob(directory + '*.html.jsont'):
     title = filename[len(directory):-len('.html.jsont')].replace('-', ' ')
     outfilename = filename[:-len('.jsont')]
+
+    dictionary = {}
     if 'Introducing' in title:
-      dictionary = introducing_dict
-    else:
-      dictionary = {}
+      dictionary['example1'] = open(
+          'test-cases/testTableExample-01.html').read()
+
+    pretty_print = 'Minimalism' in title
+
     posts.append(dict(
         filename=filename, title=title, outfilename=outfilename,
-        dictionary=dictionary))
+        dictionary=dictionary, pretty_print=pretty_print))
   return posts
 
 
@@ -58,6 +61,12 @@ def main(argv):
         'title': post['title'],
         'body': body,
         }
+
+    # Pretty print
+    if post['pretty_print']:
+      dictionary['include-js'] = [_PRETTYPRINT_BASE + 'prettify.js']
+      dictionary['include-css'] = [_PRETTYPRINT_BASE + 'prettify.css']
+      dictionary['onload-js'] = 'prettyPrint();'
 
     body = jsontemplate.FromFile(
         open('doc/html.jsont')).expand(dictionary)
