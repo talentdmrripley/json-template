@@ -30,6 +30,11 @@ default-formatter: raw
 code {
   color: green;
 }
+
+.footnotes {
+  font-size: small;
+}
+
 </style>
 </head>
 
