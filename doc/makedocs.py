@@ -6,6 +6,7 @@ makedocs.py
 __author__ = 'Andy Chu'
 
 
+import glob
 import os
 import shutil
 import sys
@@ -18,6 +19,28 @@ from python import jsontemplate
 from pan.core import json
 
 
+def BlogPosts(directory):
+  assert directory.endswith('/')
+
+  introducing_dict = {
+      'example1':
+      open('test-cases/testTableExample-01.html').read(),
+      }
+  
+  posts = []
+  for filename in glob.glob(directory + '*.html.jsont'):
+    title = filename[len(directory):-len('.html.jsont')].replace('-', ' ')
+    outfilename = filename[:-len('.jsont')]
+    if 'Introducing' in title:
+      dictionary = introducing_dict
+    else:
+      dictionary = {}
+    posts.append(dict(
+        filename=filename, title=title, outfilename=outfilename,
+        dictionary=dictionary))
+  return posts
+
+
 def main(argv):
 
   # For now, leave off '-l' 'documentation', 
@@ -26,24 +49,20 @@ def main(argv):
 
   shutil.copy('test-cases/testTableExample-01.js.html', 'doc/')
 
-  dictionary = {
-      'example1':
-      open('test-cases/testTableExample-01.html').read(),
-      }
+  for post in BlogPosts('doc/'):
 
-  body = jsontemplate.FromFile(
-      open('doc/Introducing-JSON-Template.html.jsont')).expand(dictionary)
+    body = jsontemplate.FromFile(
+        open(post['filename'])).expand(post['dictionary'])
 
-  dictionary = {
-      # TODO: Could get this from the filename
-      'title': 'Introducing JSON Template',
-      'body': body,
-      }
+    dictionary = {
+        'title': post['title'],
+        'body': body,
+        }
 
-  body = jsontemplate.FromFile(
-      open('doc/html.jsont')).expand(dictionary)
+    body = jsontemplate.FromFile(
+        open('doc/html.jsont')).expand(dictionary)
 
-  open('doc/Introducing-JSON-Template.html', 'w').write(body)
+    open(post['outfilename'], 'w').write(body)
 
   # Required epydoc to be installed
   # Don't show private variables, and don't assume the docstrings have epydoc
