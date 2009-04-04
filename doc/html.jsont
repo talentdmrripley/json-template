@@ -21,6 +21,12 @@ default-formatter: raw
         href="{{{@|html-attr-value}}}" />
 {{{.end}}}
 
+{{{# This one lets you set the media attribute }}}
+{{{.repeated section fancy-css}}}
+  <link rel="stylesheet" type="text/css"
+        href="{{{href|html-attr-value}}}" media="{{{media}}}" />
+{{{.end}}}
+
 <style type=text/css>
 /* Literals are blocks, maybe not the best name. */
 .literal {
