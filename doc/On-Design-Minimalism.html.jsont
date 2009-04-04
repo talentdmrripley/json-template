@@ -71,7 +71,7 @@ the reuse pattern with JSON Template.  </p>
 
 <p>
 The second case is easier, so we'll start with that: <a
-  href="../python/examples/reusing_the_outside.py">reusing_the_outside.py</a>.
+  href="reusing_the_outside.py.html">reusing_the_outside.py</a>.
 </p>
 
 <p>
@@ -95,7 +95,7 @@ dictionary and then one line of code for the API code.
 </p>
 
 <p>
-The second case is shown in <a href="../python/examples/reusing_the_inside.py">reusing_the_inside.py</a>.
+The second case is shown in <a href="reusing_the_inside.py.html">reusing_the_inside.py</a>.
 </p>
 
 <p> The idea here is a bit more subtle.  We already know how to substitute
@@ -126,7 +126,7 @@ different profiles.
 </p>
 
 <p>
-Read <a href="../python/example/reusing_the_inside.py">the example</a> for
+Read <a href="reusing_the_inside.py.html">the example</a> for
 details.  </p>
 
 <p>It may seem long, but keep in mind the core of what you have to do to
