@@ -129,7 +129,10 @@ def Site(path_info):
     title = PAGE_TWO_DATA['title']
   else:
     # Note: Request it with trailing slash: cgi-bin/reusing_the_outside.py/
-    body = '&lt;a href="one"&gt;One&lt;/a&gt; &lt;a href="two"&gt;Two&lt;/a&gt;'
+    body = """
+    &lt;p&gt;&lt;a href="one"&gt;Page One&lt;/a&gt; &lt;a href="two"&gt;Page Two&lt;/a&gt;&lt;/p&gt;
+    &lt;p&gt;(&lt;b&gt;View Source&lt;/b&gt; to see that both have the same outside "shell")&lt;/p&gt;
+    """
     title = 'Index'
 
   return HTML_TEMPLATE.expand({'body': body, 'title': title})

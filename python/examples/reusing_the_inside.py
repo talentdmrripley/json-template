@@ -34,7 +34,7 @@ PAGE_ONE_DATA = {
     'ONE_THIRD': 1.0 / 3,  # to show how to format a floating point number.
     }
 
-# ... and a single profile to page two.
+# ... and a *single* profile to page two.
 
 PAGE_TWO_DATA = {
     'title': 'Profile page for Ralph',
@@ -46,11 +46,11 @@ PAGE_TWO_DATA = {
     }
 
 
-# Let's define a template for the user profile.  This is the thing we're going
-# to reuse across multiple pages.
+# Define a template for the user profile.  This is the thing we're going to
+# reuse across multiple pages.
 #
-# (This is also an examples of using the FromString construction method, where
-# you can embed compilation options in the template string itself).
+# (This is also an example of the FromString construction method, which allows
+# compilation options in the template string itself).
 
 USER_PROFILE_TEMPLATE = jsontemplate.FromString("""\
 default-formatter: html
@@ -71,20 +71,6 @@ default-formatter: html
 # To do this, we must specify a *function* MoreFormatters that maps formatter
 # names (strings in the template) to other functions (which take *JSON node*
 # values and return strings to be output in the template).
-#
-# *** Now there are two crucial points to make. Pay attention! ***
-#
-# 1. Up until now we've just been using substitution for simple variables (JSON
-# strings, numbers).  But the "execution model" of JSON template is generic, so
-# we can substitute entire "subtrees" of the data dictionary -- not just atoms.
-#
-# 2. Formatters are simply functions.  Now we've used the familiar 'html'
-# formatter, which is defined as cgi.escape, which takes '<b>' -> '&lt;b&gt;'
-# for proper HTML escaping.
-#
-# But templates themselves define functions too.  The input of a (compiled)
-# template is a data dictionary, and the output is a string.  Thus we can use
-# the *template itself* as a formatter, as follows:
 
 
 def MoreFormatters(formatter_name):
@@ -118,6 +104,8 @@ def MoreFormatters(formatter_name):
     # of default formatters will now be consulted.
     return None
 
+
+# Wrapper for templates that can use the |user-profile formatter
 
 def TemplateThatCanRenderProfiles(template_str):
   return jsontemplate.Template(
@@ -217,7 +205,11 @@ def Site(path_info):
     title = PAGE_TWO_DATA['title']
   else:
     # Note: Request it with trailing slash: cgi-bin/reusing_the_inside.py/
-    body = '<a href="one">One</a> <a href="two">Two</a>'
+    body = """
+    <p><a href="one">List of Profiles</a> <a href="two">Single Profile</a></p>
+    <p>(<b>View Source</b> to see that both are using the same HTML for the
+    profile)</p>
+    """
     title = 'Index'
 
   return HTML_TEMPLATE.expand({'body': body, 'title': title})

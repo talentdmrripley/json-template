@@ -54,8 +54,12 @@ code {
 <h1>On Design Minimalism</h1>
 
 <ul>
-<h4>... and Why JSON Template doesn't need an include statement</h4>
-<h4>... and On Avoiding the Dinosaur Snaggletooth</h4>
+<p>
+<b>... or, <i>Why JSON Template doesn't need an include statement</i></b>
+</p>
+<p>
+<b>... or, <i>Avoiding the Dinosaur Snaggletooth</i></b>
+</p>
 </ul>
 
 <p> After <a href="Introducing-JSON-Template.html">introducing JSON Template</a>, the most common feature request was for
@@ -70,7 +74,7 @@ same problem, but <i>without</i> any new features.  I'll then use this as a
 general illustration of the principle of <b>design minimalism</b>.
 </p>
 
-<hr>
+<h3>Two Template Reuse Patterns</h3>
 
 <p>
 Notice that an "include" or "macro" system is actually a <i>solution</i>.  I
@@ -112,12 +116,11 @@ In Django, <i>template inheritance</i> or the <code>{% block %}</code> and
 
 </ol>
 
-<hr>
-
 <p>
 For each case I've implemented a small dynamic page that shows how to express
 the reuse pattern with JSON Template.  </p>
 
+<h3>Reuse on the "outside"</h3>
 
 <p>
 The second case is easier, so we'll start with that: <a
@@ -144,8 +147,10 @@ This involves very little code: A template expansion just is constructing a
 dictionary and then one line of code for the API code.  
 </p>
 
+<h3>Reuse on the "inside"</h3>
+
 <p>
-The second case is shown in <a href="reusing_the_inside.py.html">reusing_the_inside.py</a>.
+The first case is shown in <a href="reusing_the_inside.py.html">reusing_the_inside.py</a>.
 </p>
 
 <p> The idea here is a bit more subtle.  We already know how to substitute
