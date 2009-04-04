@@ -1,10 +1,11 @@
 meta: {{{}}}
 default-formatter: raw
 
+<!DOCTYPE HTML>
+
 {{{# A simple template for HTML docs}}}
 {{{# TODO: All these braces are ugly, and I don't need them! }}}
 
-<!DOCTYPE HTML>
 <html lang=en>
 
 <head>
