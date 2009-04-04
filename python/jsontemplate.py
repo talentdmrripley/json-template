@@ -291,6 +291,10 @@ _DEFAULT_FORMATTERS = {
     # this could be lambda x: json.dumps(x, indent=2), but here we want to be
     # compatible to Python 2.4.
     'str': _ToString,
+
+    # Just show a plain URL on an HTML page (without anchor text).
+    'plain-url': lambda x: '<a href="%s">%s</a>' % (
+        cgi.escape(x, quote=True), cgi.escape(x))
     }
 
 

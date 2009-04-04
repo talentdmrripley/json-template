@@ -1,0 +1,161 @@
+<!DOCTYPE HTML>
+
+
+<html lang=en>
+
+<head>
+<meta charset=utf-8>
+<title>reusing_the_outside.py</title>
+
+  <script type='text/javascript' src="http://google-code-prettify.googlecode.com/svn/trunk/src/prettify.js"></script>
+
+  <link rel="stylesheet" type="text/css"
+        href="http://google-code-prettify.googlecode.com/svn/trunk/src/prettify.css" />
+
+
+<style type=text/css>
+/* Literals are blocks, maybe not the best name. */
+.literal {
+  background-color: #EEE;
+  padding: 0.5em;
+}
+
+/* Override what's in the google-code-prettify CSS */
+pre.prettyprint {
+  background-color: #EEE;
+  padding: 0.5em;
+  border: none;
+}
+
+/* Make keywords bold, and comments italicized.
+See http://google-code-prettify.googlecode.com/svn/trunk/src/prettify.css 
+*/
+.kwd { color: #008; font-weight: bold; }
+.com { color: #800; font-style: italic; }
+
+/* Inline code */
+code {
+  color: green;
+}
+
+.footnotes {
+  font-size: small;
+}
+
+</style>
+</head>
+
+<body onload=" prettyPrint(); ">
+<table>
+  <tr>
+    <td>
+    </td>
+    <td width="40%">
+<p>
+<b>This CGI script as a live example</b>: <a href="http://www.chubot.org/json-template/cgi-bin/examples/reusing_the_outside.py/">http://www.chubot.org/json-template/cgi-bin/examples/reusing_the_outside.py/</a>
+</p>
+
+<p>
+<b>Raw Source Code</b>: <a href="http://json-template.googlecode.com/svn/trunk/python/examples/reusing_the_outside.py">http://json-template.googlecode.com/svn/trunk/python/examples/reusing_the_outside.py</a>
+</p>
+
+
+<pre class="prettyprint literal lang-py">#!/usr/bin/python -S
+"""reusing_the_outside.py
+
+Example of reusing the "outside" of a web page.
+"""
+
+import cgi
+import os
+import sys
+
+try:
+  import jsontemplate
+except ImportError:
+  # For development
+  sys.path.insert(0, '..')
+  import jsontemplate
+
+
+# Page 1 and 2 have *different* data dictionaries ...
+
+PAGE_ONE_DATA = {
+    'title': "Itchy &amp; Scratchy",
+    'desc': 'jerks',
+    }
+
+PAGE_TWO_DATA = {
+    'title': 'Page Two',
+    'verb': 'bites',
+    }
+
+# ... and *different* templates
+
+PAGE_ONE_TEMPLATE = jsontemplate.Template(
+    '&lt;b&gt;{title}&lt;/b&gt; are {desc}', default_formatter='html')
+
+PAGE_TWO_TEMPLATE = jsontemplate.Template(
+    '{title} &lt;i&gt;{verb}&lt;/i&gt;', default_formatter='html')
+
+
+# This is the skeleton we want to share between them.  Notice that we use
+# {body|raw} to prevent double-escaping, because 'body' is *already HTML*.
+# 'title' is plain text.
+
+HTML_TEMPLATE = jsontemplate.Template("""
+&lt;html&gt;
+  &lt;head&gt;
+    &lt;title&gt;{title}&lt;/title&gt;
+  &lt;/head&gt;
+  &lt;body&gt;{body|raw}&lt;/body&gt;
+&lt;/html&gt;
+""", default_formatter='html')
+
+
+# Now the pattern is simple:
+# 
+# 1. Just expand each specific page template with its own specific dictionary.
+# 2. And then expand the result of that into the shared HTML template.
+
+def Site(path_info):
+  """Returns an HTML page."""
+
+  if path_info == '/one':
+    body = PAGE_ONE_TEMPLATE.expand(PAGE_ONE_DATA)
+    title = PAGE_ONE_DATA['title']
+  elif path_info == '/two':
+    body = PAGE_TWO_TEMPLATE.expand(PAGE_TWO_DATA)
+    title = PAGE_TWO_DATA['title']
+  else:
+    # Note: Request it with trailing slash: cgi-bin/reusing_the_outside.py/
+    body = '&lt;a href="one"&gt;One&lt;/a&gt; &lt;a href="two"&gt;Two&lt;/a&gt;'
+    title = 'Index'
+
+  return HTML_TEMPLATE.expand({'body': body, 'title': title})
+
+
+# Now go back to the 'Design Minimalism' blog post (linked from
+# http://code.google.com/p/json-template/).
+
+def main():
+  """Returns an exit code."""
+
+  print 'Content-Type: text/html'
+  print
+  print Site(os.getenv('PATH_INFO'))
+
+
+if __name__ == '__main__':
+  main()
+</pre>
+
+   </td> 
+    <td>
+    </td>
+  </tr>
+</table>
+</body>
+
+</html>
+
