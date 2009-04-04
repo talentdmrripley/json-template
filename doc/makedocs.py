@@ -8,6 +8,7 @@ __author__ = 'Andy Chu'
 
 import glob
 import os
+import re
 import shutil
 import sys
 import subprocess
@@ -22,6 +23,31 @@ from pan.core import json
 # TDOO: don't hotlink it
 _PRETTYPRINT_BASE = 'http://google-code-prettify.googlecode.com/svn/trunk/src/'
 
+TOC_TEMPLATE = """
+<ul>
+<h4>Contents</h4>
+{.repeated section headings}
+  <a href="#{target}">{name}</a><br>
+{.end}
+</ul>
+"""
+
+_HEADING_RE = re.compile(
+  '<a name="(?P<target>[^"]+)"><h3>(?P<name>[^<]+)</h3></a>')
+
+def MakeToc(blog_template):
+  """
+  """
+  headings = []
+  for match in _HEADING_RE.finditer(blog_template):
+    headings.append(
+        dict(target=match.group('target'), name=match.group('name')))
+
+  print headings
+  toc = jsontemplate.expand(TOC_TEMPLATE, {'headings': headings})
+  print toc
+  return toc
+
 
 def BlogPosts(directory):
   assert directory.endswith('/')
@@ -31,12 +57,17 @@ def BlogPosts(directory):
     title = filename[len(directory):-len('.html.jsont')].replace('-', ' ')
     outfilename = filename[:-len('.jsont')]
 
+    blog_template = open(filename).read()
+
     dictionary = {}
     if 'Introducing' in title:
       dictionary['example1'] = open(
           'test-cases/testTableExample-01.html').read()
 
-    body = jsontemplate.FromFile(open(filename)).expand(dictionary)
+    if 'Minimalism' in title:
+      dictionary['table-of-contents'] = MakeToc(blog_template)
+
+    body = jsontemplate.FromString(blog_template).expand(dictionary)
 
     pretty_print = 'Minimalism' in title
 

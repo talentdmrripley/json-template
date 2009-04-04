@@ -4,13 +4,11 @@ default-formatter: raw
 <h1>On Design Minimalism</h1>
 
 <ul>
-<p>
-<b>... or, <i>Why JSON Template doesn't need an include statement</i></b>
-</p>
-<p>
-<b>... or, <i>Avoiding the Dinosaur Snaggletooth</i></b>
-</p>
+<p><b>... or, <i>Why JSON Template doesn't need an include statement</i></b></p>
+<p><b>... or, <i>Avoiding the Dinosaur Snaggletooth</i></b></p>
 </ul>
+
+{{#table-of-contents}}
 
 <p> After <a href="Introducing-JSON-Template.html">introducing JSON Template</a>, the most common feature request was for
 some kind of <b>include</b> or <b>macro</b> system.  The language isn't frozen
@@ -24,7 +22,10 @@ same problem, but <i>without</i> any new features.  I'll then use this as a
 general illustration of the principle of <b>design minimalism</b>.
 </p>
 
-<h3>Two Template Reuse Patterns</h3>
+{{table-of-contents}}
+
+
+<a name="section1"><h3>Two Template Reuse Patterns</h3></a>
 
 <p>
 Notice that an "include" or "macro" system is actually a <i>solution</i>.  I
@@ -70,7 +71,7 @@ In Django, <i>template inheritance</i> or the <code>{% block %}</code> and
 For each case I've implemented a small dynamic page that shows how to express
 the reuse pattern with JSON Template.  </p>
 
-<h3>Reuse on the "outside"</h3>
+<a name="section2"><h3>Sample program for reuse on the "outside"</h3></a>
 
 <p>
 The second case is easier, so we'll start with that: <a
@@ -97,7 +98,7 @@ This involves very little code: A template expansion just is constructing a
 dictionary and then one line of code for the API code.  
 </p>
 
-<h3>Reuse on the "inside"</h3>
+<a name="section3"><h3>Sample program for reuse on the "inside"</h3></a>
 
 <p>
 The first case is shown in <a href="reusing_the_inside.py.html">reusing_the_inside.py</a>.
@@ -158,7 +159,7 @@ template itself).
 </p>
 
 
-<h3>Functional Programming</h3>
+<a name="section4"><h3>Functional Programming</h3></a>
 
 <p>
 Notice that formatters are quite flexible.  HTML escaping (which takes "&lt;" to
@@ -199,7 +200,7 @@ don't tell anyone).  I will probably expound more on this in a future article.
 </p>
 
 
-<h3>Now onto Design Minimalism</h3>
+<a name="section5"><h3>Now onto Design Minimalism</h3></a>
   
 Design philosophies can be characterized along this axis:
 
@@ -251,7 +252,7 @@ having a well-defined <b>data model</b> (of JSON), and a well-defined
 to have paid off.  Orthogonal designs are the ones that seem to admit
 unexpective and creative uses.  </p>
 
-<h3>Another example of multiple problems addressed by a single solution</h3>
+<a name="section5"><h3>Another example of multiple problems addressed by a single solution</h3></a>
 
 <p>
 Here is the justification behind what might be seen as another unusual design
@@ -276,7 +277,7 @@ Solution that addresses all three problems:
 
 <ul>
   <p>
-  The grammar of JSON template is <b>context free</b>, but it has customizable
+  The grammar of JSON Template is <b>context free</b>, but it has customizable
   metacharacters (<code>{}</code>). <a href="#footnote3">[3]</a>
   </p>
 </ul>
@@ -312,7 +313,7 @@ be implemented in many languages, and every language has a different native
 parser technology, I avoided this.
 </p>
 
-<h3>Conclusion</h3>
+<a name="section6"><h3>Conclusion</h3></a>
 
 <p> Don't create a <b>dinosaur snaggletooth</b> just to solve the problem you
 have now.  Step back a bit, and see if you address multiple problems with a
