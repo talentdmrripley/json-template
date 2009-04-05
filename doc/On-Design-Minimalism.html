@@ -254,6 +254,35 @@ make your system bigger rather than smaller (accounting for the size of JSON
 template itself).
 </p>
 
+<p>
+If you don't like this extra level of indirection, <i>you</i> can also implement
+a straightforward <code>include</code> mechanism.  Let's follow the convention
+that formatters starting with <code>%</code> load template files.
+</p>
+
+<pre class="prettyprint literal">
+def MoreFormatters(formatter_name):
+  if formatter_name.startswith('%'):
+    filename = formatter_name[1:]
+    # Put your application-specific template-finding logic here
+    return jsontemplate.FromFile(open(filename)).expand
+  else:
+    return None  # consult default formatters
+</pre>
+
+<p>
+Now you can write panels like this:
+</p>
+
+<pre class="literal">
+<code>{owner|%user-profile.jsont}
+{member|%user-profile.jsont}</code>
+</pre>
+
+... where <code>user-profile.jsont</code> is a template filename.  Beautifully
+simple, right?  JSON Template is meant to be a library and not a framework.
+It's small and extensible, in order to allow each person and each application to
+use it in the most appropriate way.
 
 <a name="section4"><h3>Functional Programming</h3></a>
 
