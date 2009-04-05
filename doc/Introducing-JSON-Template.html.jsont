@@ -1,6 +1,10 @@
 meta: {{}}
 default-formatter: raw
 
+<p align="right">
+<i>March 2009</i>
+</p>
+
 <h1>Introducing JSON Template</h1>
 
 <p><a href="http://code.google.com/p/json-template/">JSON Template</a> is a minimal

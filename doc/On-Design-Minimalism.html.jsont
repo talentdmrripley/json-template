@@ -1,24 +1,28 @@
 meta: {{}}
 default-formatter: raw
 
+<p align="right">
+<i>April 2009</i>
+</p>
+
 <h1>On Design Minimalism</h1>
 
 <ul>
-<p><b>... or, <i>Why JSON Template doesn't need an include statement</i></b></p>
-<p><b>... or, <i>Avoiding the Dinosaur Snaggletooth</i></b></p>
+<p>... or, <b><i>Why JSON Template Doesn't Need an Include Statement</i></b></p>
+<p>... or, <b><i>Avoiding the Dinosaur Snaggletooth</i></b></p>
 </ul>
 
 {{#table-of-contents}}
 
 <p> After <a href="Introducing-JSON-Template.html">introducing JSON Template</a>, the most common feature request was for
 some kind of <b>include</b> or <b>macro</b> system.  The language isn't frozen
-yet by any means, but it is meant to have a minimal design, while still
-retaining power.
+yet by any means, but it's meant to have a minimal design, while still retaining
+power.
 
 <p>
 This article includes two detailed examples that show how <a
-  href="http://code.google.com/p/json-template/">JSON Template</a> solves the
-same problem, but <i>without</i> any new features.  I'll then use this as a
+href="http://code.google.com/p/json-template/">JSON Template</a> solves the
+problem of reuse, <i>without</i> any new features.  I'll then use this as a
 general illustration of the principle of <b>design minimalism</b>.
 </p>
 
@@ -38,7 +42,7 @@ do.
 
 <p>
 The problem is <b>reuse</b>, or avoiding duplication between template files.
-This can be broken down into at least two specific use cases: </p>
+This can be broken down into two more specific use cases: </p>
 
 <ol>
 <li><p>
