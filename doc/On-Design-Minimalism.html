@@ -265,6 +265,8 @@ def MoreFormatters(formatter_name):
   if formatter_name.startswith('%'):
     filename = formatter_name[1:]
     # Put your application-specific template-finding logic here
+    # In a production app, you will want to cache the file
+    # open/read and template compilation
     return jsontemplate.FromFile(open(filename)).expand
   else:
     return None  # consult default formatters
@@ -279,10 +281,18 @@ Now you can write panels like this:
 {member|%user-profile.jsont}</code>
 </pre>
 
+<p>
 ... where <code>user-profile.jsont</code> is a template filename.  Beautifully
 simple, right?  JSON Template is meant to be a library and not a framework.
 It's small and extensible, in order to allow each person and each application to
 use it in the most appropriate way.
+</p>
+
+<p>
+To get familiar with the <code>more_formatters</code> argument, it's a good
+exercise to modify the <code>MoreFormatters</code> definition above to
+<i>cache</i> the included template <i>compilations</i>.
+</p>
 
 <a name="section4"><h3>Functional Programming</h3></a>
 
