@@ -67,13 +67,16 @@ code {
     <td width="40%">
 {{{body}}}
    </td> 
+   {{{.section img-right}}}
     <td align="center" width="30%" valign="top">
-      {{{.section img-right}}}
       <a href="{{{href}}}">
         <img src="{{{src}}}" />
       </a>
-      {{{.end}}}
     </td>
+   {{{.or}}}
+    <td>
+    </td>
+   {{{.end}}}
   </tr>
 </table>
 
