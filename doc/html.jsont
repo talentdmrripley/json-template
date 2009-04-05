@@ -1,31 +1,30 @@
-meta: {{{}}}
+meta: []
 default-formatter: raw
 
 <!DOCTYPE HTML>
 
-{{{# A simple template for HTML docs}}}
-{{{# TODO: All these braces are ugly, and I don't need them! }}}
+[# A simple template for HTML docs]
 
 <html lang=en>
 
 <head>
 <meta charset=utf-8>
-<title>{{{title}}}</title>
+<title>[title]</title>
 
-{{{.repeated section include-js}}}
-  <script type='text/javascript' src="{{{@|html-attr-value}}}"></script>
-{{{.end}}}
+[.repeated section include-js]
+  <script type='text/javascript' src="[@|html-attr-value]"></script>
+[.end]
 
-{{{.repeated section include-css}}}
+[.repeated section include-css]
   <link rel="stylesheet" type="text/css"
-        href="{{{@|html-attr-value}}}" />
-{{{.end}}}
+        href="[@|html-attr-value]" />
+[.end]
 
-{{{# This one lets you set the media attribute }}}
-{{{.repeated section fancy-css}}}
+[# This one lets you set the media attribute ]
+[.repeated section fancy-css]
   <link rel="stylesheet" type="text/css"
-        href="{{{href|html-attr-value}}}" media="{{{media}}}" />
-{{{.end}}}
+        href="[href|html-attr-value]" media="[media]" />
+[.end]
 
 <style type=text/css>
 /* Literals are blocks, maybe not the best name. */
@@ -59,39 +58,38 @@ code {
 </style>
 </head>
 
-<body onload="{{{.section onload-js}}} {{{@}}} {{{.end}}}">
+<body onload="[.section onload-js][@][.end]">
 <table>
   <tr>
     <td>
     </td>
     <td width="40%">
-{{{body}}}
-   </td> 
-   {{{.section img-right}}}
+[body]
+    </td> 
+[.section img-right]
     <td align="center" width="30%" valign="top">
-      <a href="{{{href}}}">
-        <img src="{{{src}}}" />
+      <a href="[href]">
+        <img src="[src]" />
       </a>
     </td>
-   {{{.or}}}
+[.or]
     <td>
     </td>
-   {{{.end}}}
+[.end]
   </tr>
 </table>
 
-{{{.section google-analytics-id}}}
+[.section google-analytics-id]
 <script type="text/javascript">
 var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
 document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
 </script>
 <script type="text/javascript">
 try {
-var pageTracker = _gat._getTracker("{{{@}}}");
+var pageTracker = _gat._getTracker("[@]");
 pageTracker._trackPageview();
 } catch(err) {}</script>
-{{{.end}}}
+[.end]
 </body>
 
 </html>
-
