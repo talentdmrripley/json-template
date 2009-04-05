@@ -100,8 +100,17 @@ The idea is simple:
 </ol>
   
 <p>
-This involves very little code: A template expansion just is constructing a
-dictionary and then one line of code for the API code.  
+This involves very little code: A template expansion involes just constructing a
+dictionary and then a single line of code for the API call.
+</p>
+
+<p>In fact, this
+article <i>itself</i> is <a href="html.jsont">generated using this method</a>.
+The "shell" has substitutions for the <code>&lt;title&gt;</code> and
+<code>&lt;body&gt;</code>, as in the example.  It also has <code>repeated
+section</code>s for external JavaScript and CSS (e.g. for <a
+href="http://code.google.com/p/google-code-prettify">google-code-prettify</a>),
+and a <code>section</code> for <a href="http://www.google.com/analytics/">Google Analytics</a>.
 </p>
 
 <a name="section3"><h3>Sample program for reuse on the "inside"</h3></a>
