@@ -107,6 +107,12 @@ def ExpandHtmlShell(title, body, pretty_print=False):
       'body': body,
       }
 
+  if 'Minimalism' in title:
+    dictionary['img-right'] = {
+        'src': 'thagomizer.jpg',
+        'href': 'http://en.wikipedia.org/wiki/Thagomizer',
+        }
+
   # Pretty print
   if pretty_print:
     dictionary['include-js'] = [_PRETTYPRINT_BASE + 'prettify.js']

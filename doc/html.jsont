@@ -67,7 +67,12 @@ code {
     <td width="40%">
 {{{body}}}
    </td> 
-    <td>
+    <td align="center" width="30%" valign="top">
+      {{{.section img-right}}}
+      <a href="{{{href}}}">
+        <img src="{{{src}}}" />
+      </a>
+      {{{.end}}}
     </td>
   </tr>
 </table>
