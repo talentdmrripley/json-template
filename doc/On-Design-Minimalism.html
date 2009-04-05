@@ -132,8 +132,31 @@ In Django, <i>template inheritance</i> or the <code>{% block %}</code> and
 </ol>
 
 <p>
-For each case I've implemented a small dynamic page that shows how to express
-the reuse pattern with JSON Template.  </p>
+I should note that I'm not only avoiding new features -- I see problems with
+these "standard" solutions.  First, include statements break encapsulation.
+You've broken up your templates into modules (files), but what about the data
+dictionary?  A lot of web apps seem to have a lot of what are essentially global
+template variables stuffed into a "servlet base class".  
+</p>
+
+<p>
+Also, if inclusion is implemented by naive textual substitution, then we haven't
+moved beyond the C preprocessor and its well known problems. 
+</p>
+
+<p>
+I have less experience with the "inheritance" model.  But I have dealt with
+inheritance in specialized languages (as well as in all the popular general
+purpose languages), and it does suffer from the <a
+href="http://en.wikipedia.org/wiki/Fragile_base_class">fragile base class</a>
+problem.  Basically, when you can override anything, there's no possibility of
+hiding data.  A change to your "base class" requires you (in theory) to test
+every page on your site.
+</p>
+
+<p>
+Anyway, for each of these two problems, I've implemented a small dynamic page
+that shows how to express the reuse pattern in JSON Template.  </p>
 
 <a name="section2"><h3>Sample program for reuse on the "outside"</h3></a>
 
