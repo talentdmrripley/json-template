@@ -784,9 +784,24 @@ class InternalTemplateTest(testy.PyUnitCompatibleTest):
 
   def testExpand(self):
     """Test the free function expand."""
-    self.assertEqual(
+    self.verify.Equal(
         jsontemplate.expand('Hello {name}', {'name': 'World'}),
         'Hello World')
+
+  def testTemplateExpand(self):
+    t = jsontemplate.Template('Hello {name}')
+
+    self.verify.Equal(
+        t.expand({'name': 'World'}),
+        'Hello World')
+
+    # Test the kwarg syntax
+    self.verify.Equal(
+        t.expand(name='World'),
+        'Hello World')
+
+    # Only accepts one argument
+    self.verify.Raises(TypeError, t.expand, {'name': 'world'}, 'extra')
 
   def testCompileTemplate(self):
     program = jsontemplate.CompileTemplate('{}')

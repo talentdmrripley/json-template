@@ -587,20 +587,31 @@ class Template(object):
     """
     _Execute(self._program.Statements(), _ScopedContext(data_dict), callback)
 
-  def expand(self, data_dict):
+  def expand(self, *args, **kwargs):
     """Expands the template with the given data dictionary, returning a string.
 
     This is a small wrapper around render(), and is the most convenient
     interface.
 
     Args:
-      data_dict: The JSON data dictionary.
+      The JSON data dictionary.  Like the builtin dict() constructor, it can
+      take a single dictionary as a positional argument, or arbitrary keyword
+      arguments.
 
     Returns:
       The return value could be a str() or unicode() instance, depending on the
       the type of the template string passed in, and what the types the strings
       in the dictionary are.
     """
+    if args:
+      if len(args) == 1:
+        data_dict = args[0]
+      else:
+        raise TypeError(
+            'expand() only takes 1 positional argument (got %s)' % args)
+    else:
+      data_dict = kwargs
+
     tokens = []
     self.render(data_dict, tokens.append)
     return ''.join(tokens)
