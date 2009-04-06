@@ -91,9 +91,6 @@ function _ScopedContext(context) {
   //   An iteration index.  -1 means we're NOT iterating.
   var stack = [{context: context, index: -1}];
 
-  // The iteration index for the TOP of the stack.  -1 means we're NOT iterating.
-  var _index = -1;  
-
   return {
     PushSection: function(name) {
       log('PushSection '+name);
@@ -101,35 +98,36 @@ function _ScopedContext(context) {
         return null;
       }
       var new_context = stack[stack.length-1].context[name] || null;
-      stack.push({context: new_context, index: _index});
-      _index = -1;
+      stack.push({context: new_context, index: -1});
       return new_context;
     },
 
     Pop: function() {
-      _index = stack.pop().index;
+      stack.pop();
     },
 
     next: function() {
-      // Now we're iterating -- push a dummy context
-      if (_index == -1) {
-        stack.push({context: null, index: -1});
-        _index = 0;
+      var stacktop = stack[stack.length-1];
+
+      // Now we're iterating -- push a new mutable object onto the stack
+      if (stacktop.index == -1) {
+        stacktop = {context: null, index: 0};
+        stack.push(stacktop);
       }
 
       // The thing we're iterating over
       var context_array = stack[stack.length - 2].context;
 
       // We're already done
-      if (_index == context_array.length) {
-        _index = stack.pop().index;
+      if (stacktop.index == context_array.length) {
+        stack.pop();
         log('next: null');
         return null;  // sentinel to say that we're done
       }
 
-      log('next: ' + _index);
+      log('next: ' + stacktop.index);
 
-      stack[stack.length - 1].context = context_array[_index++];
+      stacktop.context = context_array[stacktop.index++];
 
       log('next: true');
       return true;  // OK, we mutated the stack

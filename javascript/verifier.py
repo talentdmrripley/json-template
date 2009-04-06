@@ -46,7 +46,7 @@ try {
 # Don't catch exceptions so you can tell where the hell they came from (v8
 # prints the line number)
 _DEBUG_JS = """
-var t = Template(%(template)s, %(options)s);
+var t = jsontemplate.Template(%(template)s, %(options)s);
 var s = t.expand(%(dictionary)s);
 print(s);
 """
