@@ -359,6 +359,12 @@ People
   Bob: nice mean fun 
 """)
 
+  def testRepeatedSectionAtRoot(self):
+    # This tests expansion of a JSON *list* -- no dictionary in sight
+
+    t = self.Template('[.repeated section @][@] [.end]', meta='[]')
+    self.verify.Expansion(t, ['Andy', 'Bob'], 'Andy Bob ')
+
   def testAlternatesWith(self):
     t = self.Template("""
 [header]

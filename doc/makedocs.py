@@ -29,6 +29,12 @@ TOC_TEMPLATE = """
 {.end}
 """
 
+TEST_CASE_INDEX_HTML_TEMPLATE = """
+{.repeated section @}
+  {@|plain-url}<br>
+{.end}
+"""
+
 _HEADING_RE = re.compile(
   '<a name="(?P<target>[^"]+)"><h3>(?P<name>[^<]+)</h3></a>')
 
@@ -127,11 +133,19 @@ def ExpandHtmlShell(title, body, pretty_print=False):
       open('doc/html.jsont')).expand(dictionary)
 
 
+def MakeIndexHtml(directory):
+  files = os.listdir(directory)
+  html = jsontemplate.expand(TEST_CASE_INDEX_HTML_TEMPLATE, files)
+  open(directory + 'index.html', 'w').write(html)
+
+
 def main(argv):
 
   # For now, leave off '-l' 'documentation', 
   argv = ['python', 'jsontemplate_test.py', '-d', 'test-cases']
   subprocess.call(argv)
+
+  MakeIndexHtml('test-cases/')
 
   shutil.copy('test-cases/testTableExample-01.js.html', 'doc/')
 
