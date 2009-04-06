@@ -135,6 +135,7 @@ def ExpandHtmlShell(title, body, pretty_print=False):
 
 def MakeIndexHtml(directory):
   files = os.listdir(directory)
+  files.sort()
   html = jsontemplate.expand(TEST_CASE_INDEX_HTML_TEMPLATE, files)
   open(directory + 'index.html', 'w').write(html)
 
