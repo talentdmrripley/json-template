@@ -86,9 +86,13 @@ var DEFAULT_FORMATTERS = {
 //
 
 function _ScopedContext(context) {
-  var stack = [context];
-  // iteration index for next().  -1 means we're NOT iterating.
-  var index = -1;  
+  // The stack contains:
+  //   The current context (an object).
+  //   An iteration index.  -1 means we're NOT iterating.
+  var stack = [{context: context, index: -1}];
+
+  // The iteration index for the TOP of the stack.  -1 means we're NOT iterating.
+  var _index = -1;  
 
   return {
     PushSection: function(name) {
@@ -96,49 +100,49 @@ function _ScopedContext(context) {
       if (name === undefined || name === null) {
         return null;
       }
-      var new_context = stack[stack.length-1][name] || null;
-      stack.push(new_context);
+      var new_context = stack[stack.length-1].context[name] || null;
+      stack.push({context: new_context, index: _index});
+      _index = -1;
       return new_context;
     },
 
     Pop: function() {
-      stack.pop();
+      _index = stack.pop().index;
     },
 
     next: function() {
       // Now we're iterating -- push a dummy context
-      if (index == -1) {
-        stack.push(null);
-        index = 0;
+      if (_index == -1) {
+        stack.push({context: null, index: -1});
+        _index = 0;
       }
 
-      // The thing we're iterating voer
-      var context_array = stack[stack.length - 2];
+      // The thing we're iterating over
+      var context_array = stack[stack.length - 2].context;
 
       // We're already done
-      if (index == context_array.length) {
-        stack.pop();
-        index = -1;  // No longer iterating
+      if (_index == context_array.length) {
+        _index = stack.pop().index;
         log('next: null');
         return null;  // sentinel to say that we're done
       }
 
-      log('next: ' + index);
+      log('next: ' + _index);
 
-      stack[stack.length - 1] = context_array[index++];
+      stack[stack.length - 1].context = context_array[_index++];
 
       log('next: true');
       return true;  // OK, we mutated the stack
     },
 
     CursorValue: function() {
-      return stack[stack.length - 1];
+      return stack[stack.length - 1].context;
     },
 
     Lookup: function(name) {
       var i = stack.length - 1;
       while (true) {
-        var context = stack[i];
+        var context = stack[i].context;
         log('context '+repr(context));
 
         if (typeof context !== 'object') {

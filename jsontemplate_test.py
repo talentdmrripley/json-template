@@ -334,6 +334,31 @@ People
   Hello Bob
 """)
 
+  def testNestedRepeatedSections(self):
+    t = self.Template("""
+[header]
+---------
+[.repeated section people]
+  [name]: [.repeated section attributes][@] [.end]
+
+[.end]
+""", meta='[]')
+
+    d = {
+        'header': 'People',
+        'people': [
+            {'name': 'Andy', 'attributes': ['jerk', 'cool']},
+            {'name': 'Bob', 'attributes': ['nice', 'mean', 'fun']},
+            ],
+        }
+
+    self.verify.Expansion(t, d, """
+People
+---------
+  Andy: jerk cool 
+  Bob: nice mean fun 
+""")
+
   def testAlternatesWith(self):
     t = self.Template("""
 [header]
