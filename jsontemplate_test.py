@@ -41,6 +41,7 @@ from python import jsontemplate  # module under *direct* test
 # External verifiers:
 from javascript import verifier as javascript_verifier
 from python import verifier as python_verifier
+from java import verifier as java_verifier
 import doc_generator
 
 # Backward-compatible naming
@@ -915,14 +916,20 @@ def main(argv):
   # e.g. this works on my Ubuntu system
   default_v8_shell = os.path.join(
       this_dir, 'javascript', 'v8shell', 'linux-i686', 'shell')
+  default_java = os.path.join(
+      os.getenv('JAVA_HOME', ''), 'bin', 'java')
 
   run_params = testy.TEST_RUN_PARAMS + [
       params.OptionalString(
           'v8-shell', default=default_v8_shell,
           help='Location of the v8 shell to run JavaScript tests'),
+      params.OptionalString(
+          'java-interpreter', default=default_java,
+          help='Location of the Java interpreter to run Java tests'),
 
       # Until we have better test filtering:
       params.OptionalBoolean('python', help='Run Python tests'),
+      params.OptionalBoolean('java', help='Run Java tests'),
       params.OptionalBoolean('javascript', help='Run JavaScript tests'),
 
       params.OptionalString(
@@ -944,6 +951,10 @@ def main(argv):
   js_verifier = javascript_verifier.V8ShellVerifier(
       options.v8_shell, js_impl, helpers)
 
+  java_impl = os.path.join(this_dir, 'java', 'jsontemplate.jar')
+  java_test_classes = os.path.join(this_dir, 'java', 'jsontemplate_test.jar')
+  jv_verifier = java_verifier.JavaVerifier(options.java_interpreter, java_impl, java_test_classes)
+
   internal_tests = [
       # Things we can't test externally
       TokenizeTest(testy.StandardVerifier()),
@@ -962,6 +973,8 @@ def main(argv):
     tests = [Template2Test(py_verifier)]
   elif options.javascript:
     tests = [Template2Test(js_verifier)]
+  elif options.java:
+    tests = [Template2Test(jv_verifier)]
   elif options.doc_output_dir:
     docgen = doc_generator.DocGenerator(options.doc_output_dir)
     # Run the internal tests before generating docs -- to make sure they all

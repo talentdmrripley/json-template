@@ -1,0 +1,4 @@
+* More default formatters (currently has just enough formatters to pass tests)
+* Test the java-specific parts (lookup names inside a bean)
+* Ant build script?
+
