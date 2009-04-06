@@ -130,7 +130,7 @@ def ExpandHtmlShell(title, body, pretty_print=False):
 def main(argv):
 
   # For now, leave off '-l' 'documentation', 
-  argv = ['./jsontemplate_test.py', '-d', 'test-cases']
+  argv = ['python', 'jsontemplate_test.py', '-d', 'test-cases']
   subprocess.call(argv)
 
   shutil.copy('test-cases/testTableExample-01.js.html', 'doc/')
