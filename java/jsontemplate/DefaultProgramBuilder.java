@@ -25,7 +25,7 @@ public class DefaultProgramBuilder implements IProgramBuilder {
 
 	IFormatter getFormatter(String formatString) {
 		IFormatter formatter = moreFormatters
-				.getFormatterForFormatString(formatString);
+				.getFormatter(formatString);
 		if (formatter == null) {
 			formatter = DefaultFormatters.get(formatString);
 		}

@@ -1,5 +1,5 @@
 package jsontemplate;
 
 public interface IFormatterResolver {
-	public IFormatter getFormatterForFormatString(String formatString);
+	public IFormatter getFormatter(String formatterName);
 }
