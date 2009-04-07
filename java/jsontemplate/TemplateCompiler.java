@@ -5,7 +5,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class TemplateCompiler {
+class TemplateCompiler {
 
 	/**
 	 * Compile the template string, calling methods on the 'program builder'.
@@ -22,7 +22,7 @@ public class TemplateCompiler {
 	 *            compilation options.
 	 * @return The compiled program (obtained from the builder)
 	 */
-	public static Section compile(String template, IProgramBuilder builder,
+	static Section compile(String template, IProgramBuilder builder,
 			TemplateCompileOptions options) {
 		if (options == null) {
 			options = new TemplateCompileOptions();
@@ -166,7 +166,7 @@ public class TemplateCompiler {
 		return result;
 	}
 
-	public static String[] splitMeta(String meta) {
+	private static String[] splitMeta(String meta) {
 		int n = meta.length();
 		if (n % 2 == 1) {
 			throw new ConfigurationError(String.format(
