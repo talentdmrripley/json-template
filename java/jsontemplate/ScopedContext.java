@@ -18,16 +18,17 @@ class ScopedContext {
 
 	public Object pushSection(String sectionName) {
 		Object cursorValue = this.getCursorValue();
-		if (cursorValue instanceof Map) {
-			Object newContext = ((Map) cursorValue).get(sectionName);
-			this.stack.add(newContext);
-			return newContext;
-		}
-		throw new EvaluationError(
+		if (isNonLookupable(cursorValue)) {
+			throw new EvaluationError(
 				String
 						.format(
 								"pushSection called when current cursor value is not a map (is: %s)",
 								cursorValue.toString()));
+		    
+		}
+		Object newContext = lookup(cursorValue, sectionName);
+		this.stack.add(newContext);
+		return newContext;
 	}
 
 	public void pop() {
@@ -95,6 +96,7 @@ class ScopedContext {
 			for (String prefix : prefixes) {
 				try {
 					Method getter = contextClass.getMethod(prefix + nameCapFirst, new Class[]{});
+					getter.setAccessible(true);
 					value = getter.invoke(context, new Object[] {});
 				} catch (SecurityException e) {
 					// swallow
@@ -112,6 +114,7 @@ class ScopedContext {
 			// try field access
 			try {
 				Field field = contextClass.getField(name);
+				field.setAccessible(true);
 				value = field.get(context);
 			} catch (SecurityException e) {
 				// swallow
