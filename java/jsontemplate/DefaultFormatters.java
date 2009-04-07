@@ -13,8 +13,8 @@ public class DefaultFormatters {
 		LOOKUP.put("htmltag", new HtmlTagFormatter());
 	}
 
-	public static IFormatter get(String formatString) {
-		return LOOKUP.get(formatString);
+	public static IFormatter get(String formatterName) {
+		return LOOKUP.get(formatterName);
 	}
 
 	private static class RawFormatter implements IFormatter {

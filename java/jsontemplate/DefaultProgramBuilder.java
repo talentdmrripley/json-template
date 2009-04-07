@@ -23,22 +23,22 @@ public class DefaultProgramBuilder implements IProgramBuilder {
 		this.currentBlock.append(statement);
 	}
 
-	IFormatter getFormatter(String formatString) {
+	IFormatter getFormatter(String formatterName) {
 		IFormatter formatter = moreFormatters
-				.getFormatter(formatString);
+				.getFormatter(formatterName);
 		if (formatter == null) {
-			formatter = DefaultFormatters.get(formatString);
+			formatter = DefaultFormatters.get(formatterName);
 		}
 		if (formatter == null) {
-			throw new BadFormatterError(formatString);
+			throw new BadFormatterError(formatterName);
 		}
 		return formatter;
 	}
 
-	public void appendSubstitution(String name, String... formatters) {
+	public void appendSubstitution(String name, String... formatterNames) {
 		ArrayList<IFormatter> formatterObjects = new ArrayList<IFormatter>();
-		for (String formatString : formatters) {
-			formatterObjects.add(this.getFormatter(formatString));
+		for (String formatterName : formatterNames) {
+			formatterObjects.add(this.getFormatter(formatterName));
 		}
 		this.currentBlock.append(new SubstitutionStatement(name,
 				(IFormatter[]) formatterObjects

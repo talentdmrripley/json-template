@@ -19,7 +19,7 @@ public class TemplateCompileOptions {
 	}
 
 	static class EmptyFormatterResolver implements IFormatterResolver {
-		public IFormatter getFormatter(String formatString) {
+		public IFormatter getFormatter(String formatterName) {
 			return null;
 		}
 	}
