@@ -15,6 +15,10 @@ public class DefaultProgramBuilder implements IProgramBuilder {
 		this.moreFormatters = moreFormatters;
 	}
 
+	public DefaultProgramBuilder() {
+		this(null);
+	}
+
 	public Section getRoot() {
 		return this.currentBlock;
 	}
@@ -24,8 +28,10 @@ public class DefaultProgramBuilder implements IProgramBuilder {
 	}
 
 	IFormatter getFormatter(String formatterName) {
-		IFormatter formatter = moreFormatters
-				.getFormatter(formatterName);
+		IFormatter formatter = null;
+		if (this.moreFormatters != null) {
+			formatter = moreFormatters.getFormatter(formatterName);
+		}
 		if (formatter == null) {
 			formatter = DefaultFormatters.get(formatterName);
 		}
@@ -50,13 +56,12 @@ public class DefaultProgramBuilder implements IProgramBuilder {
 		Section newBlock = new Section(sectionName);
 		if (repeated) {
 			this.currentBlock.append(new RepeatedSectionStatement(newBlock));
-		}
-		else {
+		} else {
 			this.currentBlock.append(new SectionStatement(newBlock));
 		}
 		this.stack.add(newBlock);
 		this.currentBlock = newBlock;
-		
+
 	}
 
 	public void newClause(String name) {
