@@ -8,7 +8,7 @@ default-formatter: raw
 <h1>On Design Minimalism</h1>
 
 <ul>
-<p>... or, <b><i>Why JSON Template Doesn't Need an Include Statement</i></b></p>
+<p>... or, <b><i>How to implement "includes" on top of JSON Template</i></b></p>
 <p>... or, <b><i>Avoiding the Dinosaur Snaggletooth</i></b></p>
 </ul>
 
@@ -329,7 +329,7 @@ having a well-defined <b>data model</b> (of JSON), and a well-defined
 to have paid off.  Orthogonal designs are the ones that seem to admit
 unexpective and creative uses.  </p>
 
-<a name="section5"><h3>Another example of multiple problems addressed by a single solution</h3></a>
+<a name="section6"><h3>Another example of multiple problems addressed by a single solution</h3></a>
 
 <p>
 Here is the justification behind what might be seen as another unusual design
@@ -390,7 +390,7 @@ be implemented in many languages, and every language has a different native
 parser technology, I avoided this.
 </p>
 
-<a name="section6"><h3>Conclusion</h3></a>
+<a name="section7"><h3>Conclusion</h3></a>
 
 <p> Don't create a <b>dinosaur snaggletooth</b> just to solve the problem you
 have now.  Step back a bit, and see if you address multiple problems with a
