@@ -25,7 +25,7 @@ class SubstitutionStatement implements IStatement {
 						String
 								.format(
 										"Formatting value %s with formatter %s raised exception: %s",
-										value.toString(), f.getName(), e
+										value.toString(), f.getClass().getName(), e
 												.getClass().getSimpleName()), e);
 			}
 		}
