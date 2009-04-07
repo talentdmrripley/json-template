@@ -57,6 +57,14 @@ def PythonPercentFormat(format_str):
     return None
 
 
+# Seam for testing
+_open = open
+
+# Cache of compiled templates.  In Java, this might need to be a
+# ConcurrentHashMap like the tokenization regex cache.
+_compiled_template_cache = {}
+
+
 class TemplateFileInclude(object):
   """Template include mechanism.
 
@@ -72,10 +80,13 @@ class TemplateFileInclude(object):
     if format_str.startswith('template '):
       relative_path = format_str[len('template '):]
       full_path = os.path.join(self.root_dir, relative_path)
-      f = open(full_path)
-      template = jsontemplate.FromFile(f)
-      f.close()
-      return template.expand  # a 'bound method'
+
+      if full_path not in _compiled_template_cache:
+        f = _open(full_path)
+        _compiled_template_cache[full_path] = jsontemplate.FromFile(f)
+        f.close()
+
+      return _compiled_template_cache[full_path].expand  # a 'bound method'
 
     else:
       return None  # this lookup is not applicable
