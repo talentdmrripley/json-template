@@ -77,8 +77,8 @@ class TemplateFileInclude(object):
   def __call__(self, format_str):
     """Returns a formatter function."""
 
-    if format_str.startswith('template '):
-      relative_path = format_str[len('template '):]
+    if format_str.startswith('template-file '):
+      relative_path = format_str[len('template-file '):]
       full_path = os.path.join(self.root_dir, relative_path)
 
       if full_path not in _compiled_template_cache:

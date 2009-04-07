@@ -37,7 +37,7 @@ class FormattersTest(testy.Test):
 
     # Constants used throughout this Test
     self.printf_template = '{a|printf %.2f}'
-    self.include_template = '{profile|template include-test.jsont}'
+    self.include_template = '{profile|template-file include-test.jsont}'
 
   def setUp(self):
 
@@ -72,8 +72,8 @@ class FormattersTest(testy.Test):
   def testTemplatesAreNotOpenedMoreThanOnce(self):
     t = jsontemplate.Template(
         """
-        {profile1|template include-test.jsont}
-        {profile2|template include-test.jsont}
+        {profile1|template-file include-test.jsont}
+        {profile2|template-file include-test.jsont}
         """,
         more_formatters=formatters.TemplateFileInclude('testdata/'))
 
