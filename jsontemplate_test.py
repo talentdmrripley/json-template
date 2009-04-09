@@ -530,7 +530,6 @@ People
 """
 
     self.verify.Expansion(t, d, expected, ignore_whitespace=True)
-    return
 
     self.verify.Expansion(t, {'header': 'People'}, """
 People
