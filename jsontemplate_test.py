@@ -40,6 +40,7 @@ from python import jsontemplate  # module under *direct* test
 
 # External verifiers:
 from javascript import verifier as javascript_verifier
+from javascript import browser_tests
 from python import verifier as python_verifier
 from java import verifier as java_verifier
 import doc_generator
@@ -167,8 +168,8 @@ class Template2Test(testy.PyUnitCompatibleTest):
   """
   VERIFIERS = [_InternalTemplateVerifier, python_verifier.ExternalVerifier]
 
-  def __init__(self, verifiers):
-    testy.PyUnitCompatibleTest.__init__(self, verifiers)
+  def __init__(self, verifier):
+    testy.PyUnitCompatibleTest.__init__(self, verifier)
     self.Template = _TemplateDef  # TODO: Replace _TemplateDef everywhere
 
   def testConfigurationErrors(self):
@@ -933,6 +934,10 @@ def main(argv):
       params.OptionalBoolean('javascript', help='Run JavaScript tests'),
 
       params.OptionalString(
+          'browser-test-out-dir', shortcut='b',
+          help='Write browser tests to this directory'),
+
+      params.OptionalString(
           'doc-output-dir', shortcut='d',
           help='Write generated docs to this directory'),
 
@@ -953,7 +958,8 @@ def main(argv):
 
   java_impl = os.path.join(this_dir, 'java', 'jsontemplate.jar')
   java_test_classes = os.path.join(this_dir, 'java', 'jsontemplate_test.jar')
-  jv_verifier = java_verifier.JavaVerifier(options.java_interpreter, java_impl, java_test_classes)
+  jv_verifier = java_verifier.JavaVerifier(
+      options.java_interpreter, java_impl, java_test_classes)
 
   internal_tests = [
       # Things we can't test externally
@@ -967,24 +973,35 @@ def main(argv):
 
   # External versions
   if options.all_tests:
+    # TODO: Add a "precondition" for running external tests (e.g. v8 shell
+    # exists, JVM exists, etc.), and then add Java here.
     tests = internal_tests + [
         Template2Test(py_verifier), Template2Test(js_verifier)]
+
   elif options.python:
     tests = [Template2Test(py_verifier)]
+
   elif options.javascript:
     tests = [Template2Test(js_verifier)]
+
   elif options.java:
     tests = [Template2Test(jv_verifier)]
+
   elif options.doc_output_dir:
     docgen = doc_generator.DocGenerator(options.doc_output_dir)
-    # Run the internal tests before generating docs -- to make sure they all
-    # pass!
+    # Run the internal tests before generating docs.
     tests = [
         Template2Test(v), Template2Test(docgen),
         DocumentationTest(v), DocumentationTest(docgen),
         ]
+
+  elif options.browser_test_out_dir:
+    testgen = browser_tests.TestGenerator(options.browser_test_out_dir)
+
+    # Run the internal tests before generating browser tests.
+    tests = [Template2Test(v), Template2Test(testgen)]
+
   else:
-  # TODO: instantiate these more easily
     tests = internal_tests
 
   testy.RunTests(tests, options)
