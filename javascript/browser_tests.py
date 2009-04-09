@@ -50,15 +50,29 @@ _HTML_TEMPLATE = """\
       jsUnity.log = function (s) {
         document.write("<div>" + s + "</div>");
       };
+      function _NormalizeWhitespace(s) {
+        var lines = s.split(/\\n/);
+        var normalizedLines = [.meta-left][.meta-right];
+        for (var i = 0; i < lines.length; i++) {
+          normalizedLines.push(lines[.meta-left]i[.meta-right].replace(/(^\s+|\s+$)/g, ""));
+        }
+        return normalizedLines.join('\\n');
+      };
 
       var results = jsUnity.run({
         [.repeated section test-bodies]
           [name]: function() {
             var t = jsontemplate.Template([template_str|js-string],
                                           [compile_options|json]);
+            [.section ignore_whitespace]
+            jsUnity.assertions.assertEqual(
+                _NormalizeWhitespace(t.expand([data_dict|json])), // left
+                _NormalizeWhitespace([expected|js-string]));  // right
+            [.or]
             jsUnity.assertions.assertEqual(
                 t.expand([data_dict|json]), // left
                 [expected|js-string]);  // right
+            [.end]
           }
         [.alternates with],[.end]
       });           
@@ -127,6 +141,7 @@ class TestGenerator(testy.StandardVerifier):
         'data_dict': dictionary,
         'compile_options': template_def.kwargs,
         'expected': expected,
+        'ignore_whitespace': ignore_whitespace,
         })
 
     self.counter += 1
