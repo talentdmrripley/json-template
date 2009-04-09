@@ -41,26 +41,36 @@ __author__ = 'Andy Chu'
 _HTML_TEMPLATE = """\
 <html>
   <head>
+    <script type="text/javascript"
+      src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js">
+    </script>
     <script type="text/javascript" src="../javascript/json-template.js">
     </script>
     <script type="text/javascript" src="../test/testy.js">
     </script>
     <script type="text/javascript">
-      // Tests are entered in the global "window" namespace.  They should all
-      // have the 'test' prefix in the method name.
-      [.repeated section test-bodies]
-        function [name]() {
-          var t = jsontemplate.Template([template_str|js-string],
-                                        [compile_options|json]);
-          testy.verifyEqual(t.expand([data_dict|json]), [expected|js-string]);
-        }
-      [.end]
+      // An object containing all tests.
+
+      var tests = {
+        [.repeated section test-bodies]
+          [name]: function () {
+            var t = jsontemplate.Template([template_str|js-string],
+                                          [compile_options|json]);
+            testy.verifyEqual(t.expand([data_dict|json]), [expected|js-string]);
+          }
+        [.alternates with],[.end]
+      };
+
+      function runTests() {
+        var t = testy(tests, $('#console'));
+        t.runTests();
+      }
     </script>
   </head>
-  <body onload="testy.runTests();">
-    <b>Tests for {test-name}</b>
+  <body onload="runTests();">
+    <b>Tests for [test-name|html]</b>
 
-    <div id="replace"></div>
+    <pre id="console">Console</pre>
   </body>
 </html>
 """
@@ -92,7 +102,8 @@ class TestGenerator(testy.StandardVerifier):
     html_file = open(filename, 'w')
 
     data = {
-        'test-name': 'Hey',
+        # TODO: Automatic way of inserting class name
+        'test-name': 'JSON Template',
         'test-bodies': self.assertions
         }
 
