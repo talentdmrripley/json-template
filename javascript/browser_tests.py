@@ -42,32 +42,29 @@ _HTML_TEMPLATE = """\
 <html>
   <head>
     <script type="text/javascript"
-      src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js">
+      src="http://jsunity.googlecode.com/files/jsunity-0.6.js">
     </script>
     <script type="text/javascript" src="../javascript/json-template.js">
     </script>
-    <script type="text/javascript" src="../test/testy.js">
-    </script>
     <script type="text/javascript">
-      // An object containing all tests.
-
-      var tests = {
-        [.repeated section test-bodies]
-          [name]: function () {
-            var t = jsontemplate.Template([template_str|js-string],
-                                          [compile_options|json]);
-            testy.verifyEqual(t.expand([data_dict|json]), [expected|js-string]);
-          }
-        [.alternates with],[.end]
+      jsUnity.log = function (s) {
+        document.write("<div>" + s + "</div>");
       };
 
-      function runTests() {
-        var t = testy(tests, $('#console'));
-        t.runTests();
-      }
+      var results = jsUnity.run({
+        [.repeated section test-bodies]
+          [name]: function() {
+            var t = jsontemplate.Template([template_str|js-string],
+                                          [compile_options|json]);
+            jsUnity.assertions.assertEqual(
+                t.expand([data_dict|json]), // left
+                [expected|js-string]);  // right
+          }
+        [.alternates with],[.end]
+      });           
     </script>
   </head>
-  <body onload="runTests();">
+  <body onload="">
     <b>Tests for [test-name|html]</b>
 
     <pre id="console">Console</pre>
