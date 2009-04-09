@@ -259,6 +259,7 @@ def _ToString(x):
 def _HtmlAttrValue(x):
   return cgi.escape(x, quote=True)
 
+
 # See http://google-ctemplate.googlecode.com/svn/trunk/doc/howto.html for more
 # escape types.
 #
@@ -294,7 +295,18 @@ _DEFAULT_FORMATTERS = {
 
     # Just show a plain URL on an HTML page (without anchor text).
     'plain-url': lambda x: '<a href="%s">%s</a>' % (
-        cgi.escape(x, quote=True), cgi.escape(x))
+        cgi.escape(x, quote=True), cgi.escape(x)),
+
+    # Placeholders for "standard names".  We're not including them by default
+    # since they require additional dependencies.  We can provide a part of the
+    # "lookup chain" in formatters.py for people people want the dependency.
+    
+    # 'json' formats arbitrary data dictionary nodes as JSON strings.  'json'
+    # and 'js-string' are identical (since a JavaScript string *is* JSON).  The
+    # latter is meant to be serve as extra documentation when you want a string
+    # argument only, which is a common case.  
+    'json': None,
+    'js-string': None,
     }
 
 

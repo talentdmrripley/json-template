@@ -25,9 +25,9 @@ import os
 import sys
 
 from pan.core import json
-from pan.core import records
 from pan.test import testy
 
+from python import formatters
 from python import jsontemplate
 
 __author__ = 'Andy Chu'
@@ -42,19 +42,22 @@ _HTML_TEMPLATE = """\
 <html>
   <head>
     <script type="text/javascript" src="../javascript/json-template.js">
+    </script>
     <script type="text/javascript" src="../test/testy.js">
     </script>
     <script type="text/javascript">
       // Tests are entered in the global "window" namespace.  They should all
       // have the 'test' prefix in the method name.
       [.repeated section test-bodies]
-        function() [name] {
-          [body]
+        function [name]() {
+          var t = jsontemplate.Template([template_str|js-string],
+                                        [compile_options|json]);
+          testy.verifyEqual(t.expand([data_dict|json]), [expected|js-string]);
         }
       [.end]
     </script>
   </head>
-  <body onload="runTests();">
+  <body onload="testy.runTests();">
     <b>Tests for {test-name}</b>
 
     <div id="replace"></div>
@@ -71,9 +74,12 @@ class TestGenerator(testy.StandardVerifier):
 
     self.assertions = []
 
-    # Don't need any escaping here.
+    def ToJson(x):
+      return json.dumps(x, indent=2)
+
     self.js_template = jsontemplate.Template(
-        _HTML_TEMPLATE, default_formatter='raw', meta='[]')
+        _HTML_TEMPLATE, default_formatter='raw', meta='[]',
+        more_formatters=formatters.Json(ToJson))
 
   def setUpOnce(self):
     if self.assertions:
@@ -104,15 +110,12 @@ class TestGenerator(testy.StandardVerifier):
     Args:
       template_def: ClassDef instance that defines a Template.
     """
-    tested_template = jsontemplate.Template(
-        *template_def.args, **template_def.kwargs)
-
-    expanded = tested_template.expand(dictionary)
-    json_str = json.dumps(dictionary, indent=2)
-
     self.assertions.append({
         'name': self.current_method.__name__,
-        'body': json_str,
+        'template_str': template_def.args[0],
+        'data_dict': dictionary,
+        'compile_options': template_def.kwargs,
+        'expected': expected,
         })
 
   # TODO:

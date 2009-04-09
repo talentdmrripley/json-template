@@ -90,3 +90,24 @@ class TemplateFileInclude(object):
 
     else:
       return None  # this lookup is not applicable
+
+
+class Json(object):
+  """Format arbitrary nodes as JSON.
+  
+  It takes a function which converts JSON structures to strings as a parameter.
+
+  All this does is relieve the user of having to remember the standard names
+  'json' and 'js-string'.  Just pass your program's JSON serializer in here.
+  """
+
+  def __init__(self, json_func):
+    self.json_func = json_func
+
+  def __call__(self, format_str):
+    """Returns a formatter function."""
+    if format_str in ('json', 'js-string'):
+      return self.json_func
+
+    else:
+      return None  # this lookup is not applicable
