@@ -146,6 +146,9 @@ def main(argv):
   argv = ['python', 'jsontemplate_test.py', '-d', 'test-cases']
   subprocess.call(argv)
 
+  argv = ['python', 'jsontemplate_test.py', '-b', 'browser-tests']
+  subprocess.call(argv)
+
   MakeIndexHtml('test-cases/')
 
   shutil.copy('test-cases/testTableExample-01.js.html', 'doc/')
