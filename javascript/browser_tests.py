@@ -79,6 +79,9 @@ class TestGenerator(testy.StandardVerifier):
     testy.StandardVerifier.__init__(self)
     self.output_dir = output_dir
 
+    # Counter for unique method names
+    self.counter = 1
+
     self.assertions = []
 
     def ToJson(x):
@@ -119,14 +122,16 @@ class TestGenerator(testy.StandardVerifier):
       template_def: ClassDef instance that defines a Template.
     """
     self.assertions.append({
-        'name': self.current_method.__name__,
+        'name': '%s_%s' % (self.current_method.__name__, self.counter),
         'template_str': template_def.args[0],
         'data_dict': dictionary,
         'compile_options': template_def.kwargs,
         'expected': expected,
         })
 
-  # TODO:
+    self.counter += 1
+
+  # TODO: Test exceptions too!
 
   def EvaluationError(self, exception, template_def, data_dict):
     pass
