@@ -841,6 +841,15 @@ class InternalTemplateTest(testy.PyUnitCompatibleTest):
     # instance (the root of the program)
     self.assertEqual(type(program), jsontemplate._Section)
 
+  def testSimpleUnicodeSubstitution(self):
+    t = jsontemplate.Template(u'Hello {name}')
+
+    self.verify.Equal(t.expand({u'name': u'World'}), u'Hello World')
+
+    # TODO: Need a lot more comprehensive *external* unicode tests, as well as
+    # ones for the internal API.  Need to test mixing of unicode() and str()
+    # instances (or declare it undefined).
+
 
 class DocumentationTest(testy.Test):
   """Test cases added for the sake of documentation."""

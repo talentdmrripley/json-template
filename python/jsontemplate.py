@@ -736,7 +736,7 @@ def _Execute(statements, context, callback):
   """
 
   for i, statement in enumerate(statements):
-    if isinstance(statement, str):
+    if isinstance(statement, basestring):
       callback(statement)
     else:
       # In the case of a substitution, args is a pair (name, formatter).
