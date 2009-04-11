@@ -981,10 +981,11 @@ def main(argv):
 
   # External versions
   if options.all_tests:
-    # TODO: Add a "precondition" for running external tests (e.g. v8 shell
-    # exists, JVM exists, etc.), and then add Java here.
     tests = internal_tests + [
-        Template2Test(py_verifier), Template2Test(js_verifier)]
+        Template2Test(py_verifier),
+        Template2Test(js_verifier),
+        Template2Test(jv_verifier),
+        ]
 
   elif options.python:
     tests = [Template2Test(py_verifier)]

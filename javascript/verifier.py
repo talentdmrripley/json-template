@@ -18,6 +18,7 @@
 
 __author__ = 'Andy Chu'
 
+import os
 import subprocess
 import sys
 import tempfile
@@ -63,6 +64,11 @@ class V8ShellVerifier(testy.StandardVerifier):
     self.v8_path = v8_path
     self.helpers_path = helpers_path
     self.script_path = script_path
+
+  def setUpOnce(self):
+    if not os.path.exists(self.v8_path):
+      raise testy.TestPrequisiteMissing(
+          '%r is missing' % self.v8_path)
 
   def _RunScript(self, template_def, dictionary):
     template_str = template_def.args[0]

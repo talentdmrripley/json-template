@@ -21,7 +21,7 @@ __author__ = 'Andy Chu, William Shallum'
 import subprocess
 import sys
 import tempfile
-import os.path
+import os
 
 from pan.core import json
 from pan.core import records
@@ -38,6 +38,11 @@ class JavaVerifier(testy.StandardVerifier):
     self.java_interpreter_path = java_interpreter_path
     self.impl_path = impl_path
     self.test_classes_path = test_classes_path
+
+  def setUpOnce(self):
+    if not os.path.exists(self.java_interpreter_path):
+      raise testy.TestPrequisiteMissing(
+          '%r is missing' % self.java_interpreter_path)
 
   def _RunScript(self, template_def, dictionary):
     template_str = template_def.args[0]
