@@ -162,11 +162,11 @@ _TemplateDef = testy.ClassDef
 
 
 class JsonTemplateTest(testy.PyUnitCompatibleTest):
-  """
-  TODO: Need to run these same tests against an identical Javascript
-  implementation.
-  """
+  """Language-independent tests for JSON Template."""
+
   LABELS = ['multilanguage']
+
+  # TODO: This isn't sed
   VERIFIERS = [_InternalTemplateVerifier, python_verifier.ExternalVerifier]
 
   def __init__(self, verifier):
@@ -217,10 +217,6 @@ class JsonTemplateTest(testy.PyUnitCompatibleTest):
   def testVariableFormat(self):
     t = self.Template('Where is your {name|html}')
     self.verify.Expansion(t, {'name': '<head>'}, 'Where is your &lt;head&gt;')
-
-  def testHtmlAttrValueFormatter(self):
-    t = self.Template('<a href="{url|html-attr-value}">')
-    self.verify.Expansion(t, {'url': '"<>&'}, '<a href="&quot;&lt;&gt;&amp;">')
 
   def testDefaultFormatter(self):
     t = self.Template('{name} {val|raw}', default_formatter='html')
@@ -689,6 +685,17 @@ People
     d = { 'title-results': [] }
 
     self.verify.Expansion(t, d, '\n')
+
+
+class StandardFormattersTest(testy.Test):
+  """Test that each implementation implements the standard formatters."""
+
+  LABELS = ['multilanguage']
+
+  def testHtmlAttrValueFormatter(self):
+    t = testy.ClassDef('<a href="{url|html-attr-value}">')
+    self.verify.Expansion(t, {'url': '"<>&'}, '<a href="&quot;&lt;&gt;&amp;">')
+
 
 
 # TODO: This can be an example in the documentation about how to use custom
