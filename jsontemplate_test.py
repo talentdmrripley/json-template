@@ -161,7 +161,7 @@ class _InternalTemplateVerifier(testy.StandardVerifier):
 _TemplateDef = testy.ClassDef
 
 
-class Template2Test(testy.PyUnitCompatibleTest):
+class JsonTemplateTest(testy.PyUnitCompatibleTest):
   """
   TODO: Need to run these same tests against an identical Javascript
   implementation.
@@ -976,31 +976,31 @@ def main(argv):
       InternalTemplateTest(v),
 
       # Internal version
-      Template2Test(v),
+      JsonTemplateTest(v),
       ]
 
   # External versions
   if options.all_tests:
     tests = internal_tests + [
-        Template2Test(py_verifier),
-        Template2Test(js_verifier),
-        Template2Test(jv_verifier),
+        JsonTemplateTest(py_verifier),
+        JsonTemplateTest(js_verifier),
+        JsonTemplateTest(jv_verifier),
         ]
 
   elif options.python:
-    tests = [Template2Test(py_verifier)]
+    tests = [JsonTemplateTest(py_verifier)]
 
   elif options.javascript:
-    tests = [Template2Test(js_verifier)]
+    tests = [JsonTemplateTest(js_verifier)]
 
   elif options.java:
-    tests = [Template2Test(jv_verifier)]
+    tests = [JsonTemplateTest(jv_verifier)]
 
   elif options.doc_output_dir:
     docgen = doc_generator.DocGenerator(options.doc_output_dir)
     # Run the internal tests before generating docs.
     tests = [
-        Template2Test(v), Template2Test(docgen),
+        JsonTemplateTest(v), JsonTemplateTest(docgen),
         DocumentationTest(v), DocumentationTest(docgen),
         ]
 
@@ -1008,7 +1008,7 @@ def main(argv):
     testgen = browser_tests.TestGenerator(options.browser_test_out_dir)
 
     # Run the internal tests before generating browser tests.
-    tests = [Template2Test(v), Template2Test(testgen)]
+    tests = [JsonTemplateTest(v), JsonTemplateTest(testgen)]
 
   else:
     tests = internal_tests
