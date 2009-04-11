@@ -166,6 +166,7 @@ class JsonTemplateTest(testy.PyUnitCompatibleTest):
   TODO: Need to run these same tests against an identical Javascript
   implementation.
   """
+  LABELS = ['multilanguage']
   VERIFIERS = [_InternalTemplateVerifier, python_verifier.ExternalVerifier]
 
   def __init__(self, verifier):
@@ -969,46 +970,57 @@ def main(argv):
   jv_verifier = java_verifier.JavaVerifier(
       options.java_interpreter, java_impl, java_test_classes)
 
+
+  filt = testy.MakeTestClassFilter(label='multilanguage')
+  multi_tests = testy.GetTestClasses(__import__(__name__), filt)
+
   internal_tests = [
       # Things we can't test externally
       TokenizeTest(testy.StandardVerifier()),
       FromStringTest(testy.StandardVerifier()),
       InternalTemplateTest(v),
-
-      # Internal version
-      JsonTemplateTest(v),
       ]
+
+  # Also run the internal version of all the multilanguage tests
+  internal_tests.extend(m(v) for m in multi_tests)
 
   # External versions
   if options.all_tests:
-    tests = internal_tests + [
-        JsonTemplateTest(py_verifier),
-        JsonTemplateTest(js_verifier),
-        JsonTemplateTest(jv_verifier),
-        ]
+    tests = internal_tests
+    tests.extend(m(py_verifier) for m in multi_tests)
+    tests.extend(m(js_verifier) for m in multi_tests)
+    tests.extend(m(jv_verifier) for m in multi_tests)
 
   elif options.python:
-    tests = [JsonTemplateTest(py_verifier)]
+    tests = [m(py_verifier) for m in multi_tests]
 
   elif options.javascript:
-    tests = [JsonTemplateTest(js_verifier)]
+    tests = [m(js_verifier) for m in multi_tests]
 
   elif options.java:
-    tests = [JsonTemplateTest(jv_verifier)]
+    tests = [m(jv_verifier) for m in multi_tests]
 
   elif options.doc_output_dir:
+    # Generates the HTML fragments.
+
     docgen = doc_generator.DocGenerator(options.doc_output_dir)
+
     # Run the internal tests before generating docs.
-    tests = [
-        JsonTemplateTest(v), JsonTemplateTest(docgen),
+    tests = []
+    tests.extend(m(v) for m in multi_tests)
+    tests.extend(m(docgen) for m in multi_tests)
+
+    tests.extend([
         DocumentationTest(v), DocumentationTest(docgen),
-        ]
+        ])
 
   elif options.browser_test_out_dir:
     testgen = browser_tests.TestGenerator(options.browser_test_out_dir)
 
     # Run the internal tests before generating browser tests.
-    tests = [JsonTemplateTest(v), JsonTemplateTest(testgen)]
+    tests = []
+    tests.extend(m(v) for m in multi_tests)
+    tests.extend(m(testgen) for m in multi_tests)
 
   else:
     tests = internal_tests
