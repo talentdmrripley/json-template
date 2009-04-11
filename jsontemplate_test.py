@@ -692,9 +692,15 @@ class StandardFormattersTest(testy.Test):
 
   LABELS = ['multilanguage']
 
+  def testHtmlFormatter(self):
+    t = testy.ClassDef('<b>{name|html}</b>')
+    self.verify.Expansion(
+        t, {'name': '"<tag>"'}, '<b>"&lt;tag&gt;"</b>')
+
   def testHtmlAttrValueFormatter(self):
     t = testy.ClassDef('<a href="{url|html-attr-value}">')
-    self.verify.Expansion(t, {'url': '"<>&'}, '<a href="&quot;&lt;&gt;&amp;">')
+    self.verify.Expansion(
+        t, {'url': '"<>&'}, '<a href="&quot;&lt;&gt;&amp;">')
 
 
 
