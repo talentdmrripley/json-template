@@ -1,0 +1,34 @@
+#!/usr/bin/python -S
+"""
+base_verifier.py
+"""
+
+__author__ = 'Andy Chu'
+
+
+from pan.test import testy
+
+
+class JsonTemplateVerifier(testy.StandardVerifier):
+  """Abstract base class for all language-specific verifiers."""
+
+  def Expansion(
+      self, template_def, dictionary, expected, ignore_whitespace=False,
+      all_formatters=False):
+    """Verifies a normal expansion."""
+    raise NotImplementedError
+
+  def ExpansionWithAllFormatters(
+      self, template_def, dictionary, expected, ignore_whitespace=False):
+    """Verifies an expansion with all formatters implemented in the language."""
+
+  def CompilationError(self, exception, *args, **kwargs):
+    """Verifiers an error that occurs when compiling the template."""
+    raise NotImplementedError
+
+  def EvaluationError(self, exception, template_def, data_dict):
+    """
+    Verifies an error that occurs when expanding a template with a data
+    dictionary.
+    """
+    raise NotImplementedError

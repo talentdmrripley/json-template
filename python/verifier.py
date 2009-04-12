@@ -31,18 +31,24 @@ from pan.core import json
 from pan.core import records
 from pan.test import testy
 
+import base_verifier
 
-class ExternalVerifier(testy.StandardVerifier):
+
+class ExternalVerifier(base_verifier.JsonTemplateVerifier):
   """Verifies template behavior in an external process."""
+
+  LABELS = ['python']
 
   def __init__(self, script_path):
     testy.StandardVerifier.__init__(self)
     self.script_path = script_path
 
-  def _RunScript(self, template_str, dictionary):
+  def _RunScript(self, template_str, dictionary, all_formatters=False):
     data = json.dumps(dictionary)
     # sys.executable necessary on Windows
     argv = [sys.executable, self.script_path, template_str, data]
+    if all_formatters:
+      argv.append('--more-formatters')
     print argv
     p = subprocess.Popen(
         argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -71,13 +77,15 @@ class ExternalVerifier(testy.StandardVerifier):
     return header + template_str
 
   def Expansion(
-      self, template_def, dictionary, expected, ignore_whitespace=False):
+      self, template_def, dictionary, expected, ignore_whitespace=False,
+      all_formatters=False):
     """
     Args:
       template_def: ClassDef instance that defines a Template.
     """
     template_str = self._MakeTemplateStr(template_def)
-    result = self._RunScript(template_str, dictionary)
+    result = self._RunScript(
+        template_str, dictionary, all_formatters=all_formatters)
 
     self.Equal(result.exit_code, 0, 'stderr: %r' % result.stderr)
     self.LongStringsEqual(

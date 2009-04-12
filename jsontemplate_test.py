@@ -36,6 +36,7 @@ from pan.core import params
 from pan.core import json
 from pan.test import testy
 
+from python import formatters
 from python import jsontemplate  # module under *direct* test
 
 # External verifiers:
@@ -44,6 +45,7 @@ from javascript import browser_tests
 from python import verifier as python_verifier
 from java import verifier as java_verifier
 import doc_generator
+import base_verifier
 
 
 class TokenizeTest(testy.Test):
@@ -131,16 +133,23 @@ Hello <there>
     self.verify.Equal(t.expand({'dude': 'Andy'}), 'Hello Andy')
 
 
-class _InternalTemplateVerifier(testy.StandardVerifier):
+class _InternalTemplateVerifier(base_verifier.JsonTemplateVerifier):
   """Verifies template behavior in-process."""
 
+  LABELS = ['python']
+
   def Expansion(
-      self, template_def, dictionary, expected, ignore_whitespace=False):
+      self, template_def, dictionary, expected, ignore_whitespace=False,
+      all_formatters=False):
     """
     Args:
       template_def: testy.ClassDef instance.
     """
+    if all_formatters:
+      template_def.kwargs['more_formatters'] = formatters.PythonPercentFormat
+
     template = jsontemplate.Template(*template_def.args, **template_def.kwargs)
+
     # TODO: Consider reversing left and right here and throughout
     left = template.expand(dictionary)
     right = expected
@@ -205,7 +214,8 @@ class JsonTemplateTest(testy.PyUnitCompatibleTest):
     # None/null is considered undefined.  Typically, a null value should be
     # wrapped in section instead.
     t = testy.ClassDef('There are {num} ways to do it')
-    self.verify.EvaluationError(jsontemplate.UndefinedVariable, t, {'num': None})
+    self.verify.EvaluationError(
+        jsontemplate.UndefinedVariable, t, {'num': None})
 
   def testVariableFormat(self):
     t = testy.ClassDef('Where is your {name|html}')
@@ -696,6 +706,17 @@ class StandardFormattersTest(testy.Test):
         t, {'url': '"<>&'}, '<a href="&quot;&lt;&gt;&amp;">')
 
 
+class AllFormattersTest(testy.Test):
+  """Test that each implementation implements the standard formatters."""
+
+  LABELS = ['multilanguage']
+
+  @testy.only_verify('python')
+  def testPrintfFormatter(self):
+    t = testy.ClassDef('<b>{num|printf %.3f}</b>')
+    self.verify.ExpansionWithAllFormatters(
+        t, {'num': 1.0/3}, '<b>0.333</b>')
+
 
 # TODO: This can be an example in the documentation about how to use custom
 # formatters.
@@ -940,8 +961,8 @@ def main(argv):
           'v8-shell', default=default_v8_shell,
           help='Location of the v8 shell to run JavaScript tests'),
       params.OptionalString(
-          'java-interpreter', default=default_java,
-          help='Location of the Java interpreter to run Java tests'),
+          'java-launcher', default=default_java,
+          help='Location of the Java launcher to run Java tests'),
 
       # Until we have better test filtering:
       params.OptionalBoolean('python', help='Run Python tests'),
@@ -974,7 +995,7 @@ def main(argv):
   java_impl = os.path.join(this_dir, 'java', 'jsontemplate.jar')
   java_test_classes = os.path.join(this_dir, 'java', 'jsontemplate_test.jar')
   jv_verifier = java_verifier.JavaVerifier(
-      options.java_interpreter, java_impl, java_test_classes)
+      options.java_launcher, java_impl, java_test_classes)
 
 
   filt = testy.MakeTestClassFilter(label='multilanguage')
