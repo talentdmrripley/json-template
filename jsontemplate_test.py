@@ -968,7 +968,7 @@ def main(argv):
 
   options = cmdapp.ParseArgv(argv, run_params)
 
-  v = _InternalTemplateVerifier()
+  int_py_verifier = _InternalTemplateVerifier()
 
   python_impl = os.path.join(this_dir, 'python', 'expand.py')
   py_verifier = python_verifier.ExternalVerifier(python_impl)
@@ -991,11 +991,11 @@ def main(argv):
       # Things we can't test externally
       TokenizeTest(testy.StandardVerifier()),
       FromStringTest(testy.StandardVerifier()),
-      InternalTemplateTest(v),
+      InternalTemplateTest(int_py_verifier),
       ]
 
   # Also run the internal version of all the multilanguage tests
-  internal_tests.extend(m(v) for m in multi_tests)
+  internal_tests.extend(m(int_py_verifier) for m in multi_tests)
 
   # External versions
   if options.all_tests:
@@ -1020,11 +1020,11 @@ def main(argv):
 
     # Run the internal tests before generating docs.
     tests = []
-    tests.extend(m(v) for m in multi_tests)
+    tests.extend(m(int_py_verifier) for m in multi_tests)
     tests.extend(m(docgen) for m in multi_tests)
 
     tests.extend([
-        DocumentationTest(v), DocumentationTest(docgen),
+        DocumentationTest(int_py_verifier), DocumentationTest(docgen),
         ])
 
   elif options.browser_test_out_dir:
@@ -1032,7 +1032,7 @@ def main(argv):
 
     # Run the internal tests before generating browser tests.
     tests = []
-    tests.extend(m(v) for m in multi_tests)
+    tests.extend(m(int_py_verifier) for m in multi_tests)
     tests.extend(m(testgen) for m in multi_tests)
 
   else:

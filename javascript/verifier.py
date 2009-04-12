@@ -67,8 +67,7 @@ class V8ShellVerifier(testy.StandardVerifier):
 
   def setUpOnce(self):
     if not os.path.exists(self.v8_path):
-      raise testy.TestPrequisiteMissing(
-          '%r is missing' % self.v8_path)
+      raise testy.TestPrequisiteMissing('%r is missing' % self.v8_path)
 
   def _RunScript(self, template_def, dictionary):
     template_str = template_def.args[0]
