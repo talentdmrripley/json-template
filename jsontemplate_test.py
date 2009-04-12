@@ -141,7 +141,7 @@ class _InternalTemplateVerifier(testy.StandardVerifier):
       self, template_def, dictionary, expected, ignore_whitespace=False):
     """
     Args:
-      template_def: _TemplateDef instance.
+      template_def: testy.ClassDef instance.
     """
     template = template2.Template(*template_def.args, **template_def.kwargs)
     # TODO: Consider reversing left and right here and throughout
@@ -158,9 +158,6 @@ class _InternalTemplateVerifier(testy.StandardVerifier):
     self.Raises(exception, template2.Template, *args, **kwargs)
 
 
-_TemplateDef = testy.ClassDef
-
-
 class JsonTemplateTest(testy.PyUnitCompatibleTest):
   """Language-independent tests for JSON Template."""
 
@@ -171,7 +168,6 @@ class JsonTemplateTest(testy.PyUnitCompatibleTest):
 
   def __init__(self, verifier):
     testy.PyUnitCompatibleTest.__init__(self, verifier)
-    self.Template = _TemplateDef  # TODO: Replace _TemplateDef everywhere
 
   def testConfigurationErrors(self):
     self.verify.CompilationError(
@@ -183,51 +179,51 @@ class JsonTemplateTest(testy.PyUnitCompatibleTest):
     # containing {}, [], <> or () is liberal.
 
   def testTrivial(self):
-    t = self.Template('Hello')
+    t = testy.ClassDef('Hello')
     self.verify.Expansion(t, {}, 'Hello')
 
   def testComment(self):
-    t = self.Template('Hello {# Comment} There')
+    t = testy.ClassDef('Hello {# Comment} There')
     self.verify.Expansion(t, {}, 'Hello  There')
 
   def testSpace(self):
-    t = self.Template('{.space}{.space}')
+    t = testy.ClassDef('{.space}{.space}')
     self.verify.Expansion(t, {}, '  ')
 
   def testOnlyDeclaration(self):
-    t = self.Template('{# Comment}')
+    t = testy.ClassDef('{# Comment}')
     self.verify.Expansion(t, {}, '')
 
   def testSimpleData(self):
-    t = self.Template('Hello {name}, how are you')
+    t = testy.ClassDef('Hello {name}, how are you')
     self.verify.Expansion(t, {'name': 'Andy'}, 'Hello Andy, how are you')
 
     self.verify.EvaluationError(template2.UndefinedVariable, t, {})
 
   def testExpandingInteger(self):
-    t = self.Template('There are {num} ways to do it')
+    t = testy.ClassDef('There are {num} ways to do it')
     self.verify.Expansion(t, {'num': 5}, 'There are 5 ways to do it')
 
   def testExpandingNull(self):
     # None/null is considered undefined.  Typically, a null value should be
     # wrapped in section instead.
-    t = self.Template('There are {num} ways to do it')
+    t = testy.ClassDef('There are {num} ways to do it')
     self.verify.EvaluationError(template2.UndefinedVariable, t, {'num': None})
 
   def testVariableFormat(self):
-    t = self.Template('Where is your {name|html}')
+    t = testy.ClassDef('Where is your {name|html}')
     self.verify.Expansion(t, {'name': '<head>'}, 'Where is your &lt;head&gt;')
 
   def testDefaultFormatter(self):
-    t = self.Template('{name} {val|raw}', default_formatter='html')
+    t = testy.ClassDef('{name} {val|raw}', default_formatter='html')
     self.verify.Expansion(t, {'name': '<head>', 'val': '<>'}, '&lt;head&gt; <>')
 
   def testUndefinedVariable(self):
-    t = self.Template('Where is your {name|html}')
+    t = testy.ClassDef('Where is your {name|html}')
     self.verify.EvaluationError(template2.UndefinedVariable, t, {})
 
   def testFormattingCharacter(self):
-    t = self.Template('Where is your {name:html}', format_char=':')
+    t = testy.ClassDef('Where is your {name:html}', format_char=':')
     self.verify.Expansion(t, {'name': '<head>'}, 'Where is your &lt;head&gt;')
 
   def testBadFormatters(self):
@@ -243,21 +239,21 @@ class JsonTemplateTest(testy.PyUnitCompatibleTest):
         default_formatter=None)
 
   def testEscapeMetacharacter(self):
-    t = self.Template('[.meta-left]Hello[.meta-right]', meta='[]')
+    t = testy.ClassDef('[.meta-left]Hello[.meta-right]', meta='[]')
     self.verify.Expansion(t, {}, '[Hello]')
 
   def testMeta(self):
-    t = self.Template('Hello {{# Comment}} There', meta='{{}}')
+    t = testy.ClassDef('Hello {{# Comment}} There', meta='{{}}')
     self.verify.Expansion(t, {}, 'Hello  There')
 
   def testSubstituteCursor(self):
-    t = self.Template('{.section is-new}New since {@} ! {.end}')
+    t = testy.ClassDef('{.section is-new}New since {@} ! {.end}')
     self.verify.Expansion(t, {}, '')
     self.verify.Expansion(t, {'is-new': 123}, 'New since 123 ! ')
 
   def testSimpleSection(self):
     # Has some newlines too
-    t = self.Template("""\
+    t = testy.ClassDef("""\
 {.section is-new}
   Hello there
   New since {date}!
@@ -272,7 +268,7 @@ class JsonTemplateTest(testy.PyUnitCompatibleTest):
 """)
 
   def testRepeatedSection(self):
-    t = self.Template("""
+    t = testy.ClassDef("""
 [header]
 ---------
 [.repeated section people]
@@ -309,7 +305,7 @@ Header
 """)
 
   def testRepeatedSectionWithDot(self):
-    t = self.Template("""
+    t = testy.ClassDef("""
 [header]
 ---------
 [.repeated section people]
@@ -334,7 +330,7 @@ People
 """)
 
   def testNestedRepeatedSections(self):
-    t = self.Template("""
+    t = testy.ClassDef("""
 [header]
 ---------
 [.repeated section people]
@@ -361,11 +357,11 @@ People
   def testRepeatedSectionAtRoot(self):
     # This tests expansion of a JSON *list* -- no dictionary in sight
 
-    t = self.Template('[.repeated section @][@] [.end]', meta='[]')
+    t = testy.ClassDef('[.repeated section @][@] [.end]', meta='[]')
     self.verify.Expansion(t, ['Andy', 'Bob'], 'Andy Bob ')
 
   def testAlternatesWith(self):
-    t = self.Template("""
+    t = testy.ClassDef("""
 [header]
 ---------
 [.repeated section people]
@@ -396,7 +392,7 @@ People
   def testSection(self):
 
     # TODO: Should the *leading* whitespace before [.end] be removed too?
-    t = self.Template("""
+    t = testy.ClassDef("""
 [header]
 ---------
 [.section people]
@@ -443,7 +439,7 @@ People
 """)
 
   def testExpansionInInnerScope(self):
-    t = self.Template("""
+    t = testy.ClassDef("""
 [url]
 [.section person]
   [name] [age] [url]
@@ -488,7 +484,7 @@ http://example.com
 
   def testSectionAndRepeatedSection(self):
     """A repeated section within a section."""
-    t = self.Template("""
+    t = testy.ClassDef("""
 [header]
 ---------
 [.section people]
@@ -536,11 +532,11 @@ People
   def testBadContext(self):
     # Note: A list isn't really a valid top level context, but this case should
     # be some kind of error.
-    t = self.Template("{foo}")
+    t = testy.ClassDef("{foo}")
     self.verify.EvaluationError(template2.UndefinedVariable, t, [])
 
   def testSectionOr(self):
-    t = self.Template("""
+    t = testy.ClassDef("""
 Hello there.
 {.section person}
   {name} {age} {url}
@@ -576,7 +572,7 @@ http://example.com
 
   @testy.labels('documentation')
   def testRepeatedSectionOr(self):
-    t = self.Template("""
+    t = testy.ClassDef("""
 {header}
 ---------
 {.repeated section people}
@@ -626,7 +622,7 @@ People
 """)
 
     # Now there are 3 clauses
-    t = self.Template("""
+    t = testy.ClassDef("""
 {header}
 ---------
 {.repeated section people}
@@ -661,7 +657,7 @@ People
   def testEmptyListWithSection(self):
     # From the wiki
 
-    t = self.Template("""
+    t = testy.ClassDef("""
 {.section title-results}
   Results.
   {.repeated section @}
@@ -721,7 +717,7 @@ class InternalTemplateTest(testy.PyUnitCompatibleTest):
   VERIFIERS = [_InternalTemplateVerifier]
 
   def testAdditionalFormat(self):
-    t = _TemplateDef(
+    t = testy.ClassDef(
         '{num|%.5f}', more_formatters=_PythonFormat)
     self.verify.Expansion(t, {'num': 1.0/3}, '0.33333')
 
@@ -744,7 +740,7 @@ class InternalTemplateTest(testy.PyUnitCompatibleTest):
     # iteration order
 
     # Single formatter
-    t = _TemplateDef(
+    t = testy.ClassDef(
         'http://example.com?{params:url-params}',
         format_char=':')
     self.verify.Expansion(
@@ -753,7 +749,7 @@ class InternalTemplateTest(testy.PyUnitCompatibleTest):
         'http://example.com?baz=%21%40%23%24%25%5E%26%2A%28&foo=1&bar=String+with+spaces')
 
     # Multiple
-    t = _TemplateDef(
+    t = testy.ClassDef(
         'http://example.com?{params|url-params|html}',
         format_char='|')
     self.verify.Expansion(
@@ -772,7 +768,7 @@ class InternalTemplateTest(testy.PyUnitCompatibleTest):
       else:
         return None
 
-    t = _TemplateDef('{@}', more_formatters=_More)
+    t = testy.ClassDef('{@}', more_formatters=_More)
     d = {
         u'url': u'http://example.com',
         u'person': {
@@ -877,7 +873,7 @@ class DocumentationTest(testy.Test):
 
   @testy.labels('documentation', 'live-js', 'blog-format')
   def testTableExample(self):
-    t = _TemplateDef("""\
+    t = testy.ClassDef("""\
 {# This is a comment and will be removed from the output.}
 
 {.section songs}
@@ -989,8 +985,8 @@ def main(argv):
 
   internal_tests = [
       # Things we can't test externally
-      TokenizeTest(testy.StandardVerifier()),
-      FromStringTest(testy.StandardVerifier()),
+      TokenizeTest(),
+      FromStringTest(),
       InternalTemplateTest(int_py_verifier),
       ]
 
