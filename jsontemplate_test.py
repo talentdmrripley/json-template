@@ -45,14 +45,11 @@ from python import verifier as python_verifier
 from java import verifier as java_verifier
 import doc_generator
 
-# Backward-compatible naming
-template2 = jsontemplate
-
 
 class TokenizeTest(testy.Test):
 
   def testMakeTokenRegex(self):
-    token_re = template2.MakeTokenRegex('[', ']')
+    token_re = jsontemplate.MakeTokenRegex('[', ']')
     tokens = token_re.split("""
 [# Comment#]
 
@@ -74,17 +71,17 @@ text
 
     # Section names are required
     self.verify.Equal(
-        template2._SECTION_RE.match('section'),
+        jsontemplate._SECTION_RE.match('section'),
         None)
     self.verify.Equal(
-        template2._SECTION_RE.match('repeated section'),
+        jsontemplate._SECTION_RE.match('repeated section'),
         None)
 
     self.verify.Equal(
-        template2._SECTION_RE.match('section Foo').groups(),
+        jsontemplate._SECTION_RE.match('section Foo').groups(),
         (None, 'section', 'Foo'))
     self.verify.Equal(
-        template2._SECTION_RE.match('repeated section @').groups(),
+        jsontemplate._SECTION_RE.match('repeated section @').groups(),
         ('repeated', 'section', '@'))
 
 
@@ -95,13 +92,13 @@ class FromStringTest(testy.Test):
 Format-Char: |
 Meta: <>
 """
-    t = template2.FromString(s, _constructor=testy.ClassDef)
+    t = jsontemplate.FromString(s, _constructor=testy.ClassDef)
     self.verify.Equal(t.args[0], '')
     self.verify.Equal(t.kwargs['meta'], '<>')
     self.verify.Equal(t.kwargs['format_char'], '|')
 
     # Empty template
-    t = template2.FromString('', _constructor=testy.ClassDef)
+    t = jsontemplate.FromString('', _constructor=testy.ClassDef)
     self.verify.Equal(t.args[0], '')
     self.verify.Equal(t.kwargs.get('meta'), None)
     self.verify.Equal(t.kwargs.get('format_char'), None)
@@ -113,7 +110,7 @@ Meta: <>
 BAD STUFF
 """
     self.verify.Raises(
-        template2.CompilationError, template2.FromString, f)
+        jsontemplate.CompilationError, jsontemplate.FromString, f)
 
   def testTemplate(self):
     f = """\
@@ -122,7 +119,7 @@ meta: <>
 
 Hello <there>
 """
-    t = template2.FromString(f, _constructor=testy.ClassDef)
+    t = jsontemplate.FromString(f, _constructor=testy.ClassDef)
     self.verify.Equal(t.args[0], 'Hello <there>\n')
     self.verify.Equal(t.kwargs['meta'], '<>')
     self.verify.Equal(t.kwargs['format_char'], ':')
@@ -130,7 +127,7 @@ Hello <there>
   def testNoOptions(self):
     # Bug fix
     f = """Hello {dude}"""
-    t = template2.FromString(f)
+    t = jsontemplate.FromString(f)
     self.verify.Equal(t.expand({'dude': 'Andy'}), 'Hello Andy')
 
 
@@ -143,7 +140,7 @@ class _InternalTemplateVerifier(testy.StandardVerifier):
     Args:
       template_def: testy.ClassDef instance.
     """
-    template = template2.Template(*template_def.args, **template_def.kwargs)
+    template = jsontemplate.Template(*template_def.args, **template_def.kwargs)
     # TODO: Consider reversing left and right here and throughout
     left = template.expand(dictionary)
     right = expected
@@ -151,11 +148,11 @@ class _InternalTemplateVerifier(testy.StandardVerifier):
     self.LongStringsEqual(left, right, ignore_whitespace=ignore_whitespace)
 
   def EvaluationError(self, exception, template_def, data_dict):
-    template = template2.Template(*template_def.args, **template_def.kwargs)
+    template = jsontemplate.Template(*template_def.args, **template_def.kwargs)
     self.Raises(exception, template.expand, data_dict)
 
   def CompilationError(self, exception, *args, **kwargs):
-    self.Raises(exception, template2.Template, *args, **kwargs)
+    self.Raises(exception, jsontemplate.Template, *args, **kwargs)
 
 
 class JsonTemplateTest(testy.PyUnitCompatibleTest):
@@ -171,9 +168,9 @@ class JsonTemplateTest(testy.PyUnitCompatibleTest):
 
   def testConfigurationErrors(self):
     self.verify.CompilationError(
-        template2.ConfigurationError, '', format_char='!')
+        jsontemplate.ConfigurationError, '', format_char='!')
     self.verify.CompilationError(
-        template2.ConfigurationError, '', meta='m')
+        jsontemplate.ConfigurationError, '', meta='m')
 
     # Should I assert that meta is not something crazy?  Max length of 4 and
     # containing {}, [], <> or () is liberal.
@@ -198,7 +195,7 @@ class JsonTemplateTest(testy.PyUnitCompatibleTest):
     t = testy.ClassDef('Hello {name}, how are you')
     self.verify.Expansion(t, {'name': 'Andy'}, 'Hello Andy, how are you')
 
-    self.verify.EvaluationError(template2.UndefinedVariable, t, {})
+    self.verify.EvaluationError(jsontemplate.UndefinedVariable, t, {})
 
   def testExpandingInteger(self):
     t = testy.ClassDef('There are {num} ways to do it')
@@ -208,7 +205,7 @@ class JsonTemplateTest(testy.PyUnitCompatibleTest):
     # None/null is considered undefined.  Typically, a null value should be
     # wrapped in section instead.
     t = testy.ClassDef('There are {num} ways to do it')
-    self.verify.EvaluationError(template2.UndefinedVariable, t, {'num': None})
+    self.verify.EvaluationError(jsontemplate.UndefinedVariable, t, {'num': None})
 
   def testVariableFormat(self):
     t = testy.ClassDef('Where is your {name|html}')
@@ -220,7 +217,7 @@ class JsonTemplateTest(testy.PyUnitCompatibleTest):
 
   def testUndefinedVariable(self):
     t = testy.ClassDef('Where is your {name|html}')
-    self.verify.EvaluationError(template2.UndefinedVariable, t, {})
+    self.verify.EvaluationError(jsontemplate.UndefinedVariable, t, {})
 
   def testFormattingCharacter(self):
     t = testy.ClassDef('Where is your {name:html}', format_char=':')
@@ -228,14 +225,14 @@ class JsonTemplateTest(testy.PyUnitCompatibleTest):
 
   def testBadFormatters(self):
     self.verify.CompilationError(
-        template2.BadFormatter, 'Where is your {name|BAD}')
+        jsontemplate.BadFormatter, 'Where is your {name|BAD}')
 
     self.verify.CompilationError(
-        template2.BadFormatter, 'Where is your {name|really|bad}')
+        jsontemplate.BadFormatter, 'Where is your {name|really|bad}')
 
   def testMissingFormatter(self):
     self.verify.CompilationError(
-        template2.MissingFormatter, 'What is your {name}',
+        jsontemplate.MissingFormatter, 'What is your {name}',
         default_formatter=None)
 
   def testEscapeMetacharacter(self):
@@ -466,17 +463,17 @@ http://example.com
             'age': 30,
             }
         }
-    self.verify.EvaluationError(template2.UndefinedVariable, t, d)
+    self.verify.EvaluationError(jsontemplate.UndefinedVariable, t, d)
 
   def testTooManyEndBlocks(self):
-    self.verify.CompilationError(template2.TemplateSyntaxError, """
+    self.verify.CompilationError(jsontemplate.TemplateSyntaxError, """
 {.section people}
 {.end}
 {.end}
 """)
 
   def testTooFewEndBlocks(self):
-    self.verify.CompilationError(template2.TemplateSyntaxError, """
+    self.verify.CompilationError(jsontemplate.TemplateSyntaxError, """
 {.section people}
   {.section cars}
   {.end}
@@ -533,7 +530,7 @@ People
     # Note: A list isn't really a valid top level context, but this case should
     # be some kind of error.
     t = testy.ClassDef("{foo}")
-    self.verify.EvaluationError(template2.UndefinedVariable, t, [])
+    self.verify.EvaluationError(jsontemplate.UndefinedVariable, t, [])
 
   def testSectionOr(self):
     t = testy.ClassDef("""
@@ -725,10 +722,10 @@ class InternalTemplateTest(testy.PyUnitCompatibleTest):
 
     # For now, integers can't be formatted directly as html.  Just omit the
     # formatter.
-    t = template2.Template('There are {num|html} ways to do it')
+    t = jsontemplate.Template('There are {num|html} ways to do it')
     try:
       t.expand({'num': 5})
-    except template2.EvaluationError, e:
+    except jsontemplate.EvaluationError, e:
       self.assert_(e.args[0].startswith('Formatting value 5'), e.args[0])
       self.assertEqual(e.original_exception.__class__, AttributeError)
     else:
@@ -792,7 +789,7 @@ class InternalTemplateTest(testy.PyUnitCompatibleTest):
   def testScope(self):
     # From the wiki
 
-    t = template2.Template("""
+    t = jsontemplate.Template("""
   {internal_link_prefix|htmltag}
   <p>
     <b>HTML Source</b>
