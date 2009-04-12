@@ -34,6 +34,7 @@ from pan.core import cmdapp
 from pan.core import params
 from pan.core import json
 from python import jsontemplate
+from python import formatters
 
 
 PARAMS = [
@@ -48,6 +49,9 @@ PARAMS = [
         'json', shortcut='j', pos=2,
         help='The JSON data dictionary to expand the template with '
         '(filename or string)'),
+    params.OptionalBoolean(
+        'more-formatters', shortcut='m',
+        help='Use all formatters that exist in the Python implementation'),
     # TODO: Argh, this doesn't work for command line parsing; only URL parsing.
     # It would be nice to be able to substitute small values as flags.
     params.UNDECLARED,
@@ -67,7 +71,12 @@ def main(argv):
 
   dictionary = json.loads(dictionary)
 
-  t = jsontemplate.FromString(template_str)
+  if options.more_formatters:
+    more_formatters = formatters.PythonPercentFormat
+  else:
+    more_formatters = lambda x: None
+
+  t = jsontemplate.FromString(template_str, more_formatters=more_formatters)
   sys.stdout.write(t.expand(dictionary))
 
 

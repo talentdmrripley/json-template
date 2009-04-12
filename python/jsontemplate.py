@@ -491,14 +491,14 @@ _OPTION_RE = re.compile(r'^([a-zA-Z\-]+):\s*(.*)')
 _OPTION_NAMES = ['meta', 'format-char', 'default-formatter']
 
 
-def FromString(s, _constructor=None):
+def FromString(s, more_formatters=lambda x: None, _constructor=None):
   """Like FromFile, but takes a string."""
 
   f = cStringIO.StringIO(s)
-  return FromFile(f, _constructor=_constructor)
+  return FromFile(f, more_formatters=more_formatters, _constructor=_constructor)
 
 
-def FromFile(f, _constructor=None):
+def FromFile(f, more_formatters=lambda x: None, _constructor=None):
   """Parse a template from a file, using a simple file format.
 
   This is useful when you want to include template options in a data file,
@@ -556,7 +556,7 @@ def FromFile(f, _constructor=None):
     # There were no options, so no blank line is necessary.
     body = line + f.read()
 
-  return _constructor(body, **options)
+  return _constructor(body, more_formatters=more_formatters, **options)
 
 
 class Template(object):
