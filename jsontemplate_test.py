@@ -718,26 +718,10 @@ class AllFormattersTest(testy.Test):
         t, {'num': 1.0/3}, '<b>0.333</b>')
 
 
-# TODO: This can be an example in the documentation about how to use custom
-# formatters.
-def _PythonFormat(format_str):
-  """Use Python % format strings as template format specifiers."""
-  # A little hack for now
-  if format_str.startswith('%'):
-    return lambda value: format_str % value
-  else:
-    return None
-
-
 class InternalTemplateTest(testy.PyUnitCompatibleTest):
   """Tests that can only be run internally."""
 
   VERIFIERS = [_InternalTemplateVerifier]
-
-  def testAdditionalFormat(self):
-    t = testy.ClassDef(
-        '{num|%.5f}', more_formatters=_PythonFormat)
-    self.verify.Expansion(t, {'num': 1.0/3}, '0.33333')
 
   def testFormatterRaisesException(self):
 
