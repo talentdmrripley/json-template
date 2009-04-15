@@ -236,7 +236,7 @@ class _ScopedContext(object):
     while 1:
       context = self.stack[i]
 
-      if type(context) is not dict:  # Can't look up names in a list or atom
+      if not hasattr(context, 'get'):  # Can't look up names in a list or atom
         i -= 1
       else:
         value = context.get(name)

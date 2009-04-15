@@ -26,7 +26,6 @@ import os
 from pprint import pprint
 import subprocess
 import sys
-import unittest
 
 if __name__ == '__main__':
   sys.path.insert(0, os.path.join(os.path.dirname(sys.argv[0]), '..'))
