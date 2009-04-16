@@ -351,6 +351,22 @@ def MakeTokenRegex(meta_left, meta_right):
   return _token_re_cache[key]
 
 
+LITERAL_TOKEN, DIRECTIVE_TOKEN = 0, 1
+
+def Tokenize(template_str, meta_left, meta_right):
+  """Yields tokens, which are tuples (TOKEN_TYPE, token_string)."""
+
+  token_re = MakeTokenRegex(meta_left, meta_right)
+
+  for line in template_str.splitlines(True):
+    tokens = token_re.split(line)
+    for i, token in enumerate(tokens):
+      if i % 2 == 0:
+        yield LITERAL_TOKEN, token
+      else:
+        yield DIRECTIVE_TOKEN, token
+
+
 def CompileTemplate(
     template_str, builder=None, meta='{}', format_char='|',
     more_formatters=lambda x: None, default_formatter='str'):
@@ -393,19 +409,15 @@ def CompileTemplate(
     raise ConfigurationError(
         'Only format characters : and | are accepted (got %r)' % format_char)
 
-  # Need () for re.split
-  token_re = MakeTokenRegex(meta_left, meta_right)
-  tokens = token_re.split(template_str)
-
   # If we go to -1, then we got too many {end}.  If end at 1, then we're missing
   # an {end}.
   balance_counter = 0
 
-  for i, token in enumerate(tokens):
+  for token_type, token in Tokenize(template_str, meta_left, meta_right):
 
     # By the definition of re.split, even tokens are literal strings, and odd
     # tokens are directives.
-    if i % 2 == 0:
+    if token_type == LITERAL_TOKEN:
       # A literal string
       if token:
         builder.Append(token)
