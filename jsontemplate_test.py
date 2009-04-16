@@ -865,6 +865,7 @@ class DocumentationTest(testy.Test):
   """Test cases added for the sake of documentation."""
 
   # TODO: The default labels for this test should be 'documentation'
+  LABELS = ['multilanguage']
 
   @testy.labels('documentation')
   def testSearchResultsExample(self):
@@ -913,17 +914,17 @@ class DocumentationTest(testy.Test):
   <h2>Songs in 'Epic Playlist'</h2>
 
   <table width="100%">
-      <tr>
+    <tr>
       <td><a href="http://example.com/music/1.mp3">Play</a>
       <td><i>Sounds Like Thunder</i></td>
       <td>Grayceon</td>
     </tr>
-      <tr>
+    <tr>
       <td><a href="http://example.com/music/2.mp3">Play</a>
       <td><i>Their Hooves Carve Craters in the Earth</i></td>
       <td>Thou</td>
     </tr>
-    </table>
+  </table>
 """
 
     self.verify.Expansion(t, d, expected)
@@ -1024,7 +1025,7 @@ def main(argv):
         ])
 
   elif options.browser_test_out_dir:
-    testgen = browser_tests.TestGenerator(options.browser_test_out_dir)
+    testgen = browser_tests.TestGenerator()
 
     # Run the internal tests before generating browser tests.
     tests = []
@@ -1035,6 +1036,10 @@ def main(argv):
     tests = internal_tests
 
   testy.RunTests(tests, options)
+
+  # Write HTML *after* running all tests
+  if options.browser_test_out_dir:
+    testgen.WriteHtml(options.browser_test_out_dir)
 
 
 if __name__ == '__main__':

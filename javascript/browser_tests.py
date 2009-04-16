@@ -21,6 +21,7 @@ Outputs HTML which refers to JavaScript.
 
 __author__ = 'Andy Chu'
 
+import datetime
 import os
 import sys
 
@@ -48,8 +49,10 @@ _HTML_TEMPLATE = """\
     </script>
     <script type="text/javascript">
       jsUnity.log = function (s) {
-        document.write("<div>" + s + "</div>");
+        document.write("<code>" + jsontemplate.HtmlEscape(s) + "</code><br>");
       };
+
+      // TODO: May not be necessary
       function _NormalizeWhitespace(s) {
         var lines = s.split(/\\n/);
         var normalizedLines = [.meta-left][.meta-right];
@@ -59,29 +62,37 @@ _HTML_TEMPLATE = """\
         return normalizedLines.join('\\n');
       };
 
+      // TODO: This isn't used, but we might want it for ignore_all_whitespace
+      function _StripAllWhitespace(s) {
+        return s.replace(/\s+/g, "");
+      };
+
       var results = jsUnity.run({
         [.repeated section test-bodies]
           [name]: function() {
             var t = jsontemplate.Template([template_str|js-string],
                                           [compile_options|json]);
+            var actual = t.expand([data_dict|json]);  // left
+            var expected = [expected|js-string];  // right
             [.section ignore_whitespace]
-            jsUnity.assertions.assertEqual(
-                _NormalizeWhitespace(t.expand([data_dict|json])), // left
-                _NormalizeWhitespace([expected|js-string]));  // right
-            [.or]
-            jsUnity.assertions.assertEqual(
-                t.expand([data_dict|json]), // left
-                [expected|js-string]);  // right
+              actual = _NormalizeWhitespace(actual);
+              expected = _NormalizeWhitespace(expected);
             [.end]
+
+            // For now, strip all whitespace.  The JavaScript version doesn't do
+            // smart-indent, and ignore_whitespace doesn't make tests pass,
+            // since it only strips at the beginning and end of lines.
+            actual = _StripAllWhitespace(actual);
+            expected = _StripAllWhitespace(expected);
+
+            jsUnity.assertions.assertEqual(actual, expected);
           }
         [.alternates with],[.end]
       });           
     </script>
   </head>
   <body onload="">
-    <b>Tests for [test-name|html]</b>
-
-    <pre id="console">Console</pre>
+    <p>Tests for [test-name|html] generated on [timestamp|html]</p>
   </body>
 </html>
 """
@@ -89,9 +100,8 @@ _HTML_TEMPLATE = """\
 
 class TestGenerator(testy.StandardVerifier):
 
-  def __init__(self, output_dir):
+  def __init__(self):
     testy.StandardVerifier.__init__(self)
-    self.output_dir = output_dir
 
     # Counter for unique method names
     self.counter = 1
@@ -105,19 +115,15 @@ class TestGenerator(testy.StandardVerifier):
         _HTML_TEMPLATE, default_formatter='raw', meta='[]',
         more_formatters=formatters.Json(ToJson))
 
-  def setUpOnce(self):
-    if self.assertions:
-      raise RuntimeError(
-          'Non-empty assertions on setUpOnce: %r' % self.assertions)
-
-  def tearDownOnce(self):
-    """Called after the whole test has been run, and all verification made."""
-    filename = os.path.join(self.output_dir, 'browser_test.html')
+  def WriteHtml(self, output_dir):
+    """Called after the whole test has been run, and all verifications made."""
+    filename = os.path.join(output_dir, 'browser_test.html')
     html_file = open(filename, 'w')
 
     data = {
         # TODO: Automatic way of inserting class name
         'test-name': 'JSON Template',
+        'timestamp': datetime.datetime.now().isoformat(),
         'test-bodies': self.assertions
         }
 
@@ -153,13 +159,3 @@ class TestGenerator(testy.StandardVerifier):
 
   def CompilationError(self, exception, *args, **kwargs):
     pass
-
-  def _WriteFile(self, filename, contents):
-    filename = os.path.join(self.output_dir, filename)
-
-    f = open(filename, 'w')
-    f.write(contents)
-    f.close()
-
-    # TODO: Need a logger?
-    print 'Wrote %s' % filename

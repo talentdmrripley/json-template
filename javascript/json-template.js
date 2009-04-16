@@ -493,7 +493,8 @@ function Template(template_str, options) {
 
 
 // We just export one name for now, the Template "class".
+// We need HtmlEscape in the browser tests, so might as well export it.
 
-return {Template: Template};
+return {Template: Template, HtmlEscape: HtmlEscape};
 
 }();
