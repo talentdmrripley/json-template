@@ -110,24 +110,24 @@ expanded.
 <p><b>A template string ...</b></p>
 
 <div class="literal">
-<pre><span style="color: red;">{# This is a comment and will be removed from the output.}
-</span>
-<span style="color: blue;">{.section songs}
-</span>  &lt;h2&gt;Songs in '<span style="color: green;">{playlist-name}</span>'&lt;/h2&gt;
+<pre><span style="color: red;">{# This is a comment and will be removed from the output.}</span>
+
+<span style="color: blue;">{.section songs}</span>
+  &lt;h2&gt;Songs in '<span style="color: green;">{playlist-name}</span>'&lt;/h2&gt;
 
   &lt;table width="100%"&gt;
-  <span style="color: blue;">{.repeated section @}
-</span>    &lt;tr&gt;
+  <span style="color: blue;">{.repeated section @}</span>
+    &lt;tr&gt;
       &lt;td&gt;&lt;a href="<span style="color: green;">{url-base|htmltag}</span><span style="color: green;">{url|htmltag}</span>"&gt;Play&lt;/a&gt;
       &lt;td&gt;&lt;i&gt;<span style="color: green;">{title}</span>&lt;/i&gt;&lt;/td&gt;
       &lt;td&gt;<span style="color: green;">{artist}</span>&lt;/td&gt;
     &lt;/tr&gt;
-  <span style="color: blue;">{.end}
-</span>  &lt;/table&gt;
-<span style="color: blue;">{.or}
-</span>  &lt;p&gt;&lt;em&gt;(No page content matches)&lt;/em&gt;&lt;/p&gt;
-<span style="color: blue;">{.end}
-</span></pre>
+  <span style="color: blue;">{.end}</span>
+  &lt;/table&gt;
+<span style="color: blue;">{.or}</span>
+  &lt;p&gt;&lt;em&gt;(No page content matches)&lt;/em&gt;&lt;/p&gt;
+<span style="color: blue;">{.end}</span>
+</pre>
 </div>
 
 <p><b>... combined with a data dictionary ...</b></p>
@@ -155,17 +155,17 @@ expanded.
   &lt;h2&gt;Songs in 'Epic Playlist'&lt;/h2&gt;
 
   &lt;table width="100%"&gt;
-      &lt;tr&gt;
+    &lt;tr&gt;
       &lt;td&gt;&lt;a href="http://example.com/music/1.mp3"&gt;Play&lt;/a&gt;
       &lt;td&gt;&lt;i&gt;Sounds Like Thunder&lt;/i&gt;&lt;/td&gt;
       &lt;td&gt;Grayceon&lt;/td&gt;
     &lt;/tr&gt;
-      &lt;tr&gt;
+    &lt;tr&gt;
       &lt;td&gt;&lt;a href="http://example.com/music/2.mp3"&gt;Play&lt;/a&gt;
       &lt;td&gt;&lt;i&gt;Their Hooves Carve Craters in the Earth&lt;/i&gt;&lt;/td&gt;
       &lt;td&gt;Thou&lt;/td&gt;
     &lt;/tr&gt;
-    &lt;/table&gt;
+  &lt;/table&gt;
 </pre>
 
 <p><b>Here is the rendered output:</b></p>
@@ -175,17 +175,17 @@ expanded.
   <h2>Songs in 'Epic Playlist'</h2>
 
   <table width="100%">
-      <tr>
+    <tr>
       <td><a href="http://example.com/music/1.mp3">Play</a>
       <td><i>Sounds Like Thunder</i></td>
       <td>Grayceon</td>
     </tr>
-      <tr>
+    <tr>
       <td><a href="http://example.com/music/2.mp3">Play</a>
       <td><i>Their Hooves Carve Craters in the Earth</i></td>
       <td>Thou</td>
     </tr>
-    </table>
+  </table>
 
 </div>
 
