@@ -96,7 +96,7 @@ class UndefinedVariable(EvaluationError):
   """The template contains a variable not defined by the data dictionary."""
 
 
-_SECTION_RE = re.compile(r'(repeated)?\s*(section)\s+(\S+)')
+_SECTION_RE = re.compile(r'(repeated)?\s*section\s+(\S+)')
 
 
 class _ProgramBuilder(object):
@@ -337,34 +337,97 @@ def MakeTokenRegex(meta_left, meta_right):
   """
   key = meta_left, meta_right
   if key not in _token_re_cache:
-    # Need () for re.split
+    # - Need () grouping for re.split
+    # - For simplicity, we allow all characters except newlines inside
+    #   metacharacters ({} / [])
     _token_re_cache[key] = re.compile(
         r'(' +
         re.escape(meta_left) +
-        # For simplicity, we allow all characters except newlines inside
-        # metacharacters ({} / [])
         r'.+?' +
         re.escape(meta_right) +
-        # Some declarations also include the newline at the end -- that is, we
-        # don't expand the newline in that case
         r'\n?)')
   return _token_re_cache[key]
 
 
-LITERAL_TOKEN, DIRECTIVE_TOKEN = 0, 1
+# Examples:
 
-def Tokenize(template_str, meta_left, meta_right):
-  """Yields tokens, which are tuples (TOKEN_TYPE, token_string)."""
+( LITERAL_TOKEN,  # "Hi"
+  SUBSTITUTION_TOKEN,  # {var|html}
+  SECTION_TOKEN,  # {.section name}
+  REPEATED_SECTION_TOKEN,  # {.repeated section name}
+  CLAUSE_TOKEN,  # {.or}
+  END_TOKEN,  # {.end}
+  ) = range(6)
+
+
+def _Tokenize(template_str, meta_left, meta_right):
+  """Yields tokens, which are 2-tuples (TOKEN_TYPE, token_string)."""
 
   token_re = MakeTokenRegex(meta_left, meta_right)
 
-  for line in template_str.splitlines(True):
+  for line in template_str.splitlines(True):  # retain newlines
     tokens = token_re.split(line)
+
+    if len(tokens) == 3:
+      # isspace() matches \r\n\v\t and space
+      #if tokens[0].isspace() and tokens[2].isspace()
+      #continue
+      pass
+
     for i, token in enumerate(tokens):
       if i % 2 == 0:
         yield LITERAL_TOKEN, token
-      else:
-        yield DIRECTIVE_TOKEN, token
+
+      else:  # It's a "directive" in metachracters
+
+        had_newline = False
+        if token.endswith('\n'):
+          token = token[:-1]
+          had_newline = True
+
+        assert token.startswith(meta_left), repr(token)
+        assert token.endswith(meta_right), repr(token)
+        token = token[len(meta_left) : -len(meta_right)]
+
+        # It's a comment
+        if token.startswith('#'):
+          continue
+
+        if token.startswith('.'):
+          token = token[1:]
+
+          literal = {
+              'meta-left': meta_left,
+              'meta-right': meta_right,
+              'space': ' ',
+              }.get(token)
+
+          if literal is not None:
+            yield LITERAL_TOKEN, literal
+            continue
+
+          match = _SECTION_RE.match(token)
+
+          if match:
+            repeated, section_name = match.groups()
+            if repeated:
+              yield REPEATED_SECTION_TOKEN, section_name
+            else:
+              yield SECTION_TOKEN, section_name
+            continue
+
+          if token in ('or', 'alternates with'):
+            yield CLAUSE_TOKEN, token
+            continue
+
+          if token == 'end':
+            yield END_TOKEN, None
+            continue
+
+        else:  # Now we know the directive is a substitution.
+          yield SUBSTITUTION_TOKEN, token
+          if had_newline:
+            yield LITERAL_TOKEN, '\n'
 
 
 def CompileTemplate(
@@ -413,68 +476,39 @@ def CompileTemplate(
   # an {end}.
   balance_counter = 0
 
-  for token_type, token in Tokenize(template_str, meta_left, meta_right):
+  for token_type, token in _Tokenize(template_str, meta_left, meta_right):
 
-    # By the definition of re.split, even tokens are literal strings, and odd
-    # tokens are directives.
     if token_type == LITERAL_TOKEN:
-      # A literal string
       if token:
         builder.Append(token)
+      continue
 
-    else:
-      had_newline = False
-      if token.endswith('\n'):
-        token = token[:-1]
-        had_newline = True
+    if token_type == REPEATED_SECTION_TOKEN:
+      builder.NewSection(True, token)
+      balance_counter += 1
+      continue
 
-      assert token.startswith(meta_left), token
-      assert token.endswith(meta_right), token
+    if token_type == SECTION_TOKEN:
+      builder.NewSection(False, token)
+      balance_counter += 1
+      continue
 
-      token = token[len(meta_left) : -len(meta_right)]
+    if token_type == CLAUSE_TOKEN:
+      builder.NewClause(token)
+      continue
 
-      # It's a comment
-      if token.startswith('#'):
-        continue
+    if token_type == END_TOKEN:
+      balance_counter -= 1
+      if balance_counter < 0:
+        # TODO: Show some context for errors
+        raise TemplateSyntaxError(
+            'Got too many %send%s statements.  You may have mistyped an '
+            "earlier 'section' or 'repeated section' directive."
+            % (meta_left, meta_right))
+      builder.EndSection()
+      continue
 
-      # It's a "keyword" directive
-      if token.startswith('.'):
-        token = token[1:]
-
-        literal = {
-            'meta-left': meta_left,
-            'meta-right': meta_right,
-            'space': ' ',
-            }.get(token)
-
-        if literal is not None:
-          builder.Append(literal)
-          continue
-
-        match = _SECTION_RE.match(token)
-
-        if match:
-          repeated, _, section_name = match.groups()
-          builder.NewSection(repeated, section_name)
-          balance_counter += 1
-          continue
-
-        if token in ('or', 'alternates with'):
-          builder.NewClause(token)
-          continue
-
-        if token == 'end':
-          balance_counter -= 1
-          if balance_counter < 0:
-            # TODO: Show some context for errors
-            raise TemplateSyntaxError(
-                'Got too many %send%s statements.  You may have mistyped an '
-                "earlier 'section' or 'repeated section' directive."
-                % (meta_left, meta_right))
-          builder.EndSection()
-          continue
-
-      # Now we know the directive is a substitution.
+    if token_type == SUBSTITUTION_TOKEN:
       parts = token.split(format_char)
       if len(parts) == 1:
         if default_formatter is None:
@@ -488,8 +522,6 @@ def CompileTemplate(
         formatters = parts[1:]
 
       builder.AppendSubstitution(name, formatters)
-      if had_newline:
-        builder.Append('\n')
 
   if balance_counter != 0:
     raise TemplateSyntaxError('Got too few %send%s statements' %

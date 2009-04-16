@@ -80,10 +80,10 @@ text
 
     self.verify.Equal(
         jsontemplate._SECTION_RE.match('section Foo').groups(),
-        (None, 'section', 'Foo'))
+        (None, 'Foo'))
     self.verify.Equal(
         jsontemplate._SECTION_RE.match('repeated section @').groups(),
-        ('repeated', 'section', '@'))
+        ('repeated', '@'))
 
 
 class FromStringTest(testy.Test):
