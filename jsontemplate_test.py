@@ -341,7 +341,6 @@ People
 ---------
 [.repeated section people]
   [name]: [.repeated section attributes][@] [.end]
-
 [.end]
 """, meta='[]')
 
@@ -426,9 +425,9 @@ There are [summary] here:
 People
 ---------
 There are 2 dudes here:
-      Andy 20
-      Bob 25
-    Footer
+    Andy 20
+    Bob 25
+  Footer
 """
     self.verify.Expansion(t, d, expected)
     #return
@@ -680,9 +679,9 @@ People
 
     self.verify.Expansion(t, d, """
   Results.
-      1. one
-      2. two
-  """)
+    1. one
+    2. two
+""")
 
     d = { 'title-results': [] }
 

@@ -95,8 +95,12 @@ class JavaVerifier(testy.StandardVerifier):
     result = self._RunScript(template_def, dictionary)
 
     self.Equal(result.exit_code, 0, 'stderr: %r' % result.stderr)
+
+    # The tests specify are written for whitespace_mode='smart-indent'.
+    # JavaScript only implement whitespace_mode='any' now, so just ignore all
+    # whitespace, and we can use the same tests.
     self.LongStringsEqual(
-        expected, result.stdout, ignore_whitespace=ignore_whitespace)
+        expected, result.stdout, ignore_all_whitespace=True)
 
   def EvaluationError(self, exception, template_def, data_dict):
     result = self._RunScript(template_def, data_dict)

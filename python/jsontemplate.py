@@ -345,7 +345,7 @@ def MakeTokenRegex(meta_left, meta_right):
         re.escape(meta_left) +
         r'.+?' +
         re.escape(meta_right) +
-        r'\n?)')
+        r')')
   return _token_re_cache[key]
 
 
@@ -360,19 +360,56 @@ def MakeTokenRegex(meta_left, meta_right):
   ) = range(6)
 
 
+def _MatchDirective(token):
+  """Helper function for matching certain directives."""
+
+  if token in ('.or', '.alternates with'):
+    return CLAUSE_TOKEN, token[1:]
+
+  if token == '.end':
+    return END_TOKEN, None
+
+  match = _SECTION_RE.match(token[1:])
+  if match:
+    repeated, section_name = match.groups()
+    if repeated:
+      return REPEATED_SECTION_TOKEN, section_name
+    else:
+      return SECTION_TOKEN, section_name
+
+  return None, None  # no match
+
+
 def _Tokenize(template_str, meta_left, meta_right):
   """Yields tokens, which are 2-tuples (TOKEN_TYPE, token_string)."""
+
+  trimlen = len(meta_left)
 
   token_re = MakeTokenRegex(meta_left, meta_right)
 
   for line in template_str.splitlines(True):  # retain newlines
     tokens = token_re.split(line)
 
+    # Check for a special case first.  If a comment or "block" directive is on a
+    # line by itself (with only space surrounding it), then the space is
+    # omitted.  For simplicity, we don't handle the case where we have 2
+    # directives, say '{.end} # {#comment}' on a line.
+
     if len(tokens) == 3:
-      # isspace() matches \r\n\v\t and space
-      #if tokens[0].isspace() and tokens[2].isspace()
-      #continue
-      pass
+      # ''.isspace() == False, so work around that
+      if (tokens[0].isspace() or not tokens[0]) and \
+         (tokens[2].isspace() or not tokens[2]):
+        token = tokens[1][trimlen : -trimlen]
+
+        if token.startswith('#'):
+          continue  # The whole line is omitted
+
+        token_type, token = _MatchDirective(token)
+        if token_type is not None:
+          yield token_type, token  # Only yield the token, not space
+          continue
+
+    # The line isn't special; process it normally.
 
     for i, token in enumerate(tokens):
       if i % 2 == 0:
@@ -380,54 +417,32 @@ def _Tokenize(template_str, meta_left, meta_right):
 
       else:  # It's a "directive" in metachracters
 
-        had_newline = False
-        if token.endswith('\n'):
-          token = token[:-1]
-          had_newline = True
-
         assert token.startswith(meta_left), repr(token)
         assert token.endswith(meta_right), repr(token)
-        token = token[len(meta_left) : -len(meta_right)]
+        token = token[trimlen : -trimlen]
 
         # It's a comment
         if token.startswith('#'):
           continue
 
         if token.startswith('.'):
-          token = token[1:]
 
           literal = {
-              'meta-left': meta_left,
-              'meta-right': meta_right,
-              'space': ' ',
+              '.meta-left': meta_left,
+              '.meta-right': meta_right,
+              '.space': ' ',
               }.get(token)
 
           if literal is not None:
             yield LITERAL_TOKEN, literal
             continue
 
-          match = _SECTION_RE.match(token)
-
-          if match:
-            repeated, section_name = match.groups()
-            if repeated:
-              yield REPEATED_SECTION_TOKEN, section_name
-            else:
-              yield SECTION_TOKEN, section_name
-            continue
-
-          if token in ('or', 'alternates with'):
-            yield CLAUSE_TOKEN, token
-            continue
-
-          if token == 'end':
-            yield END_TOKEN, None
-            continue
+          token_type, token = _MatchDirective(token)
+          if token_type is not None:
+            yield token_type, token
 
         else:  # Now we know the directive is a substitution.
           yield SUBSTITUTION_TOKEN, token
-          if had_newline:
-            yield LITERAL_TOKEN, '\n'
 
 
 def CompileTemplate(
