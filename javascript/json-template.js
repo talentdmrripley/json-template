@@ -69,7 +69,7 @@ function HtmlTagEscape(s) {
 
 // Default ToString can be changed
 function ToString(s) {
-  return s;
+  return s.toString();
 }
 
 var DEFAULT_FORMATTERS = {
@@ -307,7 +307,7 @@ var _SECTION_RE = /(repeated)?\s*(section)\s+(\S+)?/;
 // TODO: The compile function could be in a different module, in case we want to
 // compile on the server side.
 function _Compile(template_str, options) {
-  var more_formatters = options.more_formatters || {};
+  var more_formatters = options.more_formatters || function (x) { return null };
 
   // We want to allow an explicit null value for default_formatter, which means
   // that an error is raised if no formatter is specified.
@@ -319,7 +319,7 @@ function _Compile(template_str, options) {
   }
 
   function GetFormatter(format_str) {
-    var formatter = more_formatters[format_str] ||
+    var formatter = more_formatters(format_str) ||
                     DEFAULT_FORMATTERS[format_str];
     if (formatter === undefined) {
       throw {

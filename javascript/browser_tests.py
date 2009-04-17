@@ -116,9 +116,22 @@ testStrFormatter: function () {
   var t = jsontemplate.Template('num: {one}');
   var actual = t.expand({'one': 1});
   jsUnity.assertions.assertEqual(actual, 'num: 1');
+}
+""",
+"""
+testChainedStrFormatter: function () {
+  function more_formatters (name) {
+    if (name === 'replace') {
+      return function(x) { return x.replace('object', 'replaced'); }
+    }
+  }
 
+  // Test chaining with a custom formatter to make sure that str returns a
+  // string
+  var t = jsontemplate.Template(
+     'num: {one|str|replace}', {more_formatters: more_formatters});
   var actual = t.expand({'one': {}});
-  jsUnity.assertions.assertEqual(actual, 'num: [object Object]');
+  jsUnity.assertions.assertEqual(actual, 'num: [replaced Object]');
 }
 """,
     ]
