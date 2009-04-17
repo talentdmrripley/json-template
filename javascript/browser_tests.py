@@ -111,6 +111,16 @@ testNoOptions: function () {
   jsUnity.assertions.assertEqual(actual, 'Hello World');
 }
 """,
+"""
+testStrFormatter: function () {
+  var t = jsontemplate.Template('num: {one}');
+  var actual = t.expand({'one': 1});
+  jsUnity.assertions.assertEqual(actual, 'num: 1');
+
+  var actual = t.expand({'one': {}});
+  jsUnity.assertions.assertEqual(actual, 'num: [object Object]');
+}
+""",
     ]
 
 class TestGenerator(testy.StandardVerifier):
