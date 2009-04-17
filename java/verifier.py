@@ -33,6 +33,8 @@ class JavaVerifier(testy.StandardVerifier):
   Verifies template behavior by running the java test class.
   """
 
+  LABELS = ['javascript']
+
   def __init__(self, java_interpreter_path, impl_path, test_classes_path):
     testy.StandardVerifier.__init__(self)
     self.java_interpreter_path = java_interpreter_path

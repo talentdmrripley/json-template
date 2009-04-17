@@ -59,6 +59,8 @@ class V8ShellVerifier(testy.StandardVerifier):
   the v8 source tree.
   """
 
+  LABELS = ['javascript']
+
   def __init__(self, v8_path, script_path, helpers_path):
     testy.StandardVerifier.__init__(self)
     self.v8_path = v8_path
@@ -115,8 +117,8 @@ class V8ShellVerifier(testy.StandardVerifier):
         exception = line[len('EXCEPTION: '):]
 
     # There's no support for anything else in shell.cc
-    self.Equal(exit_code, 0)  
-    self.Equal(stderr, '')  
+    self.Equal(exit_code, 0)
+    self.Equal(stderr, '')
 
     return records.Record(
         stderr=stderr, stdout=stdout, exit_code=exit_code,

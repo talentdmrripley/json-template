@@ -61,9 +61,9 @@ function HtmlEscape(s) {
 }
 
 function HtmlTagEscape(s) {
-  return s.replace(/&/g,'&amp;').                                         
-           replace(/>/g,'&gt;').                                           
-           replace(/</g,'&lt;').                                           
+  return s.replace(/&/g,'&amp;').
+           replace(/>/g,'&gt;').
+           replace(/</g,'&lt;').
            replace(/"/g,'&quot;');
 }
 
@@ -85,7 +85,7 @@ var DEFAULT_FORMATTERS = {
 // Template implementation
 //
 
-function _ScopedContext(context) {
+function _ScopedContext(context, undefined_str) {
   // The stack contains:
   //   The current context (an object).
   //   An iteration index.  -1 means we're NOT iterating.
@@ -154,7 +154,13 @@ function _ScopedContext(context) {
           }
         }
         if (i <= -1) {
-          throw {name: 'UndefinedVariable', message: name + ' is not defined'};
+          if (undefined_str === undefined) {
+            throw {
+              name: 'UndefinedVariable', message: name + ' is not defined'
+            };
+          } else {
+            return undefined_str;
+          }
         }
       }
     }
@@ -474,13 +480,14 @@ function _Compile(template_str, options) {
 
 
 function Template(template_str, options) {
+  // options.undefined_str can either be a string or undefined
+
   var program = _Compile(template_str, options || {});
 
   return  {
     render: function(data_dict, callback) {
-      log('rendering ' + repr(data_dict));
-      //log('statements ' + program.Statements());
-      _Execute(program.Statements(), _ScopedContext(data_dict), callback);
+      var context = _ScopedContext(data_dict, options.undefined_str);
+      _Execute(program.Statements(), context, callback);
     },
 
     expand: function(data_dict) {

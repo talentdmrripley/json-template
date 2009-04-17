@@ -100,6 +100,8 @@ _HTML_TEMPLATE = """\
 
 class TestGenerator(testy.StandardVerifier):
 
+  LABELS = ['javascript']
+
   def __init__(self):
     testy.StandardVerifier.__init__(self)
 
