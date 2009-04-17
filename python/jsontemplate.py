@@ -203,8 +203,14 @@ class _ScopedContext(object):
   If the variable isn't in the current context, then we search up the stack.
   """
 
-  def __init__(self, context):
+  def __init__(self, context, undefined_str):
+    """
+    Args:
+      context: The root context
+      undefined_str: See Template() constructor.
+    """
     self.stack = [context]
+    self.undefined_str = undefined_str
 
   def PushSection(self, name):
     new_context = self.stack[-1].get(name)
@@ -246,7 +252,10 @@ class _ScopedContext(object):
           return value
 
       if i <= -1:  # Couldn't find it anywhere
-        raise UndefinedVariable('%r is not defined' % name)
+        if self.undefined_str is None:
+          raise UndefinedVariable('%r is not defined' % name)
+        else:
+          return self.undefined_str
 
 
 def _ToString(x):
@@ -547,7 +556,7 @@ def CompileTemplate(
 
 _OPTION_RE = re.compile(r'^([a-zA-Z\-]+):\s*(.*)')
 # TODO: whitespace mode, etc.
-_OPTION_NAMES = ['meta', 'format-char', 'default-formatter']
+_OPTION_NAMES = ['meta', 'format-char', 'default-formatter', 'undefined-str']
 
 
 def FromString(s, more_formatters=lambda x: None, _constructor=None):
@@ -632,15 +641,23 @@ class Template(object):
   files, etc.
   """
 
-  def __init__(self, template_str, builder=None, **compile_options):
+  def __init__(self, template_str, builder=None, undefined_str=None,
+               **compile_options):
     """
     Args:
       template_str: The template string.
+      undefined_str: A string to appear in the output when a variable to be
+          substituted is missing.  If None, UndefinedVariable is raised.
+          (Note: This is not really a compilation option, because affects
+          template expansion rather than compilation.  Nonetheless we make it a
+          constructor argument rather than an .expand() argument for
+          simplicity.)
 
     It also accepts all the compile options that CompileTemplate does.
     """
     self._program = CompileTemplate(
         template_str, builder=builder, **compile_options)
+    self.undefined_str = undefined_str
 
   #
   # Public API
@@ -656,7 +673,8 @@ class Template(object):
     Example: You can pass 'f.write' as the callback to write directly to a file
     handle.
     """
-    _Execute(self._program.Statements(), _ScopedContext(data_dict), callback)
+    context = _ScopedContext(data_dict, self.undefined_str)
+    _Execute(self._program.Statements(), context, callback)
 
   def expand(self, *args, **kwargs):
     """Expands the template with the given data dictionary, returning a string.

@@ -228,6 +228,15 @@ class JsonTemplateTest(testy.PyUnitCompatibleTest):
     t = testy.ClassDef('Where is your {name|html}')
     self.verify.EvaluationError(jsontemplate.UndefinedVariable, t, {})
 
+  # TODO: Implement in Java and JavaScript
+  @testy.only_verify('python')
+  def testUndefinedVariableUsesIfMissing(self):
+    t = testy.ClassDef('Where is your {name|html}', undefined_str='')
+    self.verify.Expansion(t, {}, 'Where is your ')
+
+    t = testy.ClassDef('Where is your {name|html}', undefined_str='???')
+    self.verify.Expansion(t, {}, 'Where is your ???')
+
   def testFormattingCharacter(self):
     t = testy.ClassDef('Where is your {name:html}', format_char=':')
     self.verify.Expansion(t, {'name': '<head>'}, 'Where is your &lt;head&gt;')
