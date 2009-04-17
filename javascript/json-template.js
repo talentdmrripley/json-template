@@ -481,8 +481,9 @@ function _Compile(template_str, options) {
 
 function Template(template_str, options) {
   // options.undefined_str can either be a string or undefined
+  options = options || {};
 
-  var program = _Compile(template_str, options || {});
+  var program = _Compile(template_str, options);
 
   return  {
     render: function(data_dict, callback) {

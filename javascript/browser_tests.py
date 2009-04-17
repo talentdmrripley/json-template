@@ -88,7 +88,12 @@ _HTML_TEMPLATE = """\
             jsUnity.assertions.assertEqual(actual, expected);
           }
         [.alternates with],[.end]
-      });           
+
+      [.repeated section more-tests]
+        ,[@]
+      [.end]
+
+      });
     </script>
   </head>
   <body onload="">
@@ -97,6 +102,16 @@ _HTML_TEMPLATE = """\
 </html>
 """
 
+MORE_TESTS = [
+"""
+// for fixing bug
+testNoOptions: function () {
+  var t = jsontemplate.Template('Hello {name}');
+  var actual = t.expand({'name': 'World'});
+  jsUnity.assertions.assertEqual(actual, 'Hello World');
+}
+""",
+    ]
 
 class TestGenerator(testy.StandardVerifier):
 
@@ -126,7 +141,8 @@ class TestGenerator(testy.StandardVerifier):
         # TODO: Automatic way of inserting class name
         'test-name': 'JSON Template',
         'timestamp': datetime.datetime.now().isoformat(),
-        'test-bodies': self.assertions
+        'test-bodies': self.assertions,
+        'more-tests': MORE_TESTS,
         }
 
     self.js_template.render(data, html_file.write)
