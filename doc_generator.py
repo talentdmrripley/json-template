@@ -113,8 +113,6 @@ _JS_EXAMPLE = """\
     <h4>Here is the same example rendered in JavaScript.  <b>View Source</b> to
     see how it works.</h4>
     <div id="replace"></div>
-    <p><i>(Um, for some reason this example doesn't work in IE6, but does in
-    Firefox and Chrome.  Help with that is appreciated...)</i></p>
   </body>
 </html>
 """
