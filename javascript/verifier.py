@@ -92,29 +92,33 @@ class V8ShellVerifier(testy.StandardVerifier):
 
     argv = [
         self.v8_path, self.script_path, self.helpers_path, temp_js_file.name]
+    # TODO: Use a  log
     print argv
+
     p = subprocess.Popen(
         argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         universal_newlines=True)  # for Windows too
 
-    stdout = p.stdout.read()
-    print stdout
+    # Read the lines one at a time.  This makes it possible to see if we have an
+    # infinite loop.
+    exception = None
+    stdout_lines = []
+    for line in p.stdout:
+      if line.startswith('V8LOG: '):
+        sys.stdout.write(line)
+      elif line.startswith('EXCEPTION: '):
+        exception = line[len('EXCEPTION: '):]
+      else:
+        stdout_lines.append(line)
+
     stderr = p.stderr.read()
+
     p.stdout.close()
     p.stderr.close()
     exit_code = p.wait()
     temp_js_file.close()  # deletes the file
 
-    # Important: keep line breaks
-    lines = stdout.splitlines(True)
-    # Filter out log messages
-    stdout = ''.join(
-        line for line in lines if not line.startswith('V8LOG: '))
-
-    exception = None
-    for line in lines:
-      if line.startswith('EXCEPTION: '):
-        exception = line[len('EXCEPTION: '):]
+    stdout = ''.join(stdout_lines)
 
     # There's no support for anything else in shell.cc
     self.Equal(exit_code, 0)
@@ -143,12 +147,14 @@ class V8ShellVerifier(testy.StandardVerifier):
     # whitespace, and we can use the same tests.
     self.LongStringsEqual(
         expected, result.stdout, ignore_all_whitespace=True)
+    #self.LongStringsEqual(
+    #    expected, result.stdout)
 
   def EvaluationError(self, exception, template_def, data_dict):
     result = self._RunScript(template_def, data_dict)
-    self.In('EXCEPTION: ' + exception.__name__, result.stdout)
+    self.In(exception.__name__, result.exception)
 
   def CompilationError(self, exception, *args, **kwargs):
     template_def = testy.ClassDef(*args, **kwargs)
     result = self._RunScript(template_def, {})
-    self.In('EXCEPTION: ' + exception.__name__, result.stdout)
+    self.In(exception.__name__, result.exception)

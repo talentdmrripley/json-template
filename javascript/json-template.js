@@ -47,7 +47,7 @@ function _MakeTokenRegex(meta_left, meta_right) {
       META_ESCAPE[meta_left] +
       '.+?' +
       META_ESCAPE[meta_right] +
-      '\n?)');
+      '\n?)', 'g');  // global for use with .exec()
 }
 
 // 
@@ -350,124 +350,132 @@ function _Compile(template_str, options) {
   var meta_right = meta.substring(n/2, n);
 
   var token_re = _MakeTokenRegex(meta_left, meta_right);
-  var tokens = template_str.split(token_re);
   var current_block = _Section();
   var stack = [current_block];
 
   var strip_num = meta_left.length;  // assume they're the same length
 
-  for (var i = 0; i < tokens.length; i++) {
-    var token = tokens[i];
-    var interpret_token = (i % 2 == 1);
+  var token_match;
+  var last_index = 0;
 
-    log('i: '+i);
+  while (true) {
+    token_match = token_re.exec(template_str);
+    log('match:', token_match);
+    if (token_match === null) {
+      break;
+    } else {
+      var token = token_match[0];
+    }
+    log('last_index: '+ last_index);
+    log('token_match.index: '+ token_match.index);
+
+    // Add the previous literal to the program
+    if (token_match.index > last_index) {
+      var tok = template_str.slice(last_index, token_match.index);
+      current_block.Append(tok);
+      log('tok: "'+ tok+'"');
+    }
+    last_index = token_re.lastIndex;
+
     log('token0: "'+ token+'"');
 
-    if (interpret_token) {
-      var had_newline = false;
-      if (token.slice(-1) == '\n') {
-        token = token.slice(null, -1);
-        had_newline = true;
+    var had_newline = false;
+    if (token.slice(-1) == '\n') {
+      token = token.slice(null, -1);
+      had_newline = true;
+    }
+
+    token = token.slice(strip_num, -strip_num);
+
+    if (token.charAt(0) == '#') {
+      continue;  // comment
+    }
+
+    if (token.charAt(0) == '.') {  // Keyword
+      token = token.substring(1, token.length);
+
+      var literal = {
+          'meta-left': meta_left,
+          'meta-right': meta_right,
+          'space': ' '
+          }[token];
+
+      if (literal !== undefined) {
+        current_block.Append(literal);
+        continue;
       }
 
-      token = token.substr(0 + strip_num, token.length - 1 - strip_num);
-      log('token2: "'+ token+'"');
+      var section_match = token.match(_SECTION_RE);
 
-      if (token[0] == '#') {
-        continue;  // comment
+      if (section_match) {
+        var repeated = section_match[1];
+        var section_name = section_match[3];
+        var func = repeated ? _DoRepeatedSection : _DoSection;
+        log('repeated ' + repeated + ' section_name ' + section_name);
+
+        var new_block = _Section(section_name);
+        current_block.Append([func, new_block]);
+        stack.push(new_block);
+        current_block = new_block;
+        continue;
       }
 
-      if (token[0] == '.') {  // Keyword
-        token = token.substring(1, token.length);
-        log('token3: "'+ token+'"');
-
-        var literal = {
-            'meta-left': meta_left,
-            'meta-right': meta_right,
-            'space': ' '
-            }[token];
-
-        if (literal !== undefined) {
-          current_block.Append(literal);
-          continue;
-        }
-
-        var match = token.match(_SECTION_RE);
-
-        if (match) {
-          var repeated = match[1];
-          var section_name = match[3];
-          var func = repeated ? _DoRepeatedSection : _DoSection;
-          log('repeated ' + repeated + ' section_name ' + section_name);
-
-          var new_block = _Section(section_name);
-          current_block.Append([func, new_block]);
-          stack.push(new_block);
-          current_block = new_block;
-          continue;
-        }
-
-        if (token == 'alternates with') {
-          current_block.NewClause('alternate');
-          continue;
-        }
-
-        if (token == 'or') {
-          current_block.NewClause('or');
-          continue;
-        }
-
-        if (token == 'end') {
-          // End the block
-          stack.pop();
-          if (stack.length > 0) {
-            current_block = stack[stack.length-1];
-            //log('STACK '+showArray(stack));
-            //log('end BLOCK '+showArray(current_block.Statements()));
-          } else {
-            throw {
-              name: 'TemplateSyntaxError',
-              message: 'Got too many {end} statements'
-            };
-          }
-          continue;
-        }
+      if (token == 'alternates with') {
+        current_block.NewClause('alternate');
+        continue;
       }
 
-      // A variable substitution
-      var parts = token.split(format_char);
-      var formatters;
-      var name;
-      if (parts.length == 1) {
-        if (default_formatter === null) {
-            throw {
-              name: 'MissingFormatter',
-              message: 'This template requires explicit formatters.'
-            };
-        }
-        // If no formatter is specified, the default is the 'str' formatter,
-        // which the user can define however they desire.
-        formatters = [GetFormatter(default_formatter)];
-        name = token;
-      } else {
-        formatters = [];
-        for (var j=1; j<parts.length; j++) {
-          formatters.push(GetFormatter(parts[j]));
-        }
-        name = parts[0];
-      }
-      current_block.Append(
-          [_DoSubstitute, { name: name, formatters: formatters}]);
-      if (had_newline) {
-        current_block.Append('\n');
+      if (token == 'or') {
+        current_block.NewClause('or');
+        continue;
       }
 
-    } else {
-      if (token) {
-        current_block.Append(token);
+      if (token == 'end') {
+        // End the block
+        stack.pop();
+        if (stack.length > 0) {
+          current_block = stack[stack.length-1];
+        } else {
+          throw {
+            name: 'TemplateSyntaxError',
+            message: 'Got too many {end} statements'
+          };
+        }
+        continue;
       }
     }
+
+    // A variable substitution
+    var parts = token.split(format_char);
+    var formatters;
+    var name;
+    if (parts.length == 1) {
+      if (default_formatter === null) {
+          throw {
+            name: 'MissingFormatter',
+            message: 'This template requires explicit formatters.'
+          };
+      }
+      // If no formatter is specified, the default is the 'str' formatter,
+      // which the user can define however they desire.
+      formatters = [GetFormatter(default_formatter)];
+      name = token;
+    } else {
+      formatters = [];
+      for (var j=1; j<parts.length; j++) {
+        formatters.push(GetFormatter(parts[j]));
+      }
+      name = parts[0];
+    }
+    current_block.Append(
+        [_DoSubstitute, { name: name, formatters: formatters}]);
+    if (had_newline) {
+      current_block.Append('\n');
+    }
   }
+
+  // Add the trailing literal
+  current_block.Append(template_str.slice(last_index));
 
   if (stack.length !== 1) {
     throw {
