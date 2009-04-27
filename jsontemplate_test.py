@@ -43,6 +43,7 @@ from javascript import verifier as javascript_verifier
 from javascript import browser_tests
 from python import verifier as python_verifier
 from java import verifier as java_verifier
+from php import verifier as php_verifier
 import doc_generator
 import base_verifier
 
@@ -947,6 +948,7 @@ def main(argv):
       this_dir, 'javascript', 'v8shell', 'linux-i686', 'shell')
   default_java = os.path.join(
       os.getenv('JAVA_HOME', ''), 'bin', 'java')
+  default_php = os.path.join('/','usr', 'bin', 'php')
 
   run_params = testy.TEST_RUN_PARAMS + [
       params.OptionalString(
@@ -955,10 +957,14 @@ def main(argv):
       params.OptionalString(
           'java-launcher', default=default_java,
           help='Location of the Java launcher to run Java tests'),
+      params.OptionalString(
+          'php-launcher', default=default_php,
+          help='Location of the PHP launcher to run PHP tests'),
 
       # Until we have better test filtering:
       params.OptionalBoolean('python', help='Run Python tests'),
       params.OptionalBoolean('java', help='Run Java tests'),
+      params.OptionalBoolean('php', help='Run PHP tests'),
       params.OptionalBoolean('javascript', help='Run JavaScript tests'),
 
       params.OptionalString(
@@ -989,6 +995,9 @@ def main(argv):
   jv_verifier = java_verifier.JavaVerifier(
       options.java_launcher, java_impl, java_test_classes)
 
+  php_impl = os.path.join(this_dir, 'php', 'jsontemplate.php')
+  ph_verifier = php_verifier.PhpVerifier(
+      options.php_launcher, php_impl)
 
   filt = testy.MakeTestClassFilter(label='multilanguage')
   multi_tests = testy.GetTestClasses(__import__(__name__), filt)
@@ -1009,6 +1018,7 @@ def main(argv):
     tests.extend(m(py_verifier) for m in multi_tests)
     tests.extend(m(js_verifier) for m in multi_tests)
     tests.extend(m(jv_verifier) for m in multi_tests)
+    tests.extend(m(ph_verifier) for m in multi_tests)
 
   elif options.python:
     tests = [m(py_verifier) for m in multi_tests]
@@ -1018,6 +1028,10 @@ def main(argv):
 
   elif options.java:
     tests = [m(jv_verifier) for m in multi_tests]
+
+  elif options.php:
+    tests = [m(ph_verifier) for m in multi_tests]
+
 
   elif options.doc_output_dir:
     # Generates the HTML fragments.
