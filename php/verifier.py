@@ -38,9 +38,10 @@ class PhpVerifier(testy.StandardVerifier):
     self.php_interpreter_path = php_interpreter_path
     self.script_path = script_path
 
-  def setUpOnce(self):
+  def CheckIfRunnable(self):
     if not os.path.exists(self.php_interpreter_path):
-      raise testy.TestPrequisiteMissing('%r is missing' % self.php_interpreter_path)
+      raise testy.TestPrequisiteMissing(
+          '%r is missing' % self.php_interpreter_path)
 
   def _RunScript(self, template_def, dictionary):
     template_str = template_def.args[0]

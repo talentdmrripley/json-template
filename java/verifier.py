@@ -41,7 +41,7 @@ class JavaVerifier(testy.StandardVerifier):
     self.impl_path = impl_path
     self.test_classes_path = test_classes_path
 
-  def setUpOnce(self):
+  def CheckIfRunnable(self):
     if not os.path.exists(self.java_interpreter_path):
       raise testy.TestPrequisiteMissing(
           '%r is missing' % self.java_interpreter_path)
