@@ -32,6 +32,39 @@ from pan.core import records
 from pan.test import testy
 
 import base_verifier
+from python import jsontemplate  # module under *direct* test
+from python import formatters
+
+
+class InternalTemplateVerifier(base_verifier.JsonTemplateVerifier):
+  """Verifies template behavior in-process."""
+
+  LABELS = ['python']
+
+  def Expansion(
+      self, template_def, dictionary, expected, ignore_whitespace=False,
+      ignore_all_whitespace=False, all_formatters=False):
+    """
+    Args:
+      template_def: testy.ClassDef instance.
+    """
+    if all_formatters:
+      template_def.kwargs['more_formatters'] = formatters.PythonPercentFormat
+
+    template = jsontemplate.Template(*template_def.args, **template_def.kwargs)
+
+    # TODO: Consider reversing left and right here and throughout
+    left = template.expand(dictionary)
+    right = expected
+
+    self.LongStringsEqual(left, right, ignore_whitespace=ignore_whitespace)
+
+  def EvaluationError(self, exception, template_def, data_dict):
+    template = jsontemplate.Template(*template_def.args, **template_def.kwargs)
+    self.Raises(exception, template.expand, data_dict)
+
+  def CompilationError(self, exception, *args, **kwargs):
+    self.Raises(exception, jsontemplate.Template, *args, **kwargs)
 
 
 class ExternalVerifier(base_verifier.JsonTemplateVerifier):

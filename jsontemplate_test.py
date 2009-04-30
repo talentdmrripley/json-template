@@ -35,7 +35,6 @@ from pan.core import params
 from pan.core import json
 from pan.test import testy
 
-from python import formatters
 from python import jsontemplate  # module under *direct* test
 
 # External verifiers:
@@ -133,44 +132,15 @@ Hello <there>
     self.verify.Equal(t.expand({'dude': 'Andy'}), 'Hello Andy')
 
 
-class _InternalTemplateVerifier(base_verifier.JsonTemplateVerifier):
-  """Verifies template behavior in-process."""
-
-  LABELS = ['python']
-
-  def Expansion(
-      self, template_def, dictionary, expected, ignore_whitespace=False,
-      ignore_all_whitespace=False, all_formatters=False):
-    """
-    Args:
-      template_def: testy.ClassDef instance.
-    """
-    if all_formatters:
-      template_def.kwargs['more_formatters'] = formatters.PythonPercentFormat
-
-    template = jsontemplate.Template(*template_def.args, **template_def.kwargs)
-
-    # TODO: Consider reversing left and right here and throughout
-    left = template.expand(dictionary)
-    right = expected
-
-    self.LongStringsEqual(left, right, ignore_whitespace=ignore_whitespace)
-
-  def EvaluationError(self, exception, template_def, data_dict):
-    template = jsontemplate.Template(*template_def.args, **template_def.kwargs)
-    self.Raises(exception, template.expand, data_dict)
-
-  def CompilationError(self, exception, *args, **kwargs):
-    self.Raises(exception, jsontemplate.Template, *args, **kwargs)
-
-
 class JsonTemplateTest(testy.PyUnitCompatibleTest):
   """Language-independent tests for JSON Template."""
 
   LABELS = ['multilanguage']
 
   # TODO: This isn't sed
-  VERIFIERS = [_InternalTemplateVerifier, python_verifier.ExternalVerifier]
+  VERIFIERS = [
+      python_verifier.InternalTemplateVerifier,
+      python_verifier.ExternalVerifier]
 
   def __init__(self, verifier):
     testy.PyUnitCompatibleTest.__init__(self, verifier)
@@ -737,7 +707,7 @@ class AllFormattersTest(testy.Test):
 class InternalTemplateTest(testy.PyUnitCompatibleTest):
   """Tests that can only be run internally."""
 
-  VERIFIERS = [_InternalTemplateVerifier]
+  VERIFIERS = [python_verifier.InternalTemplateVerifier]
 
   def testFormatterRaisesException(self):
 
@@ -988,7 +958,7 @@ def main(argv):
 
   options = cmdapp.ParseArgv(argv, run_params)
 
-  int_py_verifier = _InternalTemplateVerifier()
+  int_py_verifier = python_verifier.InternalTemplateVerifier()
 
   python_impl = os.path.join(this_dir, 'python', 'expand.py')
   py_verifier = python_verifier.ExternalVerifier(python_impl)
