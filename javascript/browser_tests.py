@@ -177,7 +177,8 @@ class TestGenerator(testy.StandardVerifier):
     self.counter = 1
 
   def Expansion(
-      self, template_def, dictionary, expected, ignore_whitespace=False):
+      self, template_def, dictionary, expected, ignore_whitespace=False,
+      ignore_all_whitespace=False):
     """
     Args:
       template_def: ClassDef instance that defines a Template.

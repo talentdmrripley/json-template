@@ -129,7 +129,8 @@ class V8ShellVerifier(testy.StandardVerifier):
         exception=exception)
 
   def Expansion(
-      self, template_def, dictionary, expected, ignore_whitespace=False):
+      self, template_def, dictionary, expected, ignore_whitespace=False,
+      ignore_all_whitespace=False):
     """
     Args:
       template_def: _TemplateDef instance.
@@ -146,9 +147,8 @@ class V8ShellVerifier(testy.StandardVerifier):
     # JavaScript only implement whitespace_mode='any' now, so just ignore all
     # whitespace, and we can use the same tests.
     self.LongStringsEqual(
-        expected, result.stdout, ignore_all_whitespace=True)
-    #self.LongStringsEqual(
-    #    expected, result.stdout)
+        expected, result.stdout, ignore_whitespace=ignore_whitespace,
+        ignore_all_whitespace=ignore_all_whitespace)
 
   def EvaluationError(self, exception, template_def, data_dict):
     result = self._RunScript(template_def, data_dict)

@@ -14,13 +14,14 @@ class JsonTemplateVerifier(testy.StandardVerifier):
 
   def Expansion(
       self, template_def, dictionary, expected, ignore_whitespace=False,
-      all_formatters=False):
+      ignore_all_whitespace=False, all_formatters=False):
     """Verifies a normal expansion."""
     raise NotImplementedError
 
   def ExpansionWithAllFormatters(
-      self, template_def, dictionary, expected, ignore_whitespace=False):
+      self, template_def, dictionary, expected):
     """Verifies an expansion with all formatters implemented in the language."""
+    self.Expansion(template_def, dictionary, expected, all_formatters=True)
 
   def CompilationError(self, exception, *args, **kwargs):
     """Verifiers an error that occurs when compiling the template."""

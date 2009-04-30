@@ -76,7 +76,8 @@ class PhpVerifier(testy.StandardVerifier):
         exception=exception)
 
   def Expansion(
-      self, template_def, dictionary, expected, ignore_whitespace=False):
+      self, template_def, dictionary, expected, ignore_whitespace=False,
+      ignore_all_whitespace=False):
     """
     Args:
       template_def: _TemplateDef instance.
@@ -84,8 +85,14 @@ class PhpVerifier(testy.StandardVerifier):
     result = self._RunScript(template_def, dictionary)
 
     self.Equal(result.exit_code, 0, 'stderr: %r' % result.stderr)
+
+    # In PHP, I think there are some number-of-newline differences that should
+    # be cleaned up (i.e. not just leading/trailing whitespace).
     self.LongStringsEqual(
         expected, result.stdout, ignore_all_whitespace=True)
+    #self.LongStringsEqual(
+    #    expected, result.stdout, ignore_whitespace=ignore_whitespace,
+    #    ignore_all_whitespace=ignore_all_whitespace)
 
   def EvaluationError(self, exception, template_def, data_dict):
     result = self._RunScript(template_def, data_dict)

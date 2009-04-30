@@ -78,7 +78,7 @@ class ExternalVerifier(base_verifier.JsonTemplateVerifier):
 
   def Expansion(
       self, template_def, dictionary, expected, ignore_whitespace=False,
-      all_formatters=False):
+      ignore_all_whitespace=False, all_formatters=False):
     """
     Args:
       template_def: ClassDef instance that defines a Template.
@@ -89,7 +89,8 @@ class ExternalVerifier(base_verifier.JsonTemplateVerifier):
 
     self.Equal(result.exit_code, 0, 'stderr: %r' % result.stderr)
     self.LongStringsEqual(
-        result.stdout, expected, ignore_whitespace=ignore_whitespace)
+        result.stdout, expected, ignore_whitespace=ignore_whitespace,
+        ignore_all_whitespace=ignore_all_whitespace)
 
   def EvaluationError(self, exception, template_def, data_dict):
     template_str = self._MakeTemplateStr(template_def)

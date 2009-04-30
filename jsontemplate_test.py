@@ -140,7 +140,7 @@ class _InternalTemplateVerifier(base_verifier.JsonTemplateVerifier):
 
   def Expansion(
       self, template_def, dictionary, expected, ignore_whitespace=False,
-      all_formatters=False):
+      ignore_all_whitespace=False, all_formatters=False):
     """
     Args:
       template_def: testy.ClassDef instance.
@@ -195,6 +195,13 @@ class JsonTemplateTest(testy.PyUnitCompatibleTest):
   def testSpace(self):
     t = testy.ClassDef('{.space}{.space}')
     self.verify.Expansion(t, {}, '  ')
+
+  def testWhitespace(self):
+    t = testy.ClassDef('{.tab}{.tab}')
+    self.verify.Expansion(t, {}, '\t\t')
+
+    t = testy.ClassDef('Line{.newline}')
+    self.verify.Expansion(t, {}, 'Line\n')
 
   def testOnlyDeclaration(self):
     t = testy.ClassDef('{# Comment}')
@@ -367,7 +374,7 @@ People
 ---------
   Andy: jerk cool 
   Bob: nice mean fun 
-""")
+""", ignore_all_whitespace=True)
 
   def testRepeatedSectionAtRoot(self):
     # This tests expansion of a JSON *list* -- no dictionary in sight
@@ -439,8 +446,9 @@ There are 2 dudes here:
     Bob 25
   Footer
 """
-    self.verify.Expansion(t, d, expected)
-    #return
+    # Relies on smart-indent behavior; ignore whitespace for some
+    # implementations
+    self.verify.Expansion(t, d, expected, ignore_all_whitespace=True)
 
     self.verify.Expansion(t, {'header': 'People'}, """
 People
@@ -691,7 +699,7 @@ People
   Results.
     1. one
     2. two
-""")
+""", ignore_all_whitespace=True)
 
     d = { 'title-results': [] }
 
@@ -937,7 +945,7 @@ class DocumentationTest(testy.Test):
   </table>
 """
 
-    self.verify.Expansion(t, d, expected)
+    self.verify.Expansion(t, d, expected, ignore_all_whitespace=True)
 
 
 def main(argv):

@@ -397,7 +397,9 @@ function _Compile(template_str, options) {
       var literal = {
           'meta-left': meta_left,
           'meta-right': meta_right,
-          'space': ' '
+          'space': ' ',
+          'tab': '\t',
+          'newline': '\n'
           }[token];
 
       if (literal !== undefined) {

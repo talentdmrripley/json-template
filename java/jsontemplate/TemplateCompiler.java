@@ -50,6 +50,8 @@ class TemplateCompiler {
 		keywordLookup.put("meta-left", metaLeft);
 		keywordLookup.put("meta-right", metaRight);
 		keywordLookup.put("space", " ");
+		keywordLookup.put("tab", "\t");
+		keywordLookup.put("newline", "\n");
 		// and this pattern for format splitting
 		Pattern formatSplitRe = Pattern.compile(Pattern.quote("" + formatChar));
 

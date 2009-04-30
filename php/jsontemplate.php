@@ -645,6 +645,12 @@ class JsonTemplateModule
 					case 'space':
 						$literal = ' ';
 						break;
+					case 'tab':
+						$literal = "\t";
+						break;
+					case 'newline':
+						$literal = "\n";
+						break;
 					}
 				}
 				if($literal){

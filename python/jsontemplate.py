@@ -440,6 +440,8 @@ def _Tokenize(template_str, meta_left, meta_right):
               '.meta-left': meta_left,
               '.meta-right': meta_right,
               '.space': ' ',
+              '.tab': '\t',
+              '.newline': '\n',
               }.get(token)
 
           if literal is not None:
