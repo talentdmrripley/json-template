@@ -16,6 +16,7 @@ if __name__ == '__main__':
 from python import formatters  # module under test
 from python import jsontemplate
 
+from pan.core import util
 from pan.test import testy
 
 
@@ -38,6 +39,9 @@ class FormattersTest(testy.Test):
     # Constants used throughout this Test
     self.printf_template = '{a|printf %.2f}'
     self.include_template = '{profile|template-file include-test.jsont}'
+
+    directory = util.PathRelativeToExecutable('testdata/')
+    self.include_formatter = formatters.TemplateFileInclude(directory)
 
   def setUp(self):
 
@@ -63,7 +67,7 @@ class FormattersTest(testy.Test):
   def testTemplateInclude(self):
     t = jsontemplate.Template(
         self.include_template,
-        more_formatters=formatters.TemplateFileInclude('testdata/'))
+        more_formatters=self.include_formatter)
 
     d = {'profile': {'name': 'Bob', 'age': 13}}
 
@@ -75,7 +79,7 @@ class FormattersTest(testy.Test):
         {profile1|template-file include-test.jsont}
         {profile2|template-file include-test.jsont}
         """,
-        more_formatters=formatters.TemplateFileInclude('testdata/'))
+        more_formatters=self.include_formatter)
 
     d = {
         'profile1': {'name': 'Bob', 'age': 13},
@@ -92,7 +96,7 @@ class FormattersTest(testy.Test):
   def testLookupChain(self):
     chained = formatters.LookupChain([
         formatters.PythonPercentFormat,
-        formatters.TemplateFileInclude('testdata/'),
+        self.include_formatter,
         ])
 
     # Test that the cases from testPythonPercentFormat and testTemplateInclude
