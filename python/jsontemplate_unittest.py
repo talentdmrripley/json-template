@@ -19,6 +19,93 @@ from python import verifier as python_verifier
 from python import jsontemplate  # module under direct test
 
 
+class TokenizeTest(testy.Test):
+
+  def testMakeTokenRegex(self):
+    token_re = jsontemplate.MakeTokenRegex('[', ']')
+    tokens = token_re.split("""
+[# Comment#]
+
+[# Comment !@#234 with all ...\\\ sorts of bad characters??]
+
+[# Multi ]
+[# Line ]
+[# Comment ]
+text
+[!!]
+text
+
+[foo|fmt]
+[bar|fmt]
+""")
+    self.verify.Equal(len(tokens), 17)
+
+  def testSectionRegex(self):
+
+    # Section names are required
+    self.verify.Equal(
+        jsontemplate._SECTION_RE.match('section'),
+        None)
+    self.verify.Equal(
+        jsontemplate._SECTION_RE.match('repeated section'),
+        None)
+
+    self.verify.Equal(
+        jsontemplate._SECTION_RE.match('section Foo').groups(),
+        (None, 'Foo'))
+    self.verify.Equal(
+        jsontemplate._SECTION_RE.match('repeated section @').groups(),
+        ('repeated', '@'))
+
+
+class FromStringTest(testy.Test):
+
+  def testEmpty(self):
+    s = """\
+Format-Char: |
+Meta: <>
+"""
+    t = jsontemplate.FromString(s, _constructor=testy.ClassDef)
+    self.verify.Equal(t.args[0], '')
+    self.verify.Equal(t.kwargs['meta'], '<>')
+    self.verify.Equal(t.kwargs['format_char'], '|')
+
+    # Empty template
+    t = jsontemplate.FromString('', _constructor=testy.ClassDef)
+    self.verify.Equal(t.args[0], '')
+    self.verify.Equal(t.kwargs.get('meta'), None)
+    self.verify.Equal(t.kwargs.get('format_char'), None)
+
+  def testBadOptions(self):
+    f = """\
+Format-Char: |
+Meta: <>
+BAD STUFF
+"""
+    self.verify.Raises(
+        jsontemplate.CompilationError, jsontemplate.FromString, f)
+
+  def testTemplate(self):
+    f = """\
+format-char: :
+meta: <>
+
+Hello <there>
+"""
+    t = jsontemplate.FromString(f, _constructor=testy.ClassDef)
+    self.verify.Equal(t.args[0], 'Hello <there>\n')
+    self.verify.Equal(t.kwargs['meta'], '<>')
+    self.verify.Equal(t.kwargs['format_char'], ':')
+
+  def testNoOptions(self):
+    # Bug fix
+    f = """Hello {dude}"""
+    t = jsontemplate.FromString(f)
+    self.verify.Equal(t.expand({'dude': 'Andy'}), 'Hello Andy')
+
+
+
+
 class InternalTemplateTest(testy.PyUnitCompatibleTest):
   """Tests that can only be run internally."""
 

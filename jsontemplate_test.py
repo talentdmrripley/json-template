@@ -47,91 +47,6 @@ import doc_generator
 import base_verifier
 
 
-class TokenizeTest(testy.Test):
-
-  def testMakeTokenRegex(self):
-    token_re = jsontemplate.MakeTokenRegex('[', ']')
-    tokens = token_re.split("""
-[# Comment#]
-
-[# Comment !@#234 with all ...\\\ sorts of bad characters??]
-
-[# Multi ]
-[# Line ]
-[# Comment ]
-text
-[!!]
-text
-
-[foo|fmt]
-[bar|fmt]
-""")
-    self.verify.Equal(len(tokens), 17)
-
-  def testSectionRegex(self):
-
-    # Section names are required
-    self.verify.Equal(
-        jsontemplate._SECTION_RE.match('section'),
-        None)
-    self.verify.Equal(
-        jsontemplate._SECTION_RE.match('repeated section'),
-        None)
-
-    self.verify.Equal(
-        jsontemplate._SECTION_RE.match('section Foo').groups(),
-        (None, 'Foo'))
-    self.verify.Equal(
-        jsontemplate._SECTION_RE.match('repeated section @').groups(),
-        ('repeated', '@'))
-
-
-class FromStringTest(testy.Test):
-
-  def testEmpty(self):
-    s = """\
-Format-Char: |
-Meta: <>
-"""
-    t = jsontemplate.FromString(s, _constructor=testy.ClassDef)
-    self.verify.Equal(t.args[0], '')
-    self.verify.Equal(t.kwargs['meta'], '<>')
-    self.verify.Equal(t.kwargs['format_char'], '|')
-
-    # Empty template
-    t = jsontemplate.FromString('', _constructor=testy.ClassDef)
-    self.verify.Equal(t.args[0], '')
-    self.verify.Equal(t.kwargs.get('meta'), None)
-    self.verify.Equal(t.kwargs.get('format_char'), None)
-
-  def testBadOptions(self):
-    f = """\
-Format-Char: |
-Meta: <>
-BAD STUFF
-"""
-    self.verify.Raises(
-        jsontemplate.CompilationError, jsontemplate.FromString, f)
-
-  def testTemplate(self):
-    f = """\
-format-char: :
-meta: <>
-
-Hello <there>
-"""
-    t = jsontemplate.FromString(f, _constructor=testy.ClassDef)
-    self.verify.Equal(t.args[0], 'Hello <there>\n')
-    self.verify.Equal(t.kwargs['meta'], '<>')
-    self.verify.Equal(t.kwargs['format_char'], ':')
-
-  def testNoOptions(self):
-    # Bug fix
-    f = """Hello {dude}"""
-    t = jsontemplate.FromString(f)
-    self.verify.Equal(t.expand({'dude': 'Andy'}), 'Hello Andy')
-
-
 class JsonTemplateTest(testy.PyUnitCompatibleTest):
   """Language-independent tests for JSON Template."""
 
@@ -835,14 +750,7 @@ def main(argv):
   filt = testy.MakeTestClassFilter(label='multilanguage')
   multi_tests = testy.GetTestClasses(__import__(__name__), filt)
 
-  internal_tests = [
-      # Things we can't test externally
-      TokenizeTest(),
-      FromStringTest(),
-      ]
-
-  # Also run the internal version of all the multilanguage tests
-  internal_tests.extend(m(int_py_verifier) for m in multi_tests)
+  internal_tests = [m(int_py_verifier) for m in multi_tests]
 
   # External versions
   if options.all_tests:
@@ -863,7 +771,6 @@ def main(argv):
 
   elif options.php:
     tests = [m(ph_verifier) for m in multi_tests]
-
 
   elif options.doc_output_dir:
     # Generates the HTML fragments.
