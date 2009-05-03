@@ -167,7 +167,7 @@ class JsonTemplateTest(testy.PyUnitCompatibleTest):
   def testSimpleSection(self):
     # Has some newlines too
     t = testy.ClassDef(
-      B("""
+        B("""
         {.section is-new}
           Hello there
           New since {date}!
@@ -180,20 +180,21 @@ class JsonTemplateTest(testy.PyUnitCompatibleTest):
     d = {'is-new': {'date': 'Monday'}}
 
     self.verify.Expansion(t, d,
-      B("""
+        B("""
           Hello there
           New since Monday!
           Monday
         """))
 
   def testRepeatedSection(self):
-    t = testy.ClassDef("""
-[header]
----------
-[.repeated section people]
-  [name] [age]
-[.end]
-""", meta='[]')
+    t = testy.ClassDef(
+        B("""
+        [header]
+        ---------
+        [.repeated section people]
+          [name] [age]
+        [.end]
+        """), meta='[]')
 
     d = {
         'header': 'People',
@@ -203,25 +204,24 @@ class JsonTemplateTest(testy.PyUnitCompatibleTest):
             ],
         }
 
-    self.verify.Expansion(t, d, """
-People
----------
-  Andy 20
-  Bob 25
-""")
+    self.verify.Expansion(t, d, B("""
+        People
+        ---------
+          Andy 20
+          Bob 25
+        """))
 
     # Now test a missing section
-
-    self.verify.Expansion(t, {'header': 'Header'}, """
-Header
----------
-""")
+    self.verify.Expansion(t, {'header': 'Header'}, B("""
+        Header
+        ---------
+        """))
 
     # people=None is the same
-    self.verify.Expansion(t, {'header': 'Header', 'people': None}, """
-Header
----------
-""")
+    self.verify.Expansion(t, {'header': 'Header', 'people': None}, B("""
+        Header
+        ---------
+        """))
 
   def testRepeatedSectionWithDot(self):
     t = testy.ClassDef("""
