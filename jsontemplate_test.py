@@ -33,6 +33,7 @@ if __name__ == '__main__':
 from pan.core import cmdapp
 from pan.core import params
 from pan.core import json
+from pan.core import util
 from pan.test import testy
 
 from python import jsontemplate  # module under *direct* test
@@ -45,6 +46,10 @@ from java import verifier as java_verifier
 from php import verifier as php_verifier
 import doc_generator
 import base_verifier
+
+
+# This is for making multiline strings look nicer.  Strips leading indentation.
+B = util.BlockStr
 
 
 class JsonTemplateTest(testy.PyUnitCompatibleTest):
@@ -161,19 +166,25 @@ class JsonTemplateTest(testy.PyUnitCompatibleTest):
 
   def testSimpleSection(self):
     # Has some newlines too
-    t = testy.ClassDef("""\
-{.section is-new}
-  Hello there
-  New since {date}!
-  {date}
-{.end}""")
+    t = testy.ClassDef(
+      B("""
+        {.section is-new}
+          Hello there
+          New since {date}!
+          {date}
+        {.end}
+        """))
+
     self.verify.Expansion(t, {}, '')
+
     d = {'is-new': {'date': 'Monday'}}
-    self.verify.Expansion(t, d , """\
-  Hello there
-  New since Monday!
-  Monday
-""")
+
+    self.verify.Expansion(t, d,
+      B("""
+          Hello there
+          New since Monday!
+          Monday
+        """))
 
   def testRepeatedSection(self):
     t = testy.ClassDef("""
