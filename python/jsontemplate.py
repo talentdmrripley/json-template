@@ -1,5 +1,3 @@
-#!/usr/bin/python -S
-#
 # Copyright (C) 2009 Andy Chu
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
