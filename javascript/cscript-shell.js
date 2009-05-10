@@ -1,4 +1,4 @@
-WScript.Echo("hello");
+// Read code from stdin
 
 var lines = [];
 while (!WScript.Stdin.AtEndOfStream) {
@@ -6,9 +6,11 @@ while (!WScript.Stdin.AtEndOfStream) {
   lines.push(line + '\n');
 }
 
+var code = lines.join("");
 
-//var code = lines.join("");
-var code = "WScript.Echo('code');"
+//var code = "WScript.Echo('code');"
 
 //WScript.Echo(code);
+
+// Execute the code
 WScript.Stdout.WriteLine(eval(code));

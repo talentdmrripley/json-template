@@ -23,6 +23,9 @@ import subprocess
 import sys
 import tempfile
 
+if __name__ == '__main__':
+  sys.path.insert(0, os.path.join(os.path.dirname(sys.argv[0]), '..'))
+
 from pan.core import json
 from pan.core import records
 from pan.test import testy
@@ -165,3 +168,48 @@ class V8ShellVerifier(testy.StandardVerifier):
     template_def = testy.ClassDef(*args, **kwargs)
     result = self._RunScript(template_def, {})
     self.In(exception.__name__, result.exception)
+
+
+class CScriptVerifier(V8ShellVerifier):
+  """
+  Verifies template behavior by calling out to the shell.cc sample included with
+  the v8 source tree.
+  """
+
+  LABELS = ['javascript']
+
+  def __init__(self, script_path, helpers_path):
+    testy.StandardVerifier.__init__(self)
+    self.helpers_path = helpers_path
+    self.script_path = script_path
+
+    # Flip this when you can't figure out what's going on in v8!
+    self.debug_mode = False
+    #self.debug_mode = True
+
+  def _RunScript(self, template_def, dictionary):
+    # TODO: Hook up to RunWithCScript
+    pass
+
+
+def RunWithCScript(code):
+  argv = ['cscript', '//Nologo', 'javascript/cscript-shell.js']
+  p = subprocess.Popen(argv, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+  p.stdin.write(code)
+  p.stdin.close()
+  print p.stdout.read()
+
+
+def main(argv):
+  code = open('javascript/json-template.js').read()
+  #code += 'WScript.StdOut.WriteLine(jsontemplate.Template)'
+  code += """
+var t = jsontemplate.Template('{foo}');
+WScript.StdOut.Writeline(t.expand({'foo': 'Hello'}));
+"""
+  RunWithCScript(code)
+
+
+if __name__ == '__main__':
+  main(sys.argv[1:])
+  

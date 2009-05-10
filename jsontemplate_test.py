@@ -849,8 +849,12 @@ def main(argv):
 
   js_impl = os.path.join(this_dir, 'javascript', 'json-template.js')
   helpers = os.path.join(this_dir, 'pan', 'javascript', 'test_helpers.js')
-  js_verifier = javascript_verifier.V8ShellVerifier(
-      options.v8_shell, js_impl, helpers)
+
+  if sys.platform == 'win32':
+    js_verifier = javascript_verifier.CScriptVerifier(js_impl, helpers)
+  else:
+    js_verifier = javascript_verifier.V8ShellVerifier(
+        options.v8_shell, js_impl, helpers)
 
   java_impl = os.path.join(this_dir, 'java', 'jsontemplate.jar')
   java_test_classes = os.path.join(this_dir, 'java', 'jsontemplate_test.jar')
