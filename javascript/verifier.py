@@ -55,14 +55,57 @@ var s = t.expand(%(dictionary)s);
 print(s);
 """
 
+class JavaScriptVerifier(testy.StandardVerifier):
+  """Abstract base class."""
 
-class V8ShellVerifier(testy.StandardVerifier):
+  LABELS = ['javascript']
+
+  def _RunScript(self, template_def, dictionary):
+    """
+    Abstract method to run json-template.js with the given template and
+    dictionary.
+    """
+    raise NotImplementedError
+
+  def Expansion(
+      self, template_def, dictionary, expected, ignore_whitespace=False,
+      ignore_all_whitespace=False):
+    """
+    Args:
+      template_def: _TemplateDef instance.
+    """
+    result = self._RunScript(template_def, dictionary)
+
+    # The print() function in shell.cc adds a newline, so compensate for it
+    if result.stdout.endswith('\n'):
+      result.stdout = result.stdout[:-1]
+
+    self.Equal(result.exit_code, 0, 'stderr: %r' % result.stderr)
+
+    # The tests specify are written for whitespace_mode='smart-indent'.
+    # JavaScript only implement whitespace_mode='any' now, so just ignore all
+    # whitespace, and we can use the same tests.
+    self.LongStringsEqual(
+        expected, result.stdout, ignore_whitespace=ignore_whitespace,
+        ignore_all_whitespace=ignore_all_whitespace)
+
+  def EvaluationError(self, exception, template_def, data_dict):
+    result = self._RunScript(template_def, data_dict)
+    self.In(exception.__name__, result.exception)
+
+  def CompilationError(self, exception, *args, **kwargs):
+    template_def = testy.ClassDef(*args, **kwargs)
+    result = self._RunScript(template_def, {})
+    self.In(exception.__name__, result.exception)
+
+
+
+
+class V8ShellVerifier(JavaScriptVerifier):
   """
   Verifies template behavior by calling out to the shell.cc sample included with
   the v8 source tree.
   """
-
-  LABELS = ['javascript']
 
   def __init__(self, v8_path, script_path, helpers_path):
     testy.StandardVerifier.__init__(self)
@@ -138,39 +181,8 @@ class V8ShellVerifier(testy.StandardVerifier):
         stderr=stderr, stdout=stdout, exit_code=exit_code,
         exception=exception)
 
-  def Expansion(
-      self, template_def, dictionary, expected, ignore_whitespace=False,
-      ignore_all_whitespace=False):
-    """
-    Args:
-      template_def: _TemplateDef instance.
-    """
-    result = self._RunScript(template_def, dictionary)
 
-    # The print() function in shell.cc adds a newline, so compensate for it
-    if result.stdout.endswith('\n'):
-      result.stdout = result.stdout[:-1]
-
-    self.Equal(result.exit_code, 0, 'stderr: %r' % result.stderr)
-
-    # The tests specify are written for whitespace_mode='smart-indent'.
-    # JavaScript only implement whitespace_mode='any' now, so just ignore all
-    # whitespace, and we can use the same tests.
-    self.LongStringsEqual(
-        expected, result.stdout, ignore_whitespace=ignore_whitespace,
-        ignore_all_whitespace=ignore_all_whitespace)
-
-  def EvaluationError(self, exception, template_def, data_dict):
-    result = self._RunScript(template_def, data_dict)
-    self.In(exception.__name__, result.exception)
-
-  def CompilationError(self, exception, *args, **kwargs):
-    template_def = testy.ClassDef(*args, **kwargs)
-    result = self._RunScript(template_def, {})
-    self.In(exception.__name__, result.exception)
-
-
-class CScriptVerifier(V8ShellVerifier):
+class CScriptVerifier(JavaScriptVerifier):
   """
   Verifies template behavior by calling out to the shell.cc sample included with
   the v8 source tree.
