@@ -636,6 +636,12 @@ class DottedLookupTest(testy.Test):
         t,
         {'foo': 100})
 
+    # Can't look up bar in a list
+    self.verify.EvaluationError(
+        jsontemplate.UndefinedVariable,
+        t,
+        {'foo': []})
+
     self.verify.EvaluationError(
         jsontemplate.UndefinedVariable,
         t,
@@ -645,6 +651,17 @@ class DottedLookupTest(testy.Test):
         jsontemplate.UndefinedVariable,
         t,
         {})
+
+  @testy.no_verify('java', 'php')
+  def testDottedLookupErrorsWithUndefinedStr(self):
+
+    t = testy.ClassDef('{foo.bar}', undefined_str='UNDEFINED')
+
+    # The second lookup doesn't look up the stack to find 'bar'
+    self.verify.Expansion(
+        t,
+        {'foo': {}, 'bar': 100},
+        'UNDEFINED')
 
   @testy.no_verify('java', 'php')
   def testThreeLookups(self):
