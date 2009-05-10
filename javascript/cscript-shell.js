@@ -13,7 +13,10 @@ if (WScript.Arguments.length > 0) {  // program name not included
   for (var i=0; i < WScript.Arguments.length; i++) {
     var name = WScript.Arguments(i);  // this isn't a JS array, apparently
     var f = fs.OpenTextFile(name, 1);  // 1 means reading
-    lines.push(f.ReadLine() + '\n')
+    while (!f.AtEndOfStream) {
+      var line = f.ReadLine();
+      lines.push(line + '\n');
+    }
   }
 } else {
   // Read code from stdin if there are no arguments
