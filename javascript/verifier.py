@@ -207,7 +207,7 @@ class CScriptVerifier(JavaScriptVerifier):
     self.script_contents = open(script_path).read()
 
     # Flip this when you can't figure out what's going on in v8!
-    self.debug_mode = True
+    #self.debug_mode = True
 
   def _RunScript(self, template_def, dictionary):
     test_js = self._MakeTestJs(template_def, dictionary)
