@@ -60,6 +60,26 @@ class JavaScriptVerifier(testy.StandardVerifier):
 
   LABELS = ['javascript']
 
+  def __init__(self, script_path, debug_mode=False):
+    # Path of json-template.js
+    self.script_path = script_path
+    self.debug_mode = debug_mode
+
+  def _MakeTestJs(self, template_def, dictionary):
+    template_str = template_def.args[0]
+    options = template_def.kwargs
+
+    js_template = _TEST_JS
+    if self.debug_mode:
+      js_template = _DEBUG_JS
+
+    return js_template % dict(
+        template=json.dumps(template_str),
+        options=json.dumps(options),
+        dictionary=json.dumps(dictionary),
+        )
+
+
   def _RunScript(self, template_def, dictionary):
     """
     Abstract method to run json-template.js with the given template and
@@ -91,14 +111,16 @@ class JavaScriptVerifier(testy.StandardVerifier):
 
   def EvaluationError(self, exception, template_def, data_dict):
     result = self._RunScript(template_def, data_dict)
+    if result.exception is None:
+      self.fail('No exception found in output')
     self.In(exception.__name__, result.exception)
 
   def CompilationError(self, exception, *args, **kwargs):
     template_def = testy.ClassDef(*args, **kwargs)
     result = self._RunScript(template_def, {})
+    if result.exception is None:
+      self.fail('No exception found in output')
     self.In(exception.__name__, result.exception)
-
-
 
 
 class V8ShellVerifier(JavaScriptVerifier):
@@ -107,14 +129,12 @@ class V8ShellVerifier(JavaScriptVerifier):
   the v8 source tree.
   """
 
-  def __init__(self, v8_path, script_path, helpers_path):
-    testy.StandardVerifier.__init__(self)
+  def __init__(self, v8_path, script_path, helpers_path, debug_mode=False):
+    JavaScriptVerifier.__init__(self, script_path, debug_mode=debug_mode)
     self.v8_path = v8_path
     self.helpers_path = helpers_path
-    self.script_path = script_path
 
     # Flip this when you can't figure out what's going on in v8!
-    self.debug_mode = False
     #self.debug_mode = True
 
   def CheckIfRunnable(self):
@@ -122,18 +142,8 @@ class V8ShellVerifier(JavaScriptVerifier):
       raise testy.TestPrequisiteMissing('%r is missing' % self.v8_path)
 
   def _RunScript(self, template_def, dictionary):
-    template_str = template_def.args[0]
-    options = template_def.kwargs
+    test_js = self._MakeTestJs(template_def, dictionary)
 
-    js_template = _TEST_JS
-    if self.debug_mode:
-      js_template = _DEBUG_JS
-
-    test_js = js_template % dict(
-        template=json.dumps(template_str),
-        options=json.dumps(options),
-        dictionary=json.dumps(dictionary),
-        )
     if self.debug_mode:
       print test_js
 
@@ -190,26 +200,63 @@ class CScriptVerifier(JavaScriptVerifier):
 
   LABELS = ['javascript']
 
-  def __init__(self, script_path, helpers_path):
-    testy.StandardVerifier.__init__(self)
-    self.helpers_path = helpers_path
-    self.script_path = script_path
+  def __init__(self, script_path, helpers_path, debug_mode=False):
+    JavaScriptVerifier.__init__(self, script_path, debug_mode=debug_mode)
+
+    # Read the script into a string so we can write it to stdin
+    self.script_contents = open(script_path).read()
 
     # Flip this when you can't figure out what's going on in v8!
-    self.debug_mode = False
-    #self.debug_mode = True
+    self.debug_mode = True
 
   def _RunScript(self, template_def, dictionary):
-    # TODO: Hook up to RunWithCScript
-    pass
+    test_js = self._MakeTestJs(template_def, dictionary)
+
+    if self.debug_mode:
+      print test_js
+
+    code = self.script_contents + test_js
+    exit_code, stdout, stderr = RunWithCScript(code)
+
+    if self.debug_mode:
+      print 'STDOUT', repr(stdout)
+
+    exception = None
+    stdout_lines = []
+    for line in stdout.splitlines(True):
+      if line.startswith('V8LOG: '):
+        sys.stdout.write(line)
+      elif line.startswith('EXCEPTION: '):
+        exception = line[len('EXCEPTION: '):]
+      else:
+        stdout_lines.append(line)
+
+    return records.Record(
+        stdout=''.join(stdout_lines), stderr=stderr, exit_code=exit_code,
+        exception=exception)
 
 
 def RunWithCScript(code):
+  """Runs JavaScript code with the Windows cscript interpreter.
+
+  Returns:
+    A 3 tuple of (exit code, stdout string, stderr string)
+  """
   argv = ['cscript', '//Nologo', 'javascript/cscript-shell.js']
-  p = subprocess.Popen(argv, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+  p = subprocess.Popen(argv,
+      stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE,
+      universal_newlines=True)
   p.stdin.write(code)
   p.stdin.close()
-  print p.stdout.read()
+  stdout = p.stdout.read()
+
+  # Strip an extra newline from cscript
+  if stdout.endswith('\n'):
+    stdout = stdout[:-1]
+
+  stderr = p.stderr.read()
+  exit_code = p.wait()
+  return exit_code, stdout, stderr
 
 
 def main(argv):

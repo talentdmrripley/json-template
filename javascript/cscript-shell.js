@@ -1,3 +1,8 @@
+// define this because v8 has it
+function print(msg) {
+  WScript.Stdout.WriteLine(msg);
+}
+
 // Read code from stdin
 
 var lines = [];
