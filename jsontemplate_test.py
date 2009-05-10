@@ -608,7 +608,7 @@ class DottedLookupTest(testy.Test):
 
   LABELS = ['multilanguage']
 
-  @testy.only_verify('python')
+  @testy.no_verify('java', 'php')
   def testDottedLookup(self):
     t = testy.ClassDef('{foo.bar}')
 
@@ -616,6 +616,13 @@ class DottedLookupTest(testy.Test):
         t,
         {'foo': {'bar': 'Hello'}},
         'Hello')
+
+  @testy.no_verify('java', 'php')
+  def testDottedLookupErrors(self):
+
+    # TODO: Also test everything with setting undefined_str
+
+    t = testy.ClassDef('{foo.bar}')
 
     # The second lookup doesn't look up the stack to find 'bar'
     self.verify.EvaluationError(
@@ -639,7 +646,7 @@ class DottedLookupTest(testy.Test):
         t,
         {})
 
-  @testy.only_verify('python')
+  @testy.no_verify('java', 'php')
   def testThreeLookups(self):
     t = testy.ClassDef('{foo.bar.baz}')
 
@@ -653,7 +660,7 @@ class DottedLookupTest(testy.Test):
         t,
         {'foo': 100})
 
-  @testy.only_verify('python')
+  @testy.no_verify('java', 'php')
   def testScopedLookup(self):
     t = testy.ClassDef(
         B("""

@@ -55,8 +55,8 @@ function _MakeTokenRegex(meta_left, meta_right) {
 //
 
 function HtmlEscape(s) {
-  return s.replace(/&/g,'&amp;').                                         
-           replace(/>/g,'&gt;').                                           
+  return s.replace(/&/g,'&amp;').
+           replace(/>/g,'&gt;').
            replace(/</g,'&lt;');
 }
 
@@ -137,7 +137,17 @@ function _ScopedContext(context, undefined_str) {
       return stack[stack.length - 1].context;
     },
 
-    Lookup: function(name) {
+    _Undefined: function(name) {
+      if (undefined_str === undefined) {
+        throw {
+          name: 'UndefinedVariable', message: name + ' is not defined'
+        };
+      } else {
+        return undefined_str;
+      }
+    },
+
+    _LookUpStack: function(name) {
       var i = stack.length - 1;
       while (true) {
         var context = stack[i].context;
@@ -154,16 +164,25 @@ function _ScopedContext(context, undefined_str) {
           }
         }
         if (i <= -1) {
-          if (undefined_str === undefined) {
-            throw {
-              name: 'UndefinedVariable', message: name + ' is not defined'
-            };
-          } else {
-            return undefined_str;
+          return this._Undefined(name);
+        }
+      }
+    },
+
+    Lookup: function(name) {
+      var parts = name.split('.');
+      var value = this._LookUpStack(parts[0]);
+      if (parts.length > 1) {
+        for (var i=1; i<parts.length; i++) {
+          value = value[parts[i]];
+          if (value === undefined) {
+            return this._Undefined(parts[i]);
           }
         }
       }
+      return value;
     }
+
   };
 }
 

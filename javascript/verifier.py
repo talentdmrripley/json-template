@@ -67,6 +67,10 @@ class V8ShellVerifier(testy.StandardVerifier):
     self.helpers_path = helpers_path
     self.script_path = script_path
 
+    # Flip this when you can't figure out what's going on in v8!
+    self.debug_mode = False
+    #self.debug_mode = True
+
   def CheckIfRunnable(self):
     if not os.path.exists(self.v8_path):
       raise testy.TestPrequisiteMissing('%r is missing' % self.v8_path)
@@ -76,7 +80,7 @@ class V8ShellVerifier(testy.StandardVerifier):
     options = template_def.kwargs
 
     js_template = _TEST_JS
-    if 0:  # flip this as necessary
+    if self.debug_mode:
       js_template = _DEBUG_JS
 
     test_js = js_template % dict(
@@ -84,7 +88,8 @@ class V8ShellVerifier(testy.StandardVerifier):
         options=json.dumps(options),
         dictionary=json.dumps(dictionary),
         )
-    #print test_js
+    if self.debug_mode:
+      print test_js
 
     temp_js_file = tempfile.NamedTemporaryFile(suffix='.js')
     temp_js_file.write(test_js)
@@ -119,6 +124,8 @@ class V8ShellVerifier(testy.StandardVerifier):
     temp_js_file.close()  # deletes the file
 
     stdout = ''.join(stdout_lines)
+    if self.debug_mode:
+      print stdout
 
     # There's no support for anything else in shell.cc
     self.Equal(exit_code, 0)

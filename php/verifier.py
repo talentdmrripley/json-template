@@ -33,6 +33,8 @@ class PhpVerifier(testy.StandardVerifier):
   Verifies template behavior by executing the PHP file from command line
   """
 
+  LABELS = ['php']
+
   def __init__(self, php_interpreter_path, script_path):
     testy.StandardVerifier.__init__(self)
     self.php_interpreter_path = php_interpreter_path
