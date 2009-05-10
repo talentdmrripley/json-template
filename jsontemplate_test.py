@@ -110,6 +110,7 @@ class JsonTemplateTest(testy.PyUnitCompatibleTest):
   def testExpandingNull(self):
     # None/null is considered undefined.  Typically, a null value should be
     # wrapped in section instead.
+    # TODO: Revisit this behavior; doesn't seem right!
     t = testy.ClassDef('There are {num} ways to do it')
     self.verify.EvaluationError(
         jsontemplate.UndefinedVariable, t, {'num': None})
@@ -600,6 +601,84 @@ People
     d = { 'title-results': [] }
 
     self.verify.Expansion(t, d, '\n')
+
+
+class DottedLookupTest(testy.Test):
+  """Test substitutions like {foo.bar.baz}."""
+
+  LABELS = ['multilanguage']
+
+  @testy.only_verify('python')
+  def testDottedLookup(self):
+    t = testy.ClassDef('{foo.bar}')
+
+    self.verify.Expansion(
+        t,
+        {'foo': {'bar': 'Hello'}},
+        'Hello')
+
+    # The second lookup doesn't look up the stack to find 'bar'
+    self.verify.EvaluationError(
+        jsontemplate.UndefinedVariable,
+        t,
+        {'foo': {}, 'bar': 100})
+
+    # Can't look up bar in 100
+    self.verify.EvaluationError(
+        jsontemplate.UndefinedVariable,
+        t,
+        {'foo': 100})
+
+    self.verify.EvaluationError(
+        jsontemplate.UndefinedVariable,
+        t,
+        {'foo': {}})
+
+    self.verify.EvaluationError(
+        jsontemplate.UndefinedVariable,
+        t,
+        {})
+
+  @testy.only_verify('python')
+  def testThreeLookups(self):
+    t = testy.ClassDef('{foo.bar.baz}')
+
+    self.verify.Expansion(
+        t,
+        {'foo': {'bar': {'baz': 'Hello'}}},
+        'Hello')
+
+    self.verify.EvaluationError(
+        jsontemplate.UndefinedVariable,
+        t,
+        {'foo': 100})
+
+  @testy.only_verify('python')
+  def testScopedLookup(self):
+    t = testy.ClassDef(
+        B("""
+        {.section foo}
+          {bar.baz}
+        {.end}
+        """))
+
+    self.verify.Expansion(
+        t,
+        {'foo': {'bar': {'baz': 'Hello'}}},
+        '  Hello\n')
+
+    # We should find 'bar' even if it's not under foo
+    self.verify.Expansion(
+        t,
+        { 'foo': {'unused': 1},
+          'bar': {'baz': 'Hello'},
+        },
+        '  Hello\n')
+
+    self.verify.EvaluationError(
+        jsontemplate.UndefinedVariable,
+        t,
+        {'foo': 100})
 
 
 class StandardFormattersTest(testy.Test):

@@ -231,11 +231,8 @@ class _ScopedContext(object):
       yield item
     self.stack.pop()
 
-  def Lookup(self, name):
-    """
-    Get the value associated with a name in the current context.  The current
-    context could be an dictionary in a list, or a dictionary outside a list.
-    """
+  def _LookUpStack(self, name):
+    """Look up the stack for the given name."""
     i = len(self.stack) - 1
     while 1:
       context = self.stack[i]
@@ -254,6 +251,36 @@ class _ScopedContext(object):
           raise UndefinedVariable('%r is not defined' % name)
         else:
           return self.undefined_str
+
+  def Lookup(self, name):
+    """Get the value associated with a name in the current context.
+    
+    The current context could be an dictionary in a list, or a dictionary
+    outside a list.
+
+    Args:
+      name: name to lookup, e.g. 'foo' or 'foo.bar.baz'
+
+    Returns:
+      The value, or self.undefined_str
+
+    Raises:
+      UndefinedVariable if self.undefined_str is not set
+    """
+    parts = name.split('.')
+    value = self._LookUpStack(parts[0])
+
+    # Now do simple lookups of the rest of the parts
+    for part in parts[1:]:
+      try:
+        value = value[part]
+      except (KeyError, TypeError):  # TypeError for non-dictionaries
+        if self.undefined_str is None:
+          raise UndefinedVariable('Error looking up %r' % part)
+        else:
+          return self.undefined_str
+
+    return value
 
 
 def _ToString(x):
