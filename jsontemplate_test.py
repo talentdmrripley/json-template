@@ -837,7 +837,8 @@ def main(argv):
   ph_verifier = php_verifier.PhpVerifier(
       options.php_launcher, php_impl)
 
-  filt = testy.MakeTestClassFilter(label='multilanguage')
+  filt = testy.MakeTestClassFilter(
+      label='multilanguage', regex=options.test_regex)
   multi_tests = testy.GetTestClasses(__import__(__name__), filt)
 
   internal_tests = [m(int_py_verifier) for m in multi_tests]
