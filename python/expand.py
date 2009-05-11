@@ -33,9 +33,9 @@ if __name__ == '__main__':
 from pan.core import cmdapp
 from pan.core import params
 from pan.core import json
-from python import jsontemplate
-from python import formatters
 
+import jsontemplate
+from jsontemplate import formatters
 
 PARAMS = [
     params.OptionalBoolean(

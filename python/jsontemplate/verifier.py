@@ -32,8 +32,8 @@ from pan.core import records
 from pan.test import testy
 
 import base_verifier
-from python import jsontemplate  # module under *direct* test
-from python import formatters
+import jsontemplate  # module under *direct* test
+from jsontemplate import formatters
 
 
 class InternalTemplateVerifier(base_verifier.JsonTemplateVerifier):

@@ -29,6 +29,11 @@ Other functions are exposed for tools which may want to process templates.
 
 __author__ = 'Andy Chu'
 
+__all__ = ['Error', 'CompilationError', 'EvaluationError',
+           'BadFormatter', 'MissingFormatter', 'ConfigurationError',
+           'TemplateSyntaxError', 'UndefinedVariable',
+           'CompileTemplate', 'FromString', 'FromFile',
+           'Template', 'expand']
 
 import cStringIO
 import pprint

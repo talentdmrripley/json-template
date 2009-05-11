@@ -24,8 +24,7 @@ __author__ = 'Andy Chu'
 import os
 import sys
 
-from python import jsontemplate  # For TemplateFileInclude
-
+import jsontemplate # For TemplateFileInclude
 
 def LookupChain(lookup_func_list):
   """Returns a *function* suitable for passing as the more_formatters argument

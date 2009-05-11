@@ -1,0 +1,12 @@
+How to package the Python code
+==============================
+
+Create source code .tgz:
+
+$ python setup.py sdist
+
+Create source code and upload this to Python Package Index (PyPI):
+
+$ python setup.py sdist upload
+
+XXX need a scheme for version numbers in setup.py here.

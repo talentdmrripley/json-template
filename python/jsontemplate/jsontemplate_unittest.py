@@ -15,9 +15,8 @@ if __name__ == '__main__':
 from pan.core import json
 from pan.test import testy
 
-from python import verifier as python_verifier
-from python import jsontemplate  # module under direct test
-
+from jsontemplate import verifier as python_verifier
+from jsontemplate import _jsontemplate as jsontemplate  # module under direct test
 
 class TokenizeTest(testy.Test):
 

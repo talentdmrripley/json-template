@@ -28,8 +28,8 @@ import sys
 from pan.core import json
 from pan.test import testy
 
-from python import formatters
-from python import jsontemplate
+from jsontemplate import formatters
+import jsontemplate
 
 __author__ = 'Andy Chu'
 

@@ -13,8 +13,8 @@ import unittest
 if __name__ == '__main__':
   sys.path.insert(0, os.path.join(os.path.dirname(sys.argv[0]), '..'))
 
-from python import formatters  # module under test
-from python import jsontemplate
+from jsontemplate import formatters  # module under test
+import jsontemplate
 
 from pan.core import util
 from pan.test import testy
@@ -40,7 +40,7 @@ class FormattersTest(testy.Test):
     self.printf_template = '{a|printf %.2f}'
     self.include_template = '{profile|template-file include-test.jsont}'
 
-    directory = util.PathRelativeToExecutable('testdata/')
+    directory = os.path.join(os.path.dirname(__file__), 'testdata')
     self.include_formatter = formatters.TemplateFileInclude(directory)
 
   def setUp(self):

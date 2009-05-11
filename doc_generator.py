@@ -28,8 +28,8 @@ from pan.core import json
 from pan.core import records
 from pan.test import testy
 
-from python import highlight
-from python import jsontemplate
+from jsontemplate import highlight
+import jsontemplate
 
 __author__ = 'Andy Chu'
 
