@@ -40,14 +40,13 @@ from pan.test import testy
 import jsontemplate  # module under *direct* test
 
 # External verifiers:
+from doc import doc_generator
 from javascript import verifier as javascript_verifier
 from javascript import browser_tests
 from java import verifier as java_verifier
 from php import verifier as php_verifier
 # import *must* be relative to python package to work
 import verifier as python_verifier
-import doc_generator
-import base_verifier
 
 
 # This is for making multiline strings look nicer.  Strips leading indentation.
