@@ -7,7 +7,7 @@ __author__ = 'Andy Chu'
 
 
 import cgi
-import jsontemplate
+import _jsontemplate as jsontemplate
 
 
 _TEMPLATE = None

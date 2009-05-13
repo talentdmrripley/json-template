@@ -10,13 +10,17 @@ import os
 import sys
 
 if __name__ == '__main__':
-  sys.path.insert(0, os.path.join(os.path.dirname(sys.argv[0]), '..'))
+  # for jsontemplate and pan, respectively
+  sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+  sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 
 from pan.core import json
 from pan.test import testy
 
+# We need access to the internals here
+from jsontemplate import _jsontemplate as jsontemplate
 from jsontemplate import verifier as python_verifier
-from jsontemplate import _jsontemplate as jsontemplate  # module under direct test
+
 
 class TokenizeTest(testy.Test):
 

@@ -11,7 +11,9 @@ import sys
 import unittest
 
 if __name__ == '__main__':
-  sys.path.insert(0, os.path.join(os.path.dirname(sys.argv[0]), '..'))
+  # for jsontemplate and pan, respectively
+  sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+  sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 
 from jsontemplate import formatters  # module under test
 import jsontemplate

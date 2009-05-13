@@ -31,7 +31,8 @@ from pan.core import json
 from pan.core import records
 from pan.test import testy
 
-import base_verifier
+import base_verifier  # TODO: Move this into a package
+
 import jsontemplate  # module under *direct* test
 from jsontemplate import formatters
 
