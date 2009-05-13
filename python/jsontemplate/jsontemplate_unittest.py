@@ -19,7 +19,7 @@ from pan.test import testy
 
 # We need access to the internals here
 from jsontemplate import _jsontemplate as jsontemplate
-from jsontemplate import verifier as python_verifier
+import verifier as python_verifier
 
 
 class TokenizeTest(testy.Test):

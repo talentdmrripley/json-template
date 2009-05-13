@@ -28,7 +28,8 @@ import subprocess
 import sys
 
 if __name__ == '__main__':
-  sys.path.insert(0, os.path.join(os.path.dirname(sys.argv[0]), '..'))
+  # for jsontemplate
+  sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'python'))
 
 from pan.core import cmdapp
 from pan.core import params
@@ -36,15 +37,15 @@ from pan.core import json
 from pan.core import util
 from pan.test import testy
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'python'))
 import jsontemplate  # module under *direct* test
 
 # External verifiers:
 from javascript import verifier as javascript_verifier
 from javascript import browser_tests
-from jsontemplate import verifier as python_verifier
 from java import verifier as java_verifier
 from php import verifier as php_verifier
+# import *must* be relative to python package to work
+import verifier as python_verifier
 import doc_generator
 import base_verifier
 
