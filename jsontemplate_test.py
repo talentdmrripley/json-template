@@ -241,13 +241,14 @@ class SectionsTest(testy.PyUnitCompatibleTest):
         """))
 
   def testRepeatedSectionWithDot(self):
-    t = testy.ClassDef("""
-[header]
----------
-[.repeated section people]
-  [greeting] [@]
-[.end]
-""", meta='[]')
+    t = testy.ClassDef(
+        B("""
+        [header]
+        ---------
+        [.repeated section people]
+          [greeting] [@]
+        [.end]
+        """), meta='[]')
 
     d = {
         'greeting': 'Hello',
@@ -258,21 +259,22 @@ class SectionsTest(testy.PyUnitCompatibleTest):
             ],
         }
 
-    self.verify.Expansion(t, d, """
-People
----------
-  Hello Andy
-  Hello Bob
-""")
+    self.verify.Expansion(t, d, B("""
+        People
+        ---------
+          Hello Andy
+          Hello Bob
+        """))
 
   def testNestedRepeatedSections(self):
-    t = testy.ClassDef("""
-[header]
----------
-[.repeated section people]
-  [name]: [.repeated section attributes][@] [.end]
-[.end]
-""", meta='[]')
+    t = testy.ClassDef(
+        B("""
+        [header]
+        ---------
+        [.repeated section people]
+          [name]: [.repeated section attributes][@] [.end]
+        [.end]
+        """), meta='[]')
 
     d = {
         'header': 'People',
@@ -282,12 +284,12 @@ People
             ],
         }
 
-    self.verify.Expansion(t, d, """
-People
----------
-  Andy: jerk cool 
-  Bob: nice mean fun 
-""", ignore_all_whitespace=True)
+    self.verify.Expansion(t, d, B("""
+        People
+        ---------
+          Andy: jerk cool 
+          Bob: nice mean fun 
+        """), ignore_all_whitespace=True)
 
   def testRepeatedSectionAtRoot(self):
     # This tests expansion of a JSON *list* -- no dictionary in sight
@@ -296,15 +298,17 @@ People
     self.verify.Expansion(t, ['Andy', 'Bob'], 'Andy Bob ')
 
   def testAlternatesWith(self):
-    t = testy.ClassDef("""
-[header]
----------
-[.repeated section people]
-  Name: [name] Age: [age]
-[.alternates with]
-  *****
-[.end]
-""", meta='[]')
+    t = testy.ClassDef(
+        B("""
+        [header]
+        ---------
+        [.repeated section people]
+          Name: [name] Age: [age]
+        [.alternates with]
+          *****
+        [.end]
+        """), meta='[]')
+
     d = {
         'header': 'People',
         'people': [
@@ -314,30 +318,30 @@ People
             ],
         }
 
-    self.verify.Expansion(t, d, """
-People
----------
-  Name: Andy Age: 20
-  *****
-  Name: Bob Age: 25
-  *****
-  Name: Carol Age: 30
-""")
+    self.verify.Expansion(t, d, B("""
+        People
+        ---------
+          Name: Andy Age: 20
+          *****
+          Name: Bob Age: 25
+          *****
+          Name: Carol Age: 30
+        """))
 
   def testSection(self):
 
-    # TODO: Should the *leading* whitespace before [.end] be removed too?
-    t = testy.ClassDef("""
-[header]
----------
-[.section people]
-There are [summary] here:
-  [.repeated section entries]
-    [name] [age]
-  [.end]
-  [footer]
-[.end]
-""", meta='[]')
+    t = testy.ClassDef(
+        B("""
+        [header]
+        ---------
+        [.section people]
+        There are [summary] here:
+          [.repeated section entries]
+            [name] [age]
+          [.end]
+          [footer]
+        [.end]
+        """), meta='[]')
 
     d = {
         'header': 'People',
@@ -351,36 +355,36 @@ There are [summary] here:
             }
         }
 
-    expected = """
-People
----------
-There are 2 dudes here:
-    Andy 20
-    Bob 25
-  Footer
-"""
     # Relies on smart-indent behavior; ignore whitespace for some
     # implementations
-    self.verify.Expansion(t, d, expected, ignore_all_whitespace=True)
+    self.verify.Expansion(t, d, B("""
+        People
+        ---------
+        There are 2 dudes here:
+            Andy 20
+            Bob 25
+          Footer
+        """), ignore_all_whitespace=True)
 
-    self.verify.Expansion(t, {'header': 'People'}, """
-People
----------
-""")
+    self.verify.Expansion(t, {'header': 'People'}, B("""
+        People
+        ---------
+        """))
 
     # Now test with people=None.  This is the same as omitting the key.
-    self.verify.Expansion(t, {'header': 'People', 'people': None}, """
-People
----------
-""")
+    self.verify.Expansion(t, {'header': 'People', 'people': None}, B("""
+        People
+        ---------
+        """))
 
   def testExpansionInInnerScope(self):
-    t = testy.ClassDef("""
-[url]
-[.section person]
-  [name] [age] [url]
-[.end]
-""", meta='[]')
+    t = testy.ClassDef(
+        B("""
+        [url]
+        [.section person]
+          [name] [age] [url]
+        [.end]
+        """), meta='[]')
 
     d = {
         'url': 'http://example.com',
@@ -390,11 +394,10 @@ People
             }
         }
 
-    expected = """
-http://example.com
-  Andy 30 http://example.com
-"""
-    self.verify.Expansion(t, d, expected)
+    self.verify.Expansion(t, d, B("""
+        http://example.com
+          Andy 30 http://example.com
+        """))
 
     d = {
         'person': {
@@ -405,35 +408,36 @@ http://example.com
     self.verify.EvaluationError(jsontemplate.UndefinedVariable, t, d)
 
   def testTooManyEndBlocks(self):
-    self.verify.CompilationError(jsontemplate.TemplateSyntaxError, """
-{.section people}
-{.end}
-{.end}
-""")
+    self.verify.CompilationError(jsontemplate.TemplateSyntaxError, B("""
+        {.section people}
+        {.end}
+        {.end}
+        """))
 
   def testTooFewEndBlocks(self):
-    self.verify.CompilationError(jsontemplate.TemplateSyntaxError, """
-{.section people}
-  {.section cars}
-  {.end}
-""")
+    self.verify.CompilationError(jsontemplate.TemplateSyntaxError, B("""
+        {.section people}
+          {.section cars}
+          {.end}
+        """))
 
   def testSectionAndRepeatedSection(self):
     """A repeated section within a section."""
-    t = testy.ClassDef("""
-[header]
----------
-[.section people]
-  <table>
-  [.repeated section @]
-    <tr>
-      <td>[name]</td>
-      <td>[age]</td>
-    </tr>
-  [.end]
-  </table>
-[.end]
-""", meta='[]')
+    t = testy.ClassDef(
+        B("""
+        [header]
+        ---------
+        [.section people]
+          <table>
+          [.repeated section @]
+            <tr>
+              <td>[name]</td>
+              <td>[age]</td>
+            </tr>
+          [.end]
+          </table>
+        [.end]
+        """), meta='[]')
 
     d = {
         'header': 'People',
@@ -443,27 +447,27 @@ http://example.com
             ],
         }
 
-    expected = """
-People
----------
-  <table>
-    <tr>
-      <td>Andy</td>
-      <td>20</td>
-    </tr>
-    <tr>
-      <td>Bob</td>
-      <td>25</td>
-    </tr>
-  </table>
-"""
+    expected = B("""
+        People
+        ---------
+          <table>
+            <tr>
+              <td>Andy</td>
+              <td>20</td>
+            </tr>
+            <tr>
+              <td>Bob</td>
+              <td>25</td>
+            </tr>
+          </table>
+        """)
 
     self.verify.Expansion(t, d, expected, ignore_whitespace=True)
 
-    self.verify.Expansion(t, {'header': 'People'}, """
-People
----------
-""")
+    self.verify.Expansion(t, {'header': 'People'}, B("""
+        People
+        ---------
+        """))
 
   def testBadContext(self):
     # Note: A list isn't really a valid top level context, but this case should
@@ -472,15 +476,16 @@ People
     self.verify.EvaluationError(jsontemplate.UndefinedVariable, t, [])
 
   def testSectionOr(self):
-    t = testy.ClassDef("""
-Hello there.
-{.section person}
-  {name} {age} {url}
-{.or}
-  No person.
-{.end}
-{url}
-""")
+    t = testy.ClassDef(
+        B("""
+        Hello there.
+        {.section person}
+          {name} {age} {url}
+        {.or}
+          No person.
+        {.end}
+        {url}
+        """))
 
     d = {
         'url': 'http://example.com',
@@ -490,33 +495,34 @@ Hello there.
             }
         }
 
-    expected = """
-Hello there.
-  Andy 30 http://example.com
-http://example.com
-"""
+    expected = B("""
+        Hello there.
+          Andy 30 http://example.com
+        http://example.com
+        """)
     self.verify.Expansion(t, d, expected)
 
     d = { 'url': 'http://example.com' }
 
-    expected = """
-Hello there.
-  No person.
-http://example.com
-"""
+    expected = B("""
+        Hello there.
+          No person.
+        http://example.com
+        """)
     self.verify.Expansion(t, d, expected)
 
   @testy.labels('documentation')
   def testRepeatedSectionOr(self):
-    t = testy.ClassDef("""
-{header}
----------
-{.repeated section people}
-  {name} {age}
-{.or}
-  No people.
-{.end}
-""")
+    t = testy.ClassDef(
+        B("""
+        {header}
+        ---------
+        {.repeated section people}
+          {name} {age}
+        {.or}
+          No people.
+        {.end}
+        """))
 
     with_people = {
         'header': 'People',
@@ -526,12 +532,12 @@ http://example.com
             ],
         }
 
-    self.verify.Expansion(t, with_people, """
-People
----------
-  Andy 20
-  Bob 25
-""")
+    self.verify.Expansion(t, with_people, B("""
+        People
+        ---------
+          Andy 20
+          Bob 25
+        """))
 
     # Empty list
     without_people = {
@@ -539,11 +545,11 @@ People
         'people': [],
         }
 
-    self.verify.Expansion(t, without_people, """
-People
----------
-  No people.
-""")
+    self.verify.Expansion(t, without_people, B("""
+        People
+        ---------
+          No people.
+        """))
 
     # Null
     d = {
@@ -551,32 +557,33 @@ People
         'people': None,
         }
 
-    self.verify.Expansion(t, d, """
-People
----------
-  No people.
-""")
+    self.verify.Expansion(t, d, B("""
+        People
+        ---------
+          No people.
+        """))
 
     # Now there are 3 clauses
-    t = testy.ClassDef("""
-{header}
----------
-{.repeated section people}
-  {name} {age}
-{.alternates with}
-  --
-{.or}
-  No people.
-{.end}
-""")
+    t = testy.ClassDef(
+        B("""
+        {header}
+        ---------
+        {.repeated section people}
+          {name} {age}
+        {.alternates with}
+          --
+        {.or}
+          No people.
+        {.end}
+        """))
 
-    self.verify.Expansion(t, with_people, """
-People
----------
-  Andy 20
-  --
-  Bob 25
-""")
+    self.verify.Expansion(t, with_people, B("""
+        People
+        ---------
+          Andy 20
+          --
+          Bob 25
+        """))
 
     # Empty list
     d = {
@@ -584,23 +591,24 @@ People
         'people': [],
         }
 
-    self.verify.Expansion(t, without_people, """
-People
----------
-  No people.
-""")
+    self.verify.Expansion(t, without_people, B("""
+        People
+        ---------
+          No people.
+        """))
 
   def testEmptyListWithSection(self):
     # From the wiki
 
-    t = testy.ClassDef("""
-{.section title-results}
-  Results.
-  {.repeated section @}
-    {num}. {line}
-  {.end}
-{.end}
-""")
+    t = testy.ClassDef(
+        B("""
+        {.section title-results}
+          Results.
+          {.repeated section @}
+            {num}. {line}
+          {.end}
+        {.end}
+        """))
     d = {
         'title-results': [
             {'num': 1, 'line': 'one'},
@@ -608,15 +616,15 @@ People
             ]
         }
 
-    self.verify.Expansion(t, d, """
-  Results.
-    1. one
-    2. two
-""", ignore_all_whitespace=True)
+    self.verify.Expansion(t, d, B("""
+          Results.
+            1. one
+            2. two
+        """), ignore_all_whitespace=True)
 
     d = { 'title-results': [] }
 
-    self.verify.Expansion(t, d, '\n')
+    self.verify.Expansion(t, d, '')
 
 
 class DottedLookupTest(testy.Test):
