@@ -53,7 +53,7 @@ import verifier as python_verifier
 B = util.BlockStr
 
 
-class TrivialTest(testy.Test):
+class TrivialTests(testy.Test):
   """For getting the skeleton of code in place!"""
 
   LABELS = ['multilanguage']
@@ -63,18 +63,10 @@ class TrivialTest(testy.Test):
     self.verify.Expansion(t, {}, 'Hello')
 
 
-class JsonTemplateTest(testy.PyUnitCompatibleTest):
-  """Language-independent tests for JSON Template."""
+class SimpleTests(testy.Test):
+  """Basic syntax."""
 
   LABELS = ['multilanguage']
-
-  # TODO: This isn't sed
-  VERIFIERS = [
-      python_verifier.InternalTemplateVerifier,
-      python_verifier.ExternalVerifier]
-
-  def __init__(self, verifier):
-    testy.PyUnitCompatibleTest.__init__(self, verifier)
 
   def testConfigurationErrors(self):
     self.verify.CompilationError(
@@ -103,6 +95,17 @@ class JsonTemplateTest(testy.PyUnitCompatibleTest):
   def testOnlyDeclaration(self):
     t = testy.ClassDef('{# Comment}')
     self.verify.Expansion(t, {}, '')
+
+
+class SubstitutionsTest(testy.Test):
+  """Language-independent tests for JSON Template."""
+
+  LABELS = ['multilanguage']
+
+  # TODO: This isn't sed
+  VERIFIERS = [
+      python_verifier.InternalTemplateVerifier,
+      python_verifier.ExternalVerifier]
 
   def testSimpleData(self):
     t = testy.ClassDef('Hello {name}, how are you')
@@ -143,7 +146,7 @@ class JsonTemplateTest(testy.PyUnitCompatibleTest):
     t = testy.ClassDef('Where is your {name|html}', undefined_str='???')
     self.verify.Expansion(t, {}, 'Where is your ???')
 
-  def testFormattingCharacter(self):
+  def testChangingFormattingCharacter(self):
     t = testy.ClassDef('Where is your {name:html}', format_char=':')
     self.verify.Expansion(t, {'name': '<head>'}, 'Where is your &lt;head&gt;')
 
@@ -171,6 +174,12 @@ class JsonTemplateTest(testy.PyUnitCompatibleTest):
     t = testy.ClassDef('{.section is-new}New since {@} ! {.end}')
     self.verify.Expansion(t, {}, '')
     self.verify.Expansion(t, {'is-new': 123}, 'New since 123 ! ')
+
+
+class SectionsTest(testy.PyUnitCompatibleTest):
+  """Test sections adn repeated sections."""
+
+  LABELS = ['multilanguage']
 
   def testSimpleSection(self):
     # Has some newlines too
