@@ -53,6 +53,16 @@ import verifier as python_verifier
 B = util.BlockStr
 
 
+class TrivialTest(testy.Test):
+  """For getting the skeleton of code in place!"""
+
+  LABELS = ['multilanguage']
+
+  def testTrivial(self):
+    t = testy.ClassDef('Hello')
+    self.verify.Expansion(t, {}, 'Hello')
+
+
 class JsonTemplateTest(testy.PyUnitCompatibleTest):
   """Language-independent tests for JSON Template."""
 
@@ -74,10 +84,6 @@ class JsonTemplateTest(testy.PyUnitCompatibleTest):
 
     # Should I assert that meta is not something crazy?  Max length of 4 and
     # containing {}, [], <> or () is liberal.
-
-  def testTrivial(self):
-    t = testy.ClassDef('Hello')
-    self.verify.Expansion(t, {}, 'Hello')
 
   def testComment(self):
     t = testy.ClassDef('Hello {# Comment} There')
