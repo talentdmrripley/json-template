@@ -18,7 +18,7 @@ How to release the Python code
  
    And open ``test.html`` in a web browser.
 
-   If you want to examine what would be created when doing a release,
+   Optionally, if you want to examine what would be created when doing a release,
    you can do the following::
 
      $ python setup.py sdist
