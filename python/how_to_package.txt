@@ -1,12 +1,37 @@
 How to package the Python code
 ==============================
 
-Create source code .tgz:
+Running tests
+-------------
 
-$ python setup.py sdist
+Before releasing, go to the trunk and run the internal tests::
 
-Create source code and upload this to Python Package Index (PyPI):
+  $ python jsontemplate_test.py
 
-$ python setup.py sdist upload
+Also run the Python tests::
+
+  $ python jsontemplate_test.py --python
+
+Also run the Python specific tests::
+
+  $ cd python/jsontemplate
+  $ python formatters_test.py
+  $ python jsontemplate_unittest.py
+
+Please run these tests with Python 2.4, Python 2.5 and Python 2.6.
+
+Releasing
+---------
+
+To create source code and upload this to Python Package Index (PyPI)::
+
+  $ python setup.py sdist upload
+
+To create source code .tgz for manual inspection::
+
+  $ python setup.py sdist
+
+This will appear in the ``dist`` directory.
+
 
 XXX need a scheme for version numbers in setup.py here.
