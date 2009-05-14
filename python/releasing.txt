@@ -18,8 +18,8 @@ How to release the Python code
  
    And open ``test.html`` in a web browser.
 
-   Optionally, if you want to examine what would be created when doing a release,
-   you can do the following::
+   Optionally, if you want to examine what would be created when doing
+   a release, you can do the following::
 
      $ python setup.py sdist
 
@@ -44,6 +44,8 @@ How to release the Python code
    3. Now create and upload the release::
 
       $ python setup.py register sdist upload
+
+   (this only works with Python 2.5 and up)
 
    The release has now been made public. We now need to do a "version
    bump" to prepare the development version for the work afterwards.
