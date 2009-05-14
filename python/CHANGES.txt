@@ -1,0 +1,7 @@
+Changes
+-------
+
+0.5b1 (2009-05-14)
+~~~~~~~~~~~~~~~~~~
+
+* Initial public release on PyPI.

@@ -1,21 +1,21 @@
 from distutils.core import setup
-
 import os
 
-long_description = """
-JSON Template is a simple declarative templating language.
+def read(*rnames):
+    return open(os.path.join(os.path.dirname(__file__), *rnames)).read()
 
-This is a release of the official Python implementation of JSON
-Template.
-
-For more about JSON Template, see:
-
-http://json-template.googlecode.com
-"""
+long_description = (
+    read('README.txt')
+    + '\n' +
+    read('CHANGES.txt')
+    + '\n' +
+    'Download\n'
+    '--------\n'
+    )
 
 setup(
     name="jsontemplate",
-    version="0.5dev",
+    version="0.5b1dev",
     description="A declarative templating language based on JSON",
     long_description=long_description,
     classifiers=[
