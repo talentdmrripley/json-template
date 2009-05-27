@@ -15,7 +15,7 @@ long_description = (
 
 setup(
     name="jsontemplate",
-    version="0.5b2dev",
+    version="0.5b3dev",
     description="A declarative templating language based on JSON",
     long_description=long_description,
     classifiers=[
