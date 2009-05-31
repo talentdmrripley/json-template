@@ -15,6 +15,7 @@ if __name__ == '__main__':
   sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 
 from jsontemplate import datadict  # module under test
+from jsontemplate import _jsontemplate as jsontemplate
 from pan.test import testy
 
 
@@ -63,6 +64,21 @@ class DataDictTest(testy.Test):
             'index': 2},
           ]
         })
+
+  def testCustomTemplate(self):
+
+    # Add indices automatically
+
+    class CustomTemplate(jsontemplate.Template):
+      def expand(self, data_dict):
+        datadict.AddIndex(data_dict)  # mutation
+        return jsontemplate.Template.expand(self, data_dict)
+
+    t = CustomTemplate("""{.repeated section @}{index} {name} {.end}""")
+    self.verify.Equal(
+        t.expand([{'name': 'Andy'}, {'name': 'Bob'}]),
+        '0 Andy 1 Bob ')
+
 
 
 if __name__ == '__main__':
