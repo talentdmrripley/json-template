@@ -326,13 +326,14 @@ var _SECTION_RE = /(repeated)?\s*(section)\s+(\S+)?/;
 // TODO: The compile function could be in a different module, in case we want to
 // compile on the server side.
 function _Compile(template_str, options) {
-  var more_formatters = options.more_formatters || function (x) { return null };
+  var more_formatters = options.more_formatters ||
+                        function (x) { return null; };
 
   // We want to allow an explicit null value for default_formatter, which means
   // that an error is raised if no formatter is specified.
   var default_formatter;
   if (options.default_formatter === undefined) {
-    default_formatter = 'str'; 
+    default_formatter = 'str';
   } else {
     default_formatter = options.default_formatter;
   }
@@ -507,26 +508,32 @@ function _Compile(template_str, options) {
   return current_block;
 }
 
+// The Template class is defined in the traditional style so that users can add
+// methods by mutating the prototype attribute.  TODO: Need a good idiom for
+// inheritance without mutating globals.
 
 function Template(template_str, options) {
-  // options.undefined_str can either be a string or undefined
-  options = options || {};
 
-  var program = _Compile(template_str, options);
+  // Add 'new' if we were not called with 'new', so prototyping works.
+  if(!(this instanceof Template)) {
+    return new Template(template_str, options);
+  }
 
-  return  {
-    render: function(data_dict, callback) {
-      var context = _ScopedContext(data_dict, options.undefined_str);
-      _Execute(program.Statements(), context, callback);
-    },
-
-    expand: function(data_dict) {
-      var tokens = [];
-      this.render(data_dict, function(x) { tokens.push(x); });
-      return tokens.join('');
-    }
-  };
+  this._options = options || {};
+  this._program = _Compile(template_str, this._options);
 }
+
+Template.prototype.render = function(data_dict, callback) {
+  // options.undefined_str can either be a string or undefined
+  var context = _ScopedContext(data_dict, this._options.undefined_str);
+  _Execute(this._program.Statements(), context, callback);
+};
+
+Template.prototype.expand = function(data_dict) {
+  var tokens = [];
+  this.render(data_dict, function(x) { tokens.push(x); });
+  return tokens.join('');
+};
 
 
 // We just export one name for now, the Template "class".

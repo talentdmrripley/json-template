@@ -134,6 +134,29 @@ testChainedStrFormatter: function () {
   jsUnity.assertions.assertEqual(actual, 'num: [replaced Object]');
 }
 """,
+"""
+testUsingNewToConstruct: function () {
+
+  // A user-defined function that expands the template into an array of tokens
+  jsontemplate.Template.prototype.toArray = function (data_dict, array) {
+    this.render(data_dict, function (x) { array.push(x); });
+  };
+
+  d = {'name': 'World'};
+
+  // Test expansion with 'new' too
+  var t = new jsontemplate.Template('Hello {name}');
+  var actual = t.expand(d);
+  jsUnity.assertions.assertEqual(actual, 'Hello World');
+
+  var tokens = [];
+  t.toArray(d, tokens);
+
+  // There's an extra '' at the end of the array.  That should probably be
+  // suppressed, but take a slice for now, so it's not overspecified.
+  jsUnity.assertions.assertEqual(tokens.slice(0, 2), ['Hello ', 'World']);
+}
+""",
     ]
 
 class TestGenerator(testy.StandardVerifier):
