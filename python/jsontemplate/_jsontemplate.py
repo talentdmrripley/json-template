@@ -38,7 +38,6 @@ __all__ = ['Error', 'CompilationError', 'EvaluationError',
 import cStringIO
 import pprint
 import re
-import sys
 
 # For formatters
 import cgi  # cgi.escape
