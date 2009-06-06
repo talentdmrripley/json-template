@@ -116,6 +116,42 @@ class FormattersTest(testy.Test):
 
     self.verify.Equal(t.expand(d), 'Bob is 13\n')
 
+  def testPlural(self):
+    chained = formatters.LookupChain([
+        formatters.Plural,
+        ])
+
+    t = jsontemplate.Template(
+        "{num-people} {num-people|plural? people person} in this group",
+        more_formatters=chained)
+
+    self.verify.Equal(
+        t.expand({'num-people': 3}),
+        '3 people in this group')
+
+    self.verify.Equal(
+        t.expand({'num-people': 1}),
+        '1 person in this group')
+
+  def testPluralWithSpaces(self):
+    chained = formatters.LookupChain([
+        formatters.Plural,
+        ])
+
+    # This demonstrates how you can include spaces in the arguments.  The first
+    # thing after plural? is the separator char -- in this case, a comma.
+    t = jsontemplate.Template(
+        "{num-people}{num-people|plural?, people, person} in this group",
+        more_formatters=chained)
+
+    self.verify.Equal(
+        t.expand({'num-people': 3}),
+        '3 people in this group')
+
+    self.verify.Equal(
+        t.expand({'num-people': 1}),
+        '1 person in this group')
+
 
 if __name__ == '__main__':
   testy.RunThisModule()

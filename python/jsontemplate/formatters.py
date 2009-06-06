@@ -4,8 +4,6 @@ formatters.py
 
 This module should implement the standard list of formatters.
 
-TODO: Specify language-independent formatters.
-
 It also provides a method LookupChain for *composing lookup chains* for
 formatters.
 
@@ -25,6 +23,11 @@ import os
 import sys
 
 import _jsontemplate as jsontemplate  # For TemplateFileInclude
+
+
+class Error(Exception):
+  """Base class for all exceptions raised by this module."""
+
 
 def LookupChain(lookup_func_list):
   """Returns a *function* suitable for passing as the more_formatters argument
@@ -110,3 +113,37 @@ class Json(object):
 
     else:
       return None  # this lookup is not applicable
+
+
+def Plural(format_str):
+  """Returns whether the value should be considered a plural value.
+
+  Integers greater than 1 are plural, and lists with length greater than one are
+  too.
+  """
+  if format_str.startswith('plural?'):
+    i = len('plural?')
+
+    try:
+      splitchar = format_str[i]  # Usually a space, but could be something else
+      _, plural_val, singular_val = format_str.split(splitchar)
+    except IndexError:
+      raise Error('plural? must have exactly 2 arguments')
+
+    def Formatter(value):
+      plural = False
+      if isinstance(value, int) and value > 1:
+        plural = True
+      if isinstance(value, list) and len(value) > 1:
+        plural = True
+
+      if plural:
+        return plural_val
+      else:
+        return singular_val
+
+    return Formatter
+
+  else:
+    return None  # this lookup is not applicable
+
