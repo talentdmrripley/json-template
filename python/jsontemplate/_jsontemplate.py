@@ -110,12 +110,14 @@ class _ProgramBuilder(object):
   def __init__(self, more_formatters):
     """
     Args:
-      more_formatters: A function which returns a function to apply to the
-          value, given a format string.  It can return None, in which case the
-          _DEFAULT_FORMATTERS dictionary is consulted.
+      more_formatters: See docstring for CompileTemplate
     """
     self.current_block = _Section()
     self.stack = [self.current_block]
+    # Passing a dictionary instead of a function is often more convenient
+    if isinstance(more_formatters, dict):
+      # .get is a function which returns either a function None
+      more_formatters = more_formatters.get
     self.more_formatters = more_formatters
 
   def Append(self, statement):
@@ -493,14 +495,22 @@ def CompileTemplate(
   Args:
     template_str: The template string.  It should not have any compilation
         options in the header -- those are parsed by FromString/FromFile
-    builder: Something with the interface of _ProgramBuilder
-    meta: The metacharacters to use
-    more_formatters: A function which maps format strings to
-        *other functions*.  The resulting functions should take a data
-        dictionary value (a JSON atom, or a dictionary itself), and return a
-        string to be shown on the page.  These are often used for HTML escaping,
-        etc.  There is a default set of formatters available if more_formatters
-        is not passed.
+
+    builder: The interface of _ProgramBuilder isn't fixed.  Use at your own
+        risk.
+
+    meta: The metacharacters to use, e.g. '{}', '[]'.
+
+    more_formatters:
+        A function which maps format strings to *other functions*.  The
+        resulting functions should take a data dictionary value (a JSON atom, or
+        a dictionary itself), and return a string to be shown on the page.
+        These are often used for HTML escaping, etc.  There is a default set of
+        formatters available if more_formatters is not passed.
+
+        This argument may also be a dictionary (of strings to functions), in
+        which case it's "converted" to a function in the obvious way.
+
     default_formatter: The formatter to use for substitutions that are missing a
         formatter.  The 'str' formatter the "default default" -- it just tries
         to convert the context value to a string in some unspecified manner.

@@ -107,8 +107,6 @@ Hello <there>
     self.verify.Equal(t.expand({'dude': 'Andy'}), 'Hello Andy')
 
 
-
-
 class InternalTemplateTest(testy.PyUnitCompatibleTest):
   """Tests that can only be run internally."""
 
@@ -252,6 +250,16 @@ class InternalTemplateTest(testy.PyUnitCompatibleTest):
     # TODO: Need a lot more comprehensive *external* unicode tests, as well as
     # ones for the internal API.  Need to test mixing of unicode() and str()
     # instances (or declare it undefined).
+
+  def testMoreFormattersAsDict(self):
+    t = jsontemplate.Template(
+        'Hello {name|lower} {name|upper}',
+        more_formatters={
+            'lower': lambda v: v.lower(),
+            'upper': lambda v: v.upper(),
+            })
+
+    self.verify.Equal(t.expand({'name': 'World'}), 'Hello world WORLD')
 
 
 if __name__ == '__main__':
