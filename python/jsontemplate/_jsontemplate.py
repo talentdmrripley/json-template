@@ -769,7 +769,7 @@ def _DoRepeatedSection(args, context, callback):
     # If the name is @, we stay in the enclosing context, but assume it's a
     # list, and repeat this block many times.
     items = context.CursorValue()
-    if type(items) is not list:
+    if not isinstance(items, list):
       raise EvaluationError('Expected a list; got %s' % type(items))
     pushed = False
   else:
@@ -802,12 +802,12 @@ def _DoSection(args, context, callback):
   """{section foo}"""
 
   block = args
-  # If a section isn't present in the dictionary, or is None, then don't show it
-  # at all.
+  # If a section present and "true", push the dictionary onto the stack as the
+  # new context, and show it
   if context.PushSection(block.section_name):
     _Execute(block.Statements(), context, callback)
     context.Pop()
-  else:  # Empty list, None, False, etc.
+  else:  # missing or "false" -- show the {.or} section
     context.Pop()
     _Execute(block.Statements('or'), context, callback)
 
