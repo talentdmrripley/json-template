@@ -24,11 +24,10 @@ __author__ = 'Andy Chu'
 
 import os
 from pprint import pprint
-import subprocess
 import sys
 
 if __name__ == '__main__':
-  # for jsontemplate
+  # for jsontemplate package
   sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'python'))
 
 from pan.core import cmdapp
