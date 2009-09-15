@@ -12,7 +12,12 @@ if (WScript.Arguments.length > 0) {  // program name not included
   var fs = WScript.CreateObject("Scripting.FileSystemObject");
   for (var i=0; i < WScript.Arguments.length; i++) {
     var name = WScript.Arguments(i);  // this isn't a JS array, apparently
-    var f = fs.OpenTextFile(name, 1);  // 1 means reading
+    try {
+      var f = fs.OpenTextFile(name, 1);  // 1 means reading
+    } catch(e) {
+      WScript.StdErr.WriteLine("cscript-shell.js: Couldn't open file " + name);
+      continue;
+    }
     while (!f.AtEndOfStream) {
       var line = f.ReadLine();
       lines.push(line + '\n');
