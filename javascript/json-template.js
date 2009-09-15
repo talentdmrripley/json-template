@@ -213,9 +213,8 @@ function _Section(section_name) {
 
 
 function _Execute(statements, context, callback) {
-  var i;
-  for (i=0; i<statements.length; i++) {
-    statement = statements[i];
+  for (var i=0; i<statements.length; i++) {
+    var statement = statements[i];
 
     //log('Executing ' + statement);
 
@@ -240,7 +239,7 @@ function _DoSubstitute(statement, context, callback) {
   }
 
   // Format values
-  for (i=0; i<statement.formatters.length; i++) {
+  for (var i=0; i<statement.formatters.length; i++) {
     value = statement.formatters[i](value);
   }
 
