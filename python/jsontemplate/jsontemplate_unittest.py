@@ -106,6 +106,15 @@ Hello <there>
     t = jsontemplate.FromString(f)
     self.verify.Equal(t.expand({'dude': 'Andy'}), 'Hello Andy')
 
+  def testEncoding(self):
+    # Bug fix: Templates that are Unicode strings should expand as Unicode
+    # strings
+    t = jsontemplate.FromString(u'\u00FF')
+    self.verify.Equal(t.expand({}), u'\u00FF')
+
+    t = jsontemplate.FromString(u'\uFF00')
+    self.verify.Equal(t.expand({}), u'\uFF00')
+
 
 class InternalTemplateTest(testy.PyUnitCompatibleTest):
   """Tests that can only be run internally."""

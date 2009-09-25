@@ -35,7 +35,7 @@ __all__ = ['Error', 'CompilationError', 'EvaluationError',
            'CompileTemplate', 'FromString', 'FromFile',
            'Template', 'expand']
 
-import cStringIO
+import StringIO
 import pprint
 import re
 
@@ -603,7 +603,7 @@ _OPTION_NAMES = ['meta', 'format-char', 'default-formatter', 'undefined-str']
 def FromString(s, more_formatters=lambda x: None, _constructor=None):
   """Like FromFile, but takes a string."""
 
-  f = cStringIO.StringIO(s)
+  f = StringIO.StringIO(s)
   return FromFile(f, more_formatters=more_formatters, _constructor=_constructor)
 
 
