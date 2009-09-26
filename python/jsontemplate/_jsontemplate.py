@@ -224,15 +224,12 @@ class _ScopedContext(object):
   def Pop(self):
     self.stack.pop()
 
-  def CursorValue(self):
-    return self.stack[-1]
-
   def __iter__(self):
     """Assumes that the top of the stack is a list."""
 
     # The top of the stack is always the current context.
     self.stack.append(None)
-    for item in self.stack[-2]:
+    for index, item in enumerate(self.stack[-2]):
       self.stack[-1] = item
       yield item
     self.stack.pop()
@@ -276,6 +273,9 @@ class _ScopedContext(object):
     Raises:
       UndefinedVariable if self.undefined_str is not set
     """
+    if name == '@':
+      return self.stack[-1]
+
     parts = name.split('.')
     value = self._LookUpStack(parts[0])
 
@@ -768,7 +768,7 @@ def _DoRepeatedSection(args, context, callback):
   if block.section_name == '@':
     # If the name is @, we stay in the enclosing context, but assume it's a
     # list, and repeat this block many times.
-    items = context.CursorValue()
+    items = context.Lookup('@')
     if not isinstance(items, list):
       raise EvaluationError('Expected a list; got %s' % type(items))
     pushed = False
@@ -820,7 +820,7 @@ def _DoSubstitute(args, context, callback):
   # So we can have {.section is_new}new since {@}{.end}.  Hopefully this idiom
   # is OK.
   if name == '@':
-    value = context.CursorValue()
+    value = context.Lookup('@')
   else:
     try:
       value = context.Lookup(name)
