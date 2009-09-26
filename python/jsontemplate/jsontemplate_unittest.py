@@ -16,10 +16,13 @@ if __name__ == '__main__':
 
 from pan.core import json
 from pan.test import testy
+from pan.core import util
 
 # We need access to the internals here
 from jsontemplate import _jsontemplate as jsontemplate
 import verifier as python_verifier
+
+B = util.BlockStr
 
 
 class TokenizeTest(testy.Test):
@@ -269,6 +272,42 @@ class InternalTemplateTest(testy.PyUnitCompatibleTest):
             })
 
     self.verify.Equal(t.expand({'name': 'World'}), 'Hello world WORLD')
+
+
+class AdvancedTemplateTest(testy.Test):
+
+  VERIFIERS = [python_verifier.InternalTemplateVerifier]
+
+  def testRecursiveTemplates(self):
+    # TODO: This doesn't work yet, since I can't pass child_template.expand as a
+    # formatter to child_template.
+    # 
+    # Probably need a TemplateSet abstraction.  And that may need some awareness
+    # of the 'template-file' formatter name.
+    child_template = jsontemplate.Template(
+        B("""
+        - {@}
+        """))
+
+    top = jsontemplate.Template(
+        B("""
+        Directory listing for {root}
+
+        {.repeated section children}
+          {@|child}
+        {.end}
+        """), more_formatters={'child': child_template.expand})
+
+    data = {
+      'root': '/home',
+      'children': [
+        'bin',
+        'work',
+        ],
+      }
+
+    s = top.expand(data)
+    #print s
 
 
 if __name__ == '__main__':
