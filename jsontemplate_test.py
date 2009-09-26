@@ -728,6 +728,73 @@ class DottedLookupTest(testy.Test):
         {'foo': 100})
 
 
+class SpecialVariableTest(testy.Test):
+  """Tests the special $index variable."""
+
+  LABELS = ['multilanguage']
+
+  @testy.no_verify('javascript', 'java', 'php')
+  def testIndex(self):
+    t = testy.ClassDef(
+    B("""
+    {.repeated section @}
+      {$index} {name}
+    {.end}
+    """))
+
+    data = [
+      {'name': 'Spam'},
+      {'name': 'Eggs'},
+      ]
+
+    expected = B("""
+      0 Spam
+      1 Eggs
+    """)
+    self.verify.Expansion(t, data, expected)
+
+  @testy.no_verify('javascript', 'java', 'php')
+  def testTwoIndices(self):
+    t = testy.ClassDef(
+    B("""
+    {.repeated section albums}
+      {$index} {name}
+      {.repeated section songs}
+        {$index} {@}
+      {.end}
+    {.end}
+    """))
+
+    data = {
+      'albums': [
+        { 'name': 'Diary of a Madman',
+          'songs': ['Over the Mountain', 'S.A.T.O']},
+        { 'name': 'Bark at the Moon',
+          'songs': ['Waiting for Darkness']},
+        ]
+      }
+
+    expected = B("""
+      0 Diary of a Madman
+        0 Over the Mountain
+        1 S.A.T.O
+      1 Bark at the Moon
+        0 Waiting for Darkness
+    """)
+    self.verify.Expansion(t, data, expected)
+
+  @testy.no_verify('javascript', 'java', 'php')
+  def testUndefinedIndex(self):
+    t = testy.ClassDef(
+    B("""
+    {.section foo}
+      {$index} {name}
+    {.end}
+    """))
+    data = {'foo': 'bar'}
+    self.verify.EvaluationError(jsontemplate.UndefinedVariable, t, data)
+
+
 class StandardFormattersTest(testy.Test):
   """Test that each implementation implements the standard formatters."""
 

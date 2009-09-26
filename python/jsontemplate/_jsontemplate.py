@@ -272,16 +272,25 @@ class _ScopedContext(object):
     """Look up the stack for the given name."""
     i = len(self.stack) - 1
     while 1:
-      context = self.stack[i].context
-
-      if not hasattr(context, 'get'):  # Can't look up names in a list or atom
-        i -= 1
-      else:
-        value = context.get(name)
-        if value is None:  # A key of None or a missing key are treated the same
+      frame = self.stack[i]
+      if name == '$index':
+        if frame.index == -1:  # undefined value
           i -= 1
         else:
-          return value
+          return frame.index - 1  # $index is 0-based
+
+      else:
+        context = frame.context
+
+        if not hasattr(context, 'get'):  # Can't look up names in a list or atom
+          i -= 1
+        else:
+          value = context.get(name)
+          # A key of None or a missing key are treated the same
+          if value is None:  
+            i -= 1
+          else:
+            return value
 
       if i <= -1:  # Couldn't find it anywhere
         return self._Undefined(name)
