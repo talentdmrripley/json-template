@@ -120,7 +120,7 @@ function _ScopedContext(context, undefined_str) {
       // We're already done
       if (stacktop.index == context_array.length) {
         stack.pop();
-        return null;  // sentinel to say that we're done
+        return undefined;  // sentinel to say that we're done
       }
 
       stacktop.context = context_array[stacktop.index++];
@@ -289,7 +289,7 @@ function _DoRepeatedSection(args, context, callback) {
     var statements = block.Statements();
     var alt_statements = block.Statements('alternate');
 
-    for (var i=0; context.next() !== null; i++) {
+    for (var i=0; context.next() !== undefined; i++) {
       _Execute(statements, context, callback);
       if (i != last_index) {
         _Execute(alt_statements, context, callback);
