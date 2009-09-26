@@ -116,13 +116,11 @@ class SubstitutionsTest(testy.Test):
     t = testy.ClassDef('There are {num} ways to do it')
     self.verify.Expansion(t, {'num': 5}, 'There are 5 ways to do it')
 
+  # TODO: Implement in Java/PHP
+  @testy.no_verify('java', 'php')
   def testExpandingNull(self):
-    # None/null is considered undefined.  Typically, a null value should be
-    # wrapped in section instead.
-    # TODO: Revisit this behavior; doesn't seem right!
-    t = testy.ClassDef('There are {num} ways to do it')
-    self.verify.EvaluationError(
-        jsontemplate.UndefinedVariable, t, {'num': None})
+    t = testy.ClassDef('There are {num|str} ways to do it')
+    self.verify.Expansion(t, {'num': None}, 'There are null ways to do it')
 
   def testVariableFormat(self):
     t = testy.ClassDef('Where is your {name|html}')
@@ -136,8 +134,8 @@ class SubstitutionsTest(testy.Test):
     t = testy.ClassDef('Where is your {name|html}')
     self.verify.EvaluationError(jsontemplate.UndefinedVariable, t, {})
 
-  # TODO: Implement in Java
-  @testy.only_verify('python', 'javascript')
+  # TODO: Implement in Java/PHP
+  @testy.no_verify('java', 'php')
   def testUndefinedVariableUsesUndefinedStr(self):
     t = testy.ClassDef('Where is your {name|html}', undefined_str='')
     self.verify.Expansion(t, {}, 'Where is your ')

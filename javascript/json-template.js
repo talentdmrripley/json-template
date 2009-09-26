@@ -69,6 +69,9 @@ function HtmlTagEscape(s) {
 
 // Default ToString can be changed
 function ToString(s) {
+  if (s === null) {
+    return 'null';
+  }
   return s.toString();
 }
 
@@ -146,7 +149,7 @@ function _ScopedContext(context, undefined_str) {
           i--;
         } else {
           var value = context[name];
-          if (value === undefined || value === null) {
+          if (value === undefined) {
             i--;
           } else {
             return value;

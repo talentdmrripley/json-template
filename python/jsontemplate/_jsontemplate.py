@@ -285,12 +285,10 @@ class _ScopedContext(object):
         if not hasattr(context, 'get'):  # Can't look up names in a list or atom
           i -= 1
         else:
-          value = context.get(name)
-          # A key of None or a missing key are treated the same
-          if value is None:  
+          try:
+            return context[name]
+          except KeyError:
             i -= 1
-          else:
-            return value
 
       if i <= -1:  # Couldn't find it anywhere
         return self._Undefined(name)
@@ -327,10 +325,12 @@ class _ScopedContext(object):
 
 
 def _ToString(x):
-  if type(x) in (str, unicode):
+  # Some cross-language values for primitives
+  if x is None:
+    return 'null'  
+  if isinstance(x, basestring):
     return x
-  else:
-    return pprint.pformat(x)
+  return pprint.pformat(x)
 
 
 def _HtmlAttrValue(x):
