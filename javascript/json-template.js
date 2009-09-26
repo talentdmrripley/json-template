@@ -127,10 +127,6 @@ function _ScopedContext(context, undefined_str) {
       return true;  // OK, we mutated the stack
     },
 
-    CursorValue: function() {
-      return stack[stack.length - 1].context;
-    },
-
     _Undefined: function(name) {
       if (undefined_str === undefined) {
         throw {
@@ -163,6 +159,9 @@ function _ScopedContext(context, undefined_str) {
     },
 
     Lookup: function(name) {
+      if (name == '@') {
+        return stack[stack.length-1].context;
+      }
       var parts = name.split('.');
       var value = this._LookUpStack(parts[0]);
       if (parts.length > 1) {
@@ -222,11 +221,7 @@ function _Execute(statements, context, callback) {
 
 function _DoSubstitute(statement, context, callback) {
   var value;
-  if (statement.name == '@') {
-    value = context.CursorValue();
-  } else {
-    value = context.Lookup(statement.name);
-  }
+  value = context.Lookup(statement.name);
 
   // Format values
   for (var i=0; i<statement.formatters.length; i++) {
@@ -270,7 +265,7 @@ function _DoRepeatedSection(args, context, callback) {
   if (block.section_name == '@') {
     // If the name is @, we stay in the enclosing context, but assume it's a
     // list, and repeat this block many times.
-    items = context.CursorValue();
+    items = context.Lookup('@');
     // TODO: check that items is an array; apparently this is hard in JavaScript
     //if type(items) is not list:
     //  raise EvaluationError('Expected a list; got %s' % type(items))
