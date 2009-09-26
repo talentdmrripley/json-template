@@ -93,7 +93,6 @@ function _ScopedContext(context, undefined_str) {
 
   return {
     PushSection: function(name) {
-      log('PushSection '+name);
       if (name === undefined || name === null) {
         return null;
       }
@@ -116,20 +115,15 @@ function _ScopedContext(context, undefined_str) {
       }
 
       // The thing we're iterating over
-      var context_array = stack[stack.length - 2].context;
+      var context_array = stack[stack.length-2].context;
 
       // We're already done
       if (stacktop.index == context_array.length) {
         stack.pop();
-        log('next: null');
         return null;  // sentinel to say that we're done
       }
 
-      log('next: ' + stacktop.index);
-
       stacktop.context = context_array[stacktop.index++];
-
-      log('next: true');
       return true;  // OK, we mutated the stack
     },
 
@@ -151,7 +145,6 @@ function _ScopedContext(context, undefined_str) {
       var i = stack.length - 1;
       while (true) {
         var context = stack[i].context;
-        log('context '+repr(context));
 
         if (typeof context !== 'object') {
           i--;
@@ -216,8 +209,6 @@ function _Execute(statements, context, callback) {
   for (var i=0; i<statements.length; i++) {
     var statement = statements[i];
 
-    //log('Executing ' + statement);
-
     if (typeof(statement) == 'string') {
       callback(statement);
     } else {
@@ -230,7 +221,6 @@ function _Execute(statements, context, callback) {
 
 
 function _DoSubstitute(statement, context, callback) {
-  log('Substituting: '+ statement.name);
   var value;
   if (statement.name == '@') {
     value = context.CursorValue();
@@ -290,7 +280,6 @@ function _DoRepeatedSection(args, context, callback) {
     pushed = true;
   }
 
-  //log('ITEMS: '+showArray(items));
   if (items && items.length > 0) {
     // Execute the statements in the block for every item in the list.
     // Execute the alternate block on every iteration except the last.  Each
@@ -301,15 +290,12 @@ function _DoRepeatedSection(args, context, callback) {
     var alt_statements = block.Statements('alternate');
 
     for (var i=0; context.next() !== null; i++) {
-      log('_DoRepeatedSection i: ' +i);
       _Execute(statements, context, callback);
       if (i != last_index) {
-        log('ALTERNATE');
         _Execute(alt_statements, context, callback);
       }
     }
   } else {
-    log('OR: '+block.Statements('or'));
     _Execute(block.Statements('or'), context, callback);
   }
 
@@ -379,24 +365,18 @@ function _Compile(template_str, options) {
 
   while (true) {
     token_match = token_re.exec(template_str);
-    log('match:', token_match);
     if (token_match === null) {
       break;
     } else {
       var token = token_match[0];
     }
-    log('last_index: '+ last_index);
-    log('token_match.index: '+ token_match.index);
 
     // Add the previous literal to the program
     if (token_match.index > last_index) {
       var tok = template_str.slice(last_index, token_match.index);
       current_block.Append(tok);
-      log('tok: "'+ tok+'"');
     }
     last_index = token_re.lastIndex;
-
-    log('token0: "'+ token+'"');
 
     var had_newline = false;
     if (token.slice(-1) == '\n') {
@@ -432,7 +412,6 @@ function _Compile(template_str, options) {
         var repeated = section_match[1];
         var section_name = section_match[3];
         var func = repeated ? _DoRepeatedSection : _DoSection;
-        log('repeated ' + repeated + ' section_name ' + section_name);
 
         var new_block = _Section(section_name);
         current_block.Append([func, new_block]);
