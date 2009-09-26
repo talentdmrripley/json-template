@@ -201,6 +201,15 @@ class _Section(object):
     self.current_clause.append(statement)
 
 
+class _Frame(object):
+  """A stack frame."""
+
+  def __init__(self, context, index=-1):
+    # Public attributes
+    self.context = context
+    self.index = index   # An iteration index.  -1 means we're NOT iterating.
+
+
 class _ScopedContext(object):
   """Allows scoped lookup of variables.
 
@@ -213,26 +222,45 @@ class _ScopedContext(object):
       context: The root context
       undefined_str: See Template() constructor.
     """
-    self.stack = [context]
+    self.stack = [_Frame(context)]
     self.undefined_str = undefined_str
 
   def PushSection(self, name):
-    new_context = self.stack[-1].get(name)
-    self.stack.append(new_context)
+    """Given a section name, push it on the top of the stack.
+    
+    Returns:
+      The new section, or None if there is no such section.
+    """
+    new_context = self.stack[-1].context.get(name)
+    self.stack.append(_Frame(new_context))
     return new_context
 
   def Pop(self):
     self.stack.pop()
 
-  def __iter__(self):
-    """Assumes that the top of the stack is a list."""
+  def Next(self):
+    """Advance to the next item in a repeated section.
 
-    # The top of the stack is always the current context.
-    self.stack.append(None)
-    for index, item in enumerate(self.stack[-2]):
-      self.stack[-1] = item
-      yield item
-    self.stack.pop()
+    Raises:
+      StopIteration if there are no more elements
+    """
+    stacktop = self.stack[-1]
+
+    # Now we're iterating -- push a new mutable object onto the stack
+    if stacktop.index == -1:
+      stacktop = _Frame(None, index=0)
+      self.stack.append(stacktop)
+
+    context_array = self.stack[-2].context
+
+    if stacktop.index == len(context_array):
+      self.stack.pop()
+      raise StopIteration
+
+    stacktop.context = context_array[stacktop.index]
+    stacktop.index += 1
+
+    return True  # OK, we mutated the stack
 
   def _Undefined(self, name):
     if self.undefined_str is None:
@@ -244,7 +272,7 @@ class _ScopedContext(object):
     """Look up the stack for the given name."""
     i = len(self.stack) - 1
     while 1:
-      context = self.stack[i]
+      context = self.stack[i].context
 
       if not hasattr(context, 'get'):  # Can't look up names in a list or atom
         i -= 1
@@ -274,7 +302,7 @@ class _ScopedContext(object):
       UndefinedVariable if self.undefined_str is not set
     """
     if name == '@':
-      return self.stack[-1]
+      return self.stack[-1].context
 
     parts = name.split('.')
     value = self._LookUpStack(parts[0])
@@ -782,14 +810,19 @@ def _DoRepeatedSection(args, context, callback):
     last_index = len(items) - 1
     statements = block.Statements()
     alt_statements = block.Statements('alternates with')
-    # NOTE: Iteration mutates the context!
-    for i, _ in enumerate(context):
-      # Execute the statements in the block for every item in the list.  Execute
-      # the alternate block on every iteration except the last.
-      # Each item could be an atom (string, integer, etc.) or a dictionary.
-      _Execute(statements, context, callback)
-      if i != last_index:
-        _Execute(alt_statements, context, callback)
+    try:
+      i = 0
+      while True:
+        context.Next()
+        # Execute the statements in the block for every item in the list.
+        # Execute the alternate block on every iteration except the last.  Each
+        # item could be an atom (string, integer, etc.) or a dictionary.
+        _Execute(statements, context, callback)
+        if i != last_index:
+          _Execute(alt_statements, context, callback)
+        i += 1
+    except StopIteration:
+      pass
 
   else:
     _Execute(block.Statements('or'), context, callback)

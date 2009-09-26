@@ -119,6 +119,30 @@ Hello <there>
     self.verify.Equal(t.expand({}), u'\uFF00')
 
 
+class ScopedContextTest(testy.Test):
+
+  def testScopedContext(self):
+    data = {'foo': [1,2,3]}
+    s = jsontemplate._ScopedContext(data, '')
+    self.verify.Equal(s.Lookup('@'), data)
+    self.verify.Equal(s.Lookup('foo'), data['foo'])
+    self.verify.Equal(s.Lookup('@'), data)
+
+    print s.PushSection('foo')
+    self.verify.Equal(s.Lookup('@'), data['foo'])
+    s.Next()
+    self.verify.Equal(s.Lookup('@'), 1)
+    s.Next()
+    self.verify.Equal(s.Lookup('@'), 2)
+    s.Next()
+    self.verify.Equal(s.Lookup('@'), 3)
+    self.verify.Raises(StopIteration, s.Next)
+
+  def testEmptyList(self):
+    s = jsontemplate._ScopedContext([], '')
+    self.verify.Raises(StopIteration, s.Next)
+
+
 class InternalTemplateTest(testy.PyUnitCompatibleTest):
   """Tests that can only be run internally."""
 
