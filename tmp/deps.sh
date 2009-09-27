@@ -5,7 +5,5 @@
 #
 # Usage:
 #   source deps.sh
-#
-# For using the head version of svn:externals
 
-export PYTHONPATH=../../pan/trunk
+export PYTHONPATH=../../svn/pan/trunk
