@@ -440,13 +440,18 @@ def MakeTokenRegex(meta_left, meta_right):
 def _MatchDirective(token):
   """Helper function for matching certain directives."""
 
-  if token in ('.or', '.alternates with'):
-    return CLAUSE_TOKEN, token[1:]
+  if token.startswith('.'):
+    token = token[1:]
+  else:
+    return None, None  # Must start with .
 
-  if token == '.end':
+  if token in ('or', 'alternates with'):
+    return CLAUSE_TOKEN, token
+
+  if token == 'end':
     return END_TOKEN, None
 
-  match = _SECTION_RE.match(token[1:])
+  match = _SECTION_RE.match(token)
   if match:
     repeated, section_name = match.groups()
     if repeated:
