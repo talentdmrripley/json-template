@@ -1,0 +1,339 @@
+<!DOCTYPE HTML>
+
+
+<html lang=en>
+
+<head>
+<meta charset=utf-8>
+<title>Introducing JSON Template</title>
+
+
+
+
+<style type=text/css>
+/* Literals are blocks, maybe not the best name. */
+.literal {
+  background-color: #EEE;
+  padding: 0.5em;
+}
+
+/* Override what's in the google-code-prettify CSS */
+pre.prettyprint {
+  background-color: #EEE;
+  padding: 0.5em;
+  border: none;
+}
+
+/* Make keywords bold, and comments italicized.
+See http://google-code-prettify.googlecode.com/svn/trunk/src/prettify.css 
+*/
+.kwd { color: #008; font-weight: bold; }
+.com { color: #800; font-style: italic; }
+
+/* Inline code */
+code {
+  color: green;
+}
+
+.footnotes {
+  font-size: small;
+}
+
+</style>
+</head>
+
+<body onload="">
+<table>
+  <tr>
+    <td>
+    </td>
+    <td width="40%">
+<p align="right">
+<i>March 2009</i>
+</p>
+
+<h1>Introducing JSON Template</h1>
+
+<p><a href="http://code.google.com/p/json-template/">JSON Template</a> is a minimal
+but powerful templating language, currently implemented in <i>both</i>
+<a href="http://python.org">Python</a> and 
+<a href="http://en.wikipedia.org/wiki/JavaScript">JavaScript</a>.
+
+<p>To use it, simply copy the <a
+href="http://json-template.googlecode.com/files/jsontemplate.py">Python file</a>
+or the <a
+href="http://json-template.googlecode.com/files/json-template.js">JavaScript
+file</a> into your project.  Neither has any external dependencies.
+
+<p>Since there are over one bajillion template languages for Python alone, it
+deserves some explanation.  But first here are some examples.
+
+<h3>Simple example</h3>
+
+<blockquote>
+<pre>>>> import jsontemplate
+>>> jsontemplate.expand('Hello <span style="color: green">{name}</span>', {'<span style="color: green">name</span>': 'world'})</span>
+'Hello world'</pre>
+</blockquote>
+
+<p>This Python example should look familiar to many people.*  The JavaScript
+version is a straightforward translation of this API.
+
+<h3>Full Example</h3>
+
+<p>To read this example, keep in mind the following:
+
+<ul>
+
+<li>A variable can be <b>substituted</b> by surrounding its name with curly
+braces: <code>{}</code></li>
+
+<li>Template "directives" start with a period: <code>.</code></li>
+
+<li>In place of for loops and if statements, the basic idea is that the template
+<b>declares</b> <code>section</code>s and <code>repeated section</code>s.  The
+sections are named after <b>keys</b> in the JSON data dictionary.  The presence
+or absence of the keys in the JSON dictionary implicitly determines if and how
+many times a section is expanded.</li>
+
+<li>If a JSON dictionary key is missing or empty (<code>[]</code>,
+<code>{}</code>, or <code>null</code>), then the <code>{.or}</code> section is
+expanded.
+</li>
+
+
+</ul>
+
+<p>These few constructs are surprisingly powerful.
+
+<p>The following example uses <i>most</i> of the language, but not all.
+
+
+<p><b>A template string ...</b></p>
+
+<div class="literal">
+<pre><span style="color: red;">{# This is a comment and will be removed from the output.}</span>
+
+<span style="color: blue;">{.section songs}</span>
+  &lt;h2&gt;Songs in '<span style="color: green;">{playlist-name}</span>'&lt;/h2&gt;
+
+  &lt;table width="100%"&gt;
+  <span style="color: blue;">{.repeated section @}</span>
+    &lt;tr&gt;
+      &lt;td&gt;&lt;a href="<span style="color: green;">{url-base|htmltag}</span><span style="color: green;">{url|htmltag}</span>"&gt;Play&lt;/a&gt;
+      &lt;td&gt;&lt;i&gt;<span style="color: green;">{title}</span>&lt;/i&gt;&lt;/td&gt;
+      &lt;td&gt;<span style="color: green;">{artist}</span>&lt;/td&gt;
+    &lt;/tr&gt;
+  <span style="color: blue;">{.end}</span>
+  &lt;/table&gt;
+<span style="color: blue;">{.or}</span>
+  &lt;p&gt;&lt;em&gt;(No page content matches)&lt;/em&gt;&lt;/p&gt;
+<span style="color: blue;">{.end}</span>
+</pre>
+</div>
+
+<p><b>... combined with a data dictionary ...</b></p>
+
+<pre class="literal">{
+  "url-base": "http://example.com/music/", 
+  "playlist-name": "Epic Playlist", 
+  "songs": [
+    {
+      "url": "1.mp3", 
+      "artist": "Grayceon", 
+      "title": "Sounds Like Thunder"
+    }, 
+    {
+      "url": "2.mp3", 
+      "artist": "Thou", 
+      "title": "Their Hooves Carve Craters in the Earth"
+    }
+  ]
+}</pre>
+
+<p><b>... gives output:</b></p>
+
+<pre class="literal">
+  &lt;h2&gt;Songs in 'Epic Playlist'&lt;/h2&gt;
+
+  &lt;table width="100%"&gt;
+    &lt;tr&gt;
+      &lt;td&gt;&lt;a href="http://example.com/music/1.mp3"&gt;Play&lt;/a&gt;
+      &lt;td&gt;&lt;i&gt;Sounds Like Thunder&lt;/i&gt;&lt;/td&gt;
+      &lt;td&gt;Grayceon&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;&lt;a href="http://example.com/music/2.mp3"&gt;Play&lt;/a&gt;
+      &lt;td&gt;&lt;i&gt;Their Hooves Carve Craters in the Earth&lt;/i&gt;&lt;/td&gt;
+      &lt;td&gt;Thou&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/table&gt;
+</pre>
+
+<p><b>Here is the rendered output:</b></p>
+
+<div class="literal">
+
+  <h2>Songs in 'Epic Playlist'</h2>
+
+  <table width="100%">
+    <tr>
+      <td><a href="http://example.com/music/1.mp3">Play</a>
+      <td><i>Sounds Like Thunder</i></td>
+      <td>Grayceon</td>
+    </tr>
+    <tr>
+      <td><a href="http://example.com/music/2.mp3">Play</a>
+      <td><i>Their Hooves Carve Craters in the Earth</i></td>
+      <td>Thou</td>
+    </tr>
+  </table>
+
+</div>
+
+
+<p>Here is the <a href="testTableExample-01.js.html">same example live in
+  JavaScript</a>.</p>
+
+<h3>Motivation</h3>
+
+<p> There are a few problems with the state of the art:
+
+<ul>
+
+  <li>Nearly all template languages are inexpressive and ill-specified
+  procedural languages.  That is, they reinvent things like for loops, if
+  statements, and expressions poorly.  A notable exception is <a
+  href="http://code.google.com/p/google-ctemplate/">google-ctemplate</a>, a
+  <i>declarative</i> language which runs <a
+  href="http://google.com/">google.com</a>, no less, and JSON Template is
+  strongly influenced by it.</li>
+
+  <li>Template languages grow "hairs" over time, and thus become bound to a
+  specific implementation and a specific implementation language (e.g. Java,
+  Python).  Here is <a
+  href="http://www.reddit.com/r/programming/comments/7zobf/five_languages_in_seven_lines_or_how_not_to_do/">a
+  good example</a> of the "smell" I'm talking about.  </li>
+  
+  <li>AJAX programming makes client side templating more important.  I'd like to
+  use the same system on both the client and the server.</li>
+  
+  <li><b>Every</b> successful website needs an API.  That's almost the
+  definition of success -- people have put their important information in your
+  site, and they need to get it out through means other than a browser.
+  However, bolting an API on top of a web app not architected for it can result
+  in fragile code, or at least unwanted duplication. <a
+  href="http://json.org/">JSON</a> is a common choice for APIs.</li>
+  
+</ul>
+
+<h3>Design</h3>
+
+<p><a href="http://code.google.com/p/json-template/">JSON Template</a> addresses
+these issues with the following design choices:
+
+<p><b>JSON is the "data dictionary" format.</b>
+
+<p>This has a number of consequences.  One small but surprisingly useful
+consequence is that you can serialize your data dictionaries to files, which is
+useful for testing, internationalization, and a few more things I haven't
+thought of.
+
+<p>A more important consequence is that you use your programming language, rather
+than the template system, for application logic.  Every language has a way to
+create JSON-like structures.  You can use your language's features for
+manipulating dictionaries, arrays, and strings.  In dynamic languages like
+Python and JavaScript, this is especially powerful.
+
+<p>Thus, there's a very simple programming pattern for "Web 2.0"
+sites:
+
+<ol>
+
+<li>Create a JSON structure in response to an HTTP request.</li>
+
+<li>If say <code>?format=json</code> is in the
+URL, then output the raw JSON.  </li><li>If not, combine the JSON with a
+Template string and output an HTML page (or Atom feed, etc.).
+</li>
+</ol>
+
+<p>In this way, <a href="http://code.google.com/p/json-template/">JSON
+Template</a> is the <b>complement</b> of JSON. When you use a template
+language to express program logic, this one-to-one correspondence between
+human-consumable data and machine-consumable data is hard to achieve.
+
+<p><b>The language is deliberately small, and it is declarative rather than
+procedural.</b>
+
+<p>It's intended to be <b>easily reimplemented </b>in multiple languages.
+Right now there's a JavaScript and a Python implementation -- each 500-ish lines
+of code in a single file -- with <b>no dependencies</b>.  And they both
+<b>pass the same tests</b>!  I'm hoping that people will contribute more
+implementations (Java, Ruby, PHP, etc.), which can be easily verified against
+these tests.
+
+<h3>More Features</h3>
+
+<ul>
+<li>Comes with a default set of "formatters", so it's easy to get
+escaping/security right.</li>
+
+<li>Extensible with your own application-specific formatters</li>
+
+<li>A small degree of customizable syntax makes it appropriate for many problem
+domains (not just web programming).</li>
+
+<li>Fast and hackable implementation.  Tokenization, parsing, compilation, and
+template expansion are all cleanly separated in the code.  (Like many template
+languages, instantiating a <code>jsontemplate.Template</code> object compiles
+the template string, and it can be subsequently re-expanded with different data
+dictionaries without parsing.)</li>
+
+</ul>
+
+<p>Despite being simple and minimal, it's still powerful.  See the <a
+href="http://code.google.com/p/json-template/wiki/Features">Features wiki
+page</a> for more details.
+
+<h3>License</h3>
+
+<p>I picked the <a href="http://www.apache.org/licenses/LICENSE-2.0.html">Apache
+2.0</a> license for maximum compatibility with liberal open
+source licenses, copyleft licenses, and proprietary software.
+
+<h3>Feedback</h3>
+
+<p><a href="http://code.google.com/p/json-template/issues/list">File bugs</a> or
+send mail to the <a href="http://groups.google.com/group/json-template">mailing
+list</a>.  There's also a <a
+href="http://www.reddit.com/r/programming/comments/88hf3/json_template_minimal_but_powerful_template/">reddit
+thread</a> for comments.
+
+<p>As mentioned, I've kept the language minimal on purpose.  There are a couple
+more features that I may want to add, so feedback is useful.
+
+<p style="font-size: small;">* The {} syntax for variable substitution seems to be getting popular.  It's
+used in <a href="http://www.python.org/dev/peps/pep-3101/">Python 3.0
+string formatting</a>, <a href="http://bitworking.org/news/URI_Templates">URI
+templates</a>, <a href="http://goessner.net/articles/jsont/">JsonT</a>, etc.
+
+
+    </td> 
+    <td>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript">
+try {
+var pageTracker = _gat._getTracker("UA-7815217-2");
+pageTracker._trackPageview();
+} catch(err) {}</script>
+</body>
+
+</html>

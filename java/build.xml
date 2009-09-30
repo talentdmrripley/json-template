@@ -1,0 +1,79 @@
+<project name="jsontemplate" default="test_jar" basedir=".">
+  <description>
+    json-template Java version
+  </description>
+
+  <tstamp/>
+
+  <!-- set global properties for this build -->
+  <property name="spec.title" value="json-template"/>
+  <property name="spec.version" value="200903"/>
+  <property name="spec.vendor" value="json-template.googlecode.com"/>
+  <property name="impl.title" value="java version"/>
+  <property name="impl.version" value="${DSTAMP}${TSTAMP}"/>
+  <property name="impl.vendor" value="William Shallum"/>
+
+  <property name="debug" value="on"/>
+  <property name="compilerarg" value="-Xlint:unchecked"/>
+
+  <property name="src.dir" location="jsontemplate"/>
+  <property name="classes.dir" location="classes"/>
+  <property name="dist.jar" location="jsontemplate.jar"/>
+
+  <property name="test_src.dir" location="jsontemplate_test"/>
+  <property name="test_classes.dir" location="testclasses"/>
+  <property name="test.jar" location="jsontemplate_test.jar"/>
+  <property name="test_main_class" value="jsontemplate_test.Test"/>
+
+  <target name="dist"
+      description="build the distribution jar">
+    <mkdir dir="${classes.dir}"/>
+    <javac debug="${debug}" srcdir="${src.dir}"
+        destdir="${classes.dir}">
+      <compilerarg value="${compilerarg}"/>
+    </javac>
+    <jar jarfile="${dist.jar}" basedir="${classes.dir}">
+      <manifest>
+        <section name="common">
+          <attribute name="Specification-Title" value="${spec.title}"/>
+          <attribute name="Specification-Version" value="${spec.version}"/>
+          <attribute name="Specification-Vendor" value="${spec.vendor}"/>
+          <attribute name="Implementation-Title" value="${impl.title}"/>
+          <attribute name="Implementation-Version" value="${impl.version}"/> 
+          <attribute name="Implementation-Vendor" value="${impl.vendor}"/>
+        </section>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="test_jar" depends="dist"
+      description="build the test jar">
+    <mkdir dir="${test_classes.dir}"/>
+    <javac debug="${debug}" srcdir="${test_src.dir}"
+        destdir="${test_classes.dir}"
+        classpath="${dist.jar}">
+      <compilerarg value="${compilerarg}"/>
+    </javac>
+    <jar jarfile="${test.jar}" basedir="${test_classes.dir}">
+      <manifest>
+        <attribute name="Class-Path" value="${dist.jar}"/>
+        <attribute name="Main-Class" value="${test_main_class}"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="test"
+      description="test (Usage: ant -Dfile=input.json test)">
+    <java jar="${test.jar}" fork="on">
+      <arg value="${file}"/>
+    </java>
+  </target>
+
+  <target name="clean"
+      description="clean up">
+    <delete dir="${classes.dir}"/>
+    <delete dir="${test_classes.dir}"/>
+    <delete file="${dist.jar}"/>
+    <delete file="${test.jar}"/>
+  </target>
+</project>
