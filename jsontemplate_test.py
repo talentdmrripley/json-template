@@ -821,6 +821,107 @@ class AllFormattersTest(testy.Test):
         t, {'num': 1.0/3}, '<b>0.333</b>')
 
 
+class PredicatesTest(testy.Test):
+  """Tests the predicates feature."""
+
+  LABELS = ['multilanguage']
+  # TODO: Add class-level NO_VERIFY = [] to testy
+
+  @testy.no_verify('javascript', 'java', 'php')
+  def testValuePredicate(self):
+    t = testy.ClassDef(
+    B("""
+    {.repeated section num}
+      {.plural?}
+        There are {@} people here.
+      {.singular?}
+        There is one person here.
+      {.or}
+        There is nobody here.
+      {.end}
+    {.end}
+    """))
+
+    data = {'num': [0, 1, 2, 3]}
+
+    expected = B("""
+        There is nobody here.
+        There is one person here.
+        There are 2 people here.
+        There are 3 people here.
+    """)
+    self.verify.Expansion(t, data, expected)
+
+  @testy.no_verify('javascript', 'java', 'php')
+  def testValuePredicateWithRecord(self):
+    t = testy.ClassDef(
+    B("""
+    {.repeated section groups}
+      {.section num}
+        {.plural?}
+          {@} people in {name}.
+        {.singular?}
+          One person in {name}.
+        {.end}
+      {.or}
+        {# IMPORTANT: This must be the .or clause, because 0 is a false value }
+        {#            May be better to use Plural and Singular variants.      }
+          Nobody in {name}.
+      {.end}
+    {.end}
+    """))
+
+    data = {
+        'groups': [
+            {'name': 'Beginner', 'num': 3},
+            {'name': 'Intermediate', 'num': 1},
+            {'name': 'Advanced', 'num': 0},
+            ]
+        }
+
+    expected = B("""
+          3 people in Beginner.
+          One person in Intermediate.
+          Nobody in Advanced.
+    """)
+    self.verify.Expansion(t, data, expected)
+
+  @testy.no_verify('javascript', 'java', 'php')
+  def testContextPredicate(self):
+    # TODO: Implement predicates that take a context.
+    return
+    t = testy.ClassDef(
+    B("""
+    {.repeated section posts}
+      Title: {title}
+      Body: {body}
+      {..moderator?}
+        <delete>
+      {..user?}
+        <user>
+      {.end}
+    {.end}
+    """))
+
+    data = {
+        'moderator': True,
+        'posts': [
+            {'title': 'Spam', 'body': 'This is spam'},
+            {'title': 'Eggs', 'body': 'These are eggs'},
+            ]
+        }
+
+    expected = B("""
+      Title: Spam
+      Body: This is spam
+        <delete>
+      Title: Eggs
+      Body: These are eggs
+        <delete>
+    """)
+    self.verify.Expansion(t, data, expected)
+
+
 class DocumentationTest(testy.Test):
   """Test cases added for the sake of documentation."""
 
