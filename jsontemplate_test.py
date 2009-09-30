@@ -808,6 +808,37 @@ class StandardFormattersTest(testy.Test):
     self.verify.Expansion(
         t, {'url': '"<>&'}, '<a href="&quot;&lt;&gt;&amp;">')
 
+  # TODO: Do this in 3 other languages
+  @testy.no_verify('javascript', 'php', 'java')
+  def testAbsUrlFormatter(self):
+    """AbsUrl is mainly an example of 'context formatters'.
+
+    The point of this is that the AbsUrl has access to the top-level 'base-url'
+    value.  Without this, base-url would have to be repeated in every single
+    item in 'users'.
+    """
+
+    t = testy.ClassDef(
+        B("""
+        {.repeated section users}
+          {url|AbsUrl}
+        {.end}
+        """))
+
+    data = {
+        'base-url': 'http://example.com',
+        'users': [
+            {'url': 'dan'},
+            {'url': 'ed'},
+            ],
+        }
+
+    expected = B("""
+      http://example.com/dan
+      http://example.com/ed
+    """)
+    self.verify.Expansion(t, data, expected)
+
 
 class AllFormattersTest(testy.Test):
   """Test that each implementation implements the standard formatters."""

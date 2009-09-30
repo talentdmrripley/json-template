@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# $Id$
+# $Id: _jsontemplate.py 290 2009-09-26 18:39:58Z andy@chubot.org $
 
 """Python implementation of json-template.
 
@@ -42,6 +42,7 @@ import re
 # For formatters
 import cgi  # cgi.escape
 import urllib  # for urllib.encode
+import urlparse  # for urljoin
 
 
 class Error(Exception):
@@ -100,6 +101,10 @@ class UndefinedVariable(EvaluationError):
 
 _SECTION_RE = re.compile(r'(repeated)?\s*section\s+(\S+)')
 
+# Some formatters and predicates need to look up values in the whole context,
+# rather than just the current node.  'Node functions' start with a lowercase
+# letter; 'Context functions' start with any other character.
+_NODE_FUNC, _CONTEXT_FUNC = 0, 1
 
 class _ProgramBuilder(object):
   """
@@ -134,8 +139,14 @@ class _ProgramBuilder(object):
     formatter = (
         self.more_formatters(format_str) or _DEFAULT_FORMATTERS.get(format_str))
 
+    # TODO: Consider making this convention user-customizable.
+    if format_str[0].islower():  # a .. z
+      func_type = _NODE_FUNC
+    else:
+      func_type = _CONTEXT_FUNC
+
     if formatter:
-      return formatter
+      return formatter, func_type
     else:
       raise BadFormatter('%r is not a valid formatter' % format_str)
 
@@ -337,6 +348,20 @@ def _HtmlAttrValue(x):
   return cgi.escape(x, quote=True)
 
 
+def _AbsUrl(relative_url, lookup):
+  """Returns an absolute URL, given the current node as a relative URL.
+  
+  Assumes that the context has a value named 'base-url'.  This is a little like
+  the HTML <base> tag, but implemented with HTML generation.
+
+  Raises:
+    UndefinedVariable if 'base-url' doesn't exist
+  """
+  # urljoin is flexible about trailing/leading slashes -- it will add or de-dupe
+  # them
+  return urlparse.urljoin(lookup('base-url'), relative_url)
+
+
 # See http://google-ctemplate.googlecode.com/svn/trunk/doc/howto.html for more
 # escape types.
 #
@@ -373,6 +398,9 @@ _DEFAULT_FORMATTERS = {
     # Just show a plain URL on an HTML page (without anchor text).
     'plain-url': lambda x: '<a href="%s">%s</a>' % (
         cgi.escape(x, quote=True), cgi.escape(x)),
+
+    # A context formatter
+    'AbsUrl': _AbsUrl,
 
     # Placeholders for "standard names".  We're not including them by default
     # since they require additional dependencies.  We can provide a part of the
@@ -870,9 +898,14 @@ def _DoSubstitute(args, context, callback):
       raise EvaluationError(
           'Error evaluating %r in context %r: %r' % (name, context, e))
 
-  for f in formatters:
+  for func, func_type in formatters:
     try:
-      value = f(value)
+      if func_type == _NODE_FUNC:
+        value = func(value)
+      else:
+        # Pass the Lookup function into the formatter.  It can raise
+        # UndefinedVariable.
+        value = func(value, context.Lookup)
     except KeyboardInterrupt:
       raise
     except Exception, e:
