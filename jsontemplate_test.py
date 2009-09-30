@@ -731,14 +731,14 @@ class SpecialVariableTest(testy.Test):
 
   LABELS = ['multilanguage']
 
-  @testy.no_verify('javascript', 'java', 'php')
+  @testy.no_verify('java', 'php')
   def testIndex(self):
     t = testy.ClassDef(
-    B("""
-    {.repeated section @}
-      {$index} {name}
-    {.end}
-    """))
+        B("""
+        {.repeated section @}
+          {$index} {name}
+        {.end}
+        """))
 
     data = [
       {'name': 'Spam'},
@@ -751,17 +751,17 @@ class SpecialVariableTest(testy.Test):
     """)
     self.verify.Expansion(t, data, expected)
 
-  @testy.no_verify('javascript', 'java', 'php')
+  @testy.no_verify('java', 'php')
   def testTwoIndices(self):
     t = testy.ClassDef(
-    B("""
-    {.repeated section albums}
-      {$index} {name}
-      {.repeated section songs}
-        {$index} {@}
-      {.end}
-    {.end}
-    """))
+        B("""
+        {.repeated section albums}
+          {$index} {name}
+          {.repeated section songs}
+            {$index} {@}
+          {.end}
+        {.end}
+        """))
 
     data = {
       'albums': [
@@ -779,16 +779,17 @@ class SpecialVariableTest(testy.Test):
       1 Bark at the Moon
         0 Waiting for Darkness
     """)
-    self.verify.Expansion(t, data, expected)
+    # Whitespace still differs between Python/JS
+    self.verify.Expansion(t, data, expected, ignore_all_whitespace=True)
 
-  @testy.no_verify('javascript', 'java', 'php')
+  @testy.no_verify('java', 'php')
   def testUndefinedIndex(self):
     t = testy.ClassDef(
-    B("""
-    {.section foo}
-      {$index} {name}
-    {.end}
-    """))
+        B("""
+        {.section foo}
+          {$index} {name}
+        {.end}
+        """))
     data = {'foo': 'bar'}
     self.verify.EvaluationError(jsontemplate.UndefinedVariable, t, data)
 
