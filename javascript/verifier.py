@@ -60,9 +60,14 @@ class JavaScriptVerifier(testy.StandardVerifier):
 
   LABELS = ['javascript']
 
-  def __init__(self, script_path, debug_mode=False):
+  def __init__(self, script_path, helpers_path, debug_mode=False):
+    if not os.path.exists(helpers_path):
+      raise RuntimeError(
+          "%s doesn't exist; need to check out the 'pan' repository.  See "
+          "DevelopingJsonTemplate" % helpers_path)
     # Path of json-template.js
     self.script_path = script_path
+    self.helpers_path = helpers_path
     self.debug_mode = debug_mode
 
   def _MakeTestJs(self, template_def, dictionary):
@@ -130,9 +135,9 @@ class V8ShellVerifier(JavaScriptVerifier):
   """
 
   def __init__(self, v8_path, script_path, helpers_path, debug_mode=False):
-    JavaScriptVerifier.__init__(self, script_path, debug_mode=debug_mode)
+    JavaScriptVerifier.__init__(
+        self, script_path, helpers_path, debug_mode=debug_mode)
     self.v8_path = v8_path
-    self.helpers_path = helpers_path
 
     # Flip this when you can't figure out what's going on in v8!
     #self.debug_mode = True
@@ -201,13 +206,11 @@ class CScriptVerifier(JavaScriptVerifier):
   LABELS = ['javascript']
 
   def __init__(self, script_path, helpers_path, debug_mode=False):
-    JavaScriptVerifier.__init__(self, script_path, debug_mode=debug_mode)
+    JavaScriptVerifier.__init__(
+        self, script_path, helpers_path, debug_mode=debug_mode)
 
     # Read the script into a string so we can write it to stdin
     self.script_contents = open(script_path).read()
-
-    # Flip this when you can't figure out what's going on in v8!
-    #self.debug_mode = True
 
   def _RunScript(self, template_def, dictionary):
     test_js = self._MakeTestJs(template_def, dictionary)
