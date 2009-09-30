@@ -968,7 +968,10 @@ def main(argv):
   py_verifier = python_verifier.ExternalVerifier(python_impl)
 
   js_impl = os.path.join(this_dir, 'javascript', 'json-template.js')
-  helpers = os.path.join(this_dir, 'pan', 'javascript', 'test_helpers.js')
+  # This assumes that you have the pan repository checked out
+  helpers = os.path.join(
+      this_dir, '..', '..', 'svn', 'pan', 'trunk', 'pan', 'javascript',
+      'test_helpers.js')
 
   if sys.platform == 'win32':
     js_verifier = javascript_verifier.CScriptVerifier(js_impl, helpers)
