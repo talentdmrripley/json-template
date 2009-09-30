@@ -29,11 +29,11 @@ Other functions are exposed for tools which may want to process templates.
 
 __author__ = 'Andy Chu'
 
-__all__ = ['Error', 'CompilationError', 'EvaluationError',
-           'BadFormatter', 'MissingFormatter', 'ConfigurationError',
-           'TemplateSyntaxError', 'UndefinedVariable',
-           'CompileTemplate', 'FromString', 'FromFile',
-           'Template', 'expand']
+__all__ = [
+    'Error', 'CompilationError', 'EvaluationError', 'BadFormatter',
+    'BadPredicate', 'MissingFormatter', 'ConfigurationError',
+    'TemplateSyntaxError', 'UndefinedVariable', 'CompileTemplate', 'FromString',
+    'FromFile', 'Template', 'expand']
 
 import StringIO
 import pprint
@@ -82,6 +82,9 @@ class EvaluationError(Error):
 class BadFormatter(CompilationError):
   """A bad formatter was specified, e.g. {variable|BAD}"""
 
+class BadPredicate(CompilationError):
+  """A bad predicate was specified, e.g. {.BAD?}"""
+
 class MissingFormatter(CompilationError):
   """
   Raised when formatters are required, and a variable is missing a formatter.
@@ -112,18 +115,23 @@ class _ProgramBuilder(object):
   instances.
   """
 
-  def __init__(self, more_formatters):
+  def __init__(self, formatters, predicates):
     """
     Args:
       more_formatters: See docstring for CompileTemplate
     """
     self.current_block = _Section()
     self.stack = [self.current_block]
+
     # Passing a dictionary instead of a function is often more convenient
-    if isinstance(more_formatters, dict):
-      # .get is a function which returns either a function None
-      more_formatters = more_formatters.get
-    self.more_formatters = more_formatters
+    # .get is a function which returns either a function None
+    if isinstance(formatters, dict):
+      formatters = formatters.get
+    self.formatters = formatters
+
+    if isinstance(predicates, dict):
+      predicates = predicates.get
+    self.predicates = predicates
 
   def Append(self, statement):
     """
@@ -137,7 +145,7 @@ class _ProgramBuilder(object):
     The user's formatters are consulted first, then the default formatters.
     """
     formatter = (
-        self.more_formatters(format_str) or _DEFAULT_FORMATTERS.get(format_str))
+        self.formatters(format_str) or _DEFAULT_FORMATTERS.get(format_str))
 
     # TODO: Consider making this convention user-customizable.
     if format_str[0].islower():  # a .. z
@@ -150,28 +158,69 @@ class _ProgramBuilder(object):
     else:
       raise BadFormatter('%r is not a valid formatter' % format_str)
 
+  def _GetPredicate(self, pred_str):
+    """
+    The user's predicates are consulted first, then the default formatters.
+    """
+    predicate = (
+        self.predicates(pred_str) or _DEFAULT_PREDICATES.get(pred_str))
+
+    if predicate:
+      return predicate
+    else:
+      raise BadPredicate('%r is not a valid predicate' % pred_str)
+
   def AppendSubstitution(self, name, formatters):
     formatters = [self._GetFormatter(f) for f in formatters]
     self.current_block.Append((_DoSubstitute, (name, formatters)))
 
-  def NewSection(self, repeated, section_name):
+  def NewSection(self, token_type, section_name):
     """For sections or repeated sections."""
 
-    new_block = _Section(section_name)
-    if repeated:
+    # TODO: Consider getting rid of this dispatching, and turn _Do* into methods
+    if token_type == REPEATED_SECTION_TOKEN:
+      new_block = _Section(section_name)
       func = _DoRepeatedSection
-    else:
+    elif token_type == SECTION_TOKEN:
+      new_block = _Section(section_name)
       func = _DoSection
+    elif token_type == PREDICATE_TOKEN:
+      new_block = _PredicateSection()
+      func = _DoPredicates
+    else:
+      raise AssertionError('Invalid token type %s' % token_type)
 
     self.current_block.Append((func, new_block))
     self.stack.append(new_block)
     self.current_block = new_block
 
+  def NewPredicateClause(self, name):
+    """Returns whether a new BLOCK was created as a result of this clause."""
+    # All clauses fall under one block.  The first clause to evaluate to true is
+    # executed, and then all other clauses are skipped.
+
+    pred = self._GetPredicate(name)
+
+    if isinstance(self.current_block, _PredicateSection):
+      self.current_block.NewPredicateClause(pred)
+      return False
+    else:
+      self.NewSection(PREDICATE_TOKEN, None)  # No name
+      self.current_block.NewPredicateClause(pred)
+      return True
+
   def NewClause(self, name):
-    # TODO: Raise errors if the clause isn't appropriate for the current block
-    # isn't a 'repeated section' (e.g. alternates with in a non-repeated
-    # section)
-    self.current_block.NewClause(name)
+    if isinstance(self.current_block, _PredicateSection):
+      if name == 'or':
+        # There is no test for 'or'
+        self.current_block.NewPredicateClause(lambda x: True)
+      else:
+        raise CompilationError('Invalid clause %r in predicate section' % name)
+    else:
+      # TODO: Raise errors if the clause isn't appropriate for the current block
+      # isn't a 'repeated section' (e.g. alternates with in a non-repeated
+      # section)
+      self.current_block.NewClause(name)
 
   def EndSection(self):
     self.stack.pop()
@@ -182,34 +231,55 @@ class _ProgramBuilder(object):
     return self.current_block
 
 
-class _Section(object):
+class _AbstractSection(object):
+
+  def __init__(self):
+    # Pairs of func, args, or a literal string
+    self.current_clause = []
+
+  def Append(self, statement):
+    """Append a statement to this block."""
+    self.current_clause.append(statement)
+
+
+class _Section(_AbstractSection):
   """Represents a (repeated) section."""
 
   def __init__(self, section_name=None):
     """
     Args:
       section_name: name given as an argument to the section
+      token_type: The token type that created this section (e.g.
+          PREDICATE_TOKEN)
     """
+    _AbstractSection.__init__(self)
     self.section_name = section_name
 
-    # Pairs of func, args, or a literal string
-    self.current_clause = []
+    # Clauses is just a string and a list of statements.
     self.statements = {'default': self.current_clause}
 
   def __repr__(self):
-    return '<Block %s>' % self.section_name
+    return '<Section %s>' % self.section_name
 
   def Statements(self, clause='default'):
     return self.statements.get(clause, [])
 
   def NewClause(self, clause_name):
-    new_clause = []
-    self.statements[clause_name] = new_clause
-    self.current_clause = new_clause
+    self.current_clause = []
+    self.statements[clause_name] = self.current_clause
 
-  def Append(self, statement):
-    """Append a statement to this block."""
-    self.current_clause.append(statement)
+
+class _PredicateSection(_AbstractSection):
+  """Represents a sequence of predicate clauses."""
+
+  def __init__(self):
+    _AbstractSection.__init__(self)
+    # List of func, statements
+    self.clauses = []
+
+  def NewPredicateClause(self, predicate):
+    self.current_clause = []
+    self.clauses.append((predicate, self.current_clause))
 
 
 class _Frame(object):
@@ -238,7 +308,7 @@ class _ScopedContext(object):
 
   def PushSection(self, name):
     """Given a section name, push it on the top of the stack.
-    
+
     Returns:
       The new section, or None if there is no such section.
     """
@@ -338,7 +408,7 @@ class _ScopedContext(object):
 def _ToString(x):
   # Some cross-language values for primitives
   if x is None:
-    return 'null'  
+    return 'null'
   if isinstance(x, basestring):
     return x
   return pprint.pformat(x)
@@ -385,7 +455,7 @@ _DEFAULT_FORMATTERS = {
     'size': lambda value: str(len(value)),
 
     # The argument is a dictionary, and we get a a=1&b=2 string back.
-    'url-params': urllib.urlencode,  
+    'url-params': urllib.urlencode,
 
     # The argument is an atom, and it takes 'Search query?' -> 'Search+query%3F'
     'url-param-value': urllib.quote_plus,  # param is an atom
@@ -405,13 +475,19 @@ _DEFAULT_FORMATTERS = {
     # Placeholders for "standard names".  We're not including them by default
     # since they require additional dependencies.  We can provide a part of the
     # "lookup chain" in formatters.py for people people want the dependency.
-    
+
     # 'json' formats arbitrary data dictionary nodes as JSON strings.  'json'
     # and 'js-string' are identical (since a JavaScript string *is* JSON).  The
     # latter is meant to be serve as extra documentation when you want a string
-    # argument only, which is a common case.  
+    # argument only, which is a common case.
     'json': None,
     'js-string': None,
+    }
+
+
+_DEFAULT_PREDICATES = {
+    'singular': lambda x: x == 1,
+    'plural': lambda x: x > 1,
     }
 
 
@@ -460,27 +536,36 @@ def MakeTokenRegex(meta_left, meta_right):
   SUBSTITUTION_TOKEN,  # {var|html}
   SECTION_TOKEN,  # {.section name}
   REPEATED_SECTION_TOKEN,  # {.repeated section name}
+  PREDICATE_TOKEN,  # {.predicate?}
   CLAUSE_TOKEN,  # {.or}
   END_TOKEN,  # {.end}
-  ) = range(6)
+  ) = range(7)
 
 
 def _MatchDirective(token):
   """Helper function for matching certain directives."""
 
-  if token in ('.or', '.alternates with'):
-    return CLAUSE_TOKEN, token[1:]
+  if token.startswith('.'):
+    token = token[1:]
+  else:
+    return None, None  # Must start with .
 
-  if token == '.end':
+  if token in ('or', 'alternates with'):
+    return CLAUSE_TOKEN, token
+
+  if token == 'end':
     return END_TOKEN, None
 
-  match = _SECTION_RE.match(token[1:])
+  match = _SECTION_RE.match(token)
   if match:
     repeated, section_name = match.groups()
     if repeated:
       return REPEATED_SECTION_TOKEN, section_name
     else:
       return SECTION_TOKEN, section_name
+
+  if token.endswith('?'):
+    return PREDICATE_TOKEN, token[:-1]
 
   return None, None  # no match
 
@@ -554,7 +639,8 @@ def _Tokenize(template_str, meta_left, meta_right):
 
 def CompileTemplate(
     template_str, builder=None, meta='{}', format_char='|',
-    more_formatters=lambda x: None, default_formatter='str'):
+    more_formatters=lambda x: None, more_predicates=lambda x: None,
+    default_formatter='str'):
   """Compile the template string, calling methods on the 'program builder'.
 
   Args:
@@ -576,6 +662,9 @@ def CompileTemplate(
         This argument may also be a dictionary (of strings to functions), in
         which case it's "converted" to a function in the obvious way.
 
+    more_predicates:
+        Like more_formatters, but for predicates.
+
     default_formatter: The formatter to use for substitutions that are missing a
         formatter.  The 'str' formatter the "default default" -- it just tries
         to convert the context value to a string in some unspecified manner.
@@ -591,7 +680,7 @@ def CompileTemplate(
   This function is public so it can be used by other tools, e.g. a syntax
   checking tool run before submitting a template to source control.
   """
-  builder = builder or _ProgramBuilder(more_formatters)
+  builder = builder or _ProgramBuilder(more_formatters, more_predicates)
   meta_left, meta_right = SplitMeta(meta)
 
   # : is meant to look like Python 3000 formatting {foo:.3f}.  According to
@@ -613,14 +702,17 @@ def CompileTemplate(
         builder.Append(token)
       continue
 
-    if token_type == REPEATED_SECTION_TOKEN:
-      builder.NewSection(True, token)
+    if token_type in (SECTION_TOKEN, REPEATED_SECTION_TOKEN):
+      builder.NewSection(token_type, token)
       balance_counter += 1
       continue
 
-    if token_type == SECTION_TOKEN:
-      builder.NewSection(False, token)
-      balance_counter += 1
+    if token_type == PREDICATE_TOKEN:
+      # Everything of the form {.predicate?} implicitly ends and starts a new
+      # clause
+      block_made = builder.NewPredicateClause(token)
+      if block_made:
+        balance_counter += 1
       continue
 
     if token_type == CLAUSE_TOKEN:
@@ -882,6 +974,20 @@ def _DoSection(args, context, callback):
     _Execute(block.Statements('or'), context, callback)
 
 
+def _DoPredicates(args, context, callback):
+  """{.predicate?}
+
+  Here we execute the first clause that evaluates to true, and then stop.
+  """
+  block = args
+  value = context.Lookup('@')
+  for predicate, statements in block.clauses:
+    do_clause = predicate(value)
+    if do_clause:
+      _Execute(statements, context, callback)
+      break
+
+
 def _DoSubstitute(args, context, callback):
   """Variable substitution, e.g. {foo}"""
 
@@ -932,7 +1038,7 @@ def _Execute(statements, context, callback):
     if isinstance(statement, basestring):
       callback(statement)
     else:
-      # In the case of a substitution, args is a pair (name, formatter).
+      # In the case of a substitution, args is a pair (name, formatters).
       # In the case of a section, it's a _Section instance.
       try:
         func, args = statement
