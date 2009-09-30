@@ -143,18 +143,27 @@ function _ScopedContext(context, undefined_str) {
     _LookUpStack: function(name) {
       var i = stack.length - 1;
       while (true) {
-        var context = stack[i].context;
-
-        if (typeof context !== 'object') {
-          i--;
-        } else {
-          var value = context[name];
-          if (value === undefined) {
+        var frame = stack[i];
+        if (name == '$index') {
+          if (frame.index == -1) {  // undefined value
             i--;
           } else {
-            return value;
+            return frame.index - 1;
+          }
+        } else {
+          var context = frame.context;
+          if (typeof context !== 'object') {
+            i--;
+          } else {
+            var value = context[name];
+            if (value === undefined) {
+              i--;
+            } else {
+              return value;
+            }
           }
         }
+
         if (i <= -1) {
           return this._Undefined(name);
         }
