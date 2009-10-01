@@ -1085,7 +1085,7 @@ def main(argv):
   jv_verifier = java_verifier.JavaVerifier(
       options.java_launcher, java_impl, java_test_classes)
 
-  php_impl = os.path.join(this_dir, 'php', 'jsontemplate.php')
+  php_impl = os.path.join(this_dir, 'php', 'jsontemplate_cmd.php')
   ph_verifier = php_verifier.PhpVerifier(
       options.php_launcher, php_impl)
 
