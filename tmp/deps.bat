@@ -1,1 +1,1 @@
-set PYTHONPATH=..\..\testy\pan\
+set PYTHONPATH=..\..\svn\pan\trunk
