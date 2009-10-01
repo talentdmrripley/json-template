@@ -27,7 +27,6 @@ class JsonTemplateError extends Exception
 			$this->message .= "\n\nNear: ".$this->near;
 		}
 	}
-
 }
 
 /* 
@@ -292,8 +291,9 @@ class JsonTemplateScopedContext implements Iterator
 {
 	protected $positions = array();
 
-	function __construct($context)
+	function __construct($context,$undefined_str=null)
 	{
+		$this->undefined_str=$undefined_str;
 		$this->stack = array($context);
 		$this->name_stack = array('@');
 	}
@@ -373,30 +373,77 @@ class JsonTemplateScopedContext implements Iterator
 		}
 	}
 
-    	// Get the value associated with a name in the current context.  The current
-    	// context could be an associative array or a StdClass object
-	function Lookup($name)
+	function Undefined($name) {
+		if ($this->undefined_str === null) {
+			throw new JsonTemplateUndefinedVariable(sprintf('%s is not defined',$name));
+		} else {
+			return $this->undefined_str;
+		}
+	}
+
+	// Get the value associated with a name in the current context.	The current
+	// context could be an associative array or a StdClass object
+ 	function Lookup($name) {
+		if ($name == '@') {
+			return end($this->stack);
+		}
+		$parts = explode('.',$name);
+		$value = $this->_LookUpStack($parts[0]);
+		$count=count($parts);
+		if ($count > 1) {
+			for ($i = 1; $i < $count; $i++) {
+				$namepart=$parts[$i];
+				if(is_array($value)){
+					if(!isset($value[$namepart])){
+						return $this->Undefined($name);
+					}else{
+						$value= $value[$namepart];
+					}
+				}elseif(is_object($value)){
+					if(!property_exists($value,$namepart)){
+						return $this->Undefined($name);
+					}else{
+						$value= $value->$namepart;
+					}
+				} else {
+					return $this->Undefined($name);
+				}
+			}
+		}
+		return $value;
+	}
+			
+	function _LookUpStack($name)
 	{
 		$i = count($this->stack)-1;
 		while(true){
 			$context = $this->stack[$i];
-			if(is_array($context)){
-				if(!isset($context[$name])){
-					$i -= 1;
-				}else{
-					return $context[$name];
+			if ($name=='$index'){
+				$key=$this->key();
+				if($key==-1){
+					$i--;
+				} else {
+					return $key;
 				}
-			}elseif(is_object($context)){
-				if(!property_exists($context,$name)){
-					$i -= 1;
+			} else {
+				if(is_array($context)){
+					if(!isset($context[$name])){
+						$i -= 1;
+					}else{
+						return $context[$name];
+					}
+				}elseif(is_object($context)){
+					if(!property_exists($context,$name)){
+						$i -= 1;
+					}else{
+						return $context->$name;
+					}
 				}else{
-					return $context->$name;
+					$i -= 1;
 				}
-			}else{
-				$i -= 1;
 			}
 			if($i<= -1){
-				throw new JsonTemplateUndefinedVariable(sprintf('%s is not defined',$name));
+				return $this->Undefined($name);
 			}
 		}
 	}
@@ -433,7 +480,17 @@ class RawJsonTemplateFormatter extends JsonTemplateFormatter
 {
 	function format($str)
 	{
-		return "${str}";
+		return $str;
+	}
+}
+
+class StringJsonTemplateFormatter extends JsonTemplateFormatter
+{
+	function format($str)
+	{
+		if ($str===null)
+			return 'null';
+		return (string)$str;
 	}
 }
 
@@ -485,14 +542,14 @@ class JsonTemplateModule
 	public $token_re_cache = array();
 
 	public $default_formatters = array(
-		'html'			=> 'HtmlJsonTemplateFormatter',
+		'html'				=> 'HtmlJsonTemplateFormatter',
 		'html-attr-value'	=> 'HtmlAttributeValueJsonTemplateFormatter',
-		'htmltag'		=> 'HtmlAttributeValueJsonTemplateFormatter',
-		'raw'			=> 'RawJsonTemplateFormatter',
-		'size'			=> 'SizeJsonTemplateFormatter',
+		'htmltag'			=> 'HtmlAttributeValueJsonTemplateFormatter',
+		'raw'				=> 'RawJsonTemplateFormatter',
+		'size'				=> 'SizeJsonTemplateFormatter',
 		'url-params'		=> 'UrlParamsJsonTemplateFormatter',
 		'url-param-value'	=> 'UrlParamValueJsonTemplateFormatter',
-		'str'			=> 'RawJsonTemplateFormatter',
+		'str'				=> 'StringJsonTemplateFormatter',
 		'default_formatter'	=> 'RawJsonTemplateFormatter',
 	);
 
@@ -569,26 +626,8 @@ class JsonTemplateModule
 	*/
 	function CompileTemplate($template_str, $options=array(), $builder=null)
 	{
-		$default_options = array(
-			'meta'			=> '{}',
-			'format_char' 		=> '|',
-			'more_formatters'	=> null,
-			'default_formatter'	=> 'str',
-		);
-		if(is_array($options)){
-			$options = array_merge($default_options,$options);
-		}elseif(is_object($options)){
-			$obj = $options;
-			$options = $default_options;
-			foreach($options as $k=>$v){
-				if(property_exists($obj,$k)){
-					$options[$k] = $obj->$k;
-				}
-			}
-		}else{
-			$options = $default_options;
-		}
-
+		$options=JsonTemplate::processDefaultOptions($options);
+		
 		if(!$builder){
 			$builder = new JsonTemplateProgramBuilder($options['more_formatters']);
 		}
@@ -638,19 +677,19 @@ class JsonTemplateModule
 					switch($token){
 					case 'meta-left':
 						$literal = $meta_left;
-						break;
+						continue;
 					case 'meta-right':
 						$literal = $meta_right;
-						break;
+						continue;
 					case 'space':
 						$literal = ' ';
-						break;
+						continue;
 					case 'tab':
 						$literal = "\t";
-						break;
+						continue;
 					case 'newline':
 						$literal = "\n";
-						break;
+						continue;
 					}
 				}
 				if($literal){
@@ -674,9 +713,9 @@ class JsonTemplateModule
 					if($balance_counter < 0){
 						# TODO: Show some context for errors
 						throw new JsonTemplateTemplateSyntaxError(sprintf(
-							'Got too many %send%s statements.  You may have mistyped an '.
-							"earlier 'section' or 'repeated section' directive.",
-							$meta_left, $meta_right));
+							'Got too many %s.end%s statements.  You may have mistyped an '.
+							"earlier %s.section%s or %s.repeated section%s directive.",
+							$meta_left, $meta_right,$meta_left, $meta_right,$meta_left, $meta_right));
 					}
 					$builder->EndSection();
 					if($had_newline){
@@ -791,7 +830,7 @@ class JsonTemplateModule
 		if($block->section_name == '@'){
 			# If the name is @, we stay in the enclosing context, but assume it's a
 			# list, and repeat this block many times.
-			$items = $context->CursorValue();
+			$items = $context->Lookup('@');
 			if(!is_array($items)){
 				throw new JsonTemplateEvaluationError(sprintf('Expected a list; got %s', gettype($items)));
 			}
@@ -874,10 +913,6 @@ class JsonTemplateModule
 					 $value, $f, $e), $e);
 			}
 		}
-		# TODO: Require a string/unicode instance here?
-		if(!$value){
-			throw new JsonTemplateUndefinedVariable(sprintf('Evaluating %s gave null value', $name));
-		}
 		if($callback instanceof JsonTemplateCallback){
 			return $callback->call($value);
 		}elseif(is_string($callback)){
@@ -954,20 +989,46 @@ files, etc.
 class JsonTemplate
 {
 	protected $program;
+	
+	/*
+	 * This function add the passed options to the default options.
+	 * If the passed options are in object form, they are converted 
+	 * to associative array form first, so the class can always 
+	 * access options in the array notation.
+	 */
+	static function processDefaultOptions($options){
+		if(is_string($options)){
+			$options = json_decode($options);
+		}
+		$default_options = array(
+			'undefined_str'		=> null,
+			'meta'				=> '{}',
+			'format_char' 		=> '|',
+			'more_formatters'	=> null,
+			'default_formatter'	=> 'str',
+		);
+		if(is_object($options)){
+			$options = array_merge($default_options,get_object_vars($options));
+		}else if(is_array($options)){
+			$options = array_merge($default_options,$options);
+		}else{
+			$options = $default_options;
+		}
+		return $options;
+	}
 	/*
 	Args:
 	template_str: The template string.
 
 	It also accepts all the compile options that CompileTemplate does.
 	*/
-	function __construct($template_str, $compile_options=array(), $builder=null)
+	function __construct($template_str, $options=array(), $builder=null)
 	{
-		if(is_string($compile_options)){
-			$compile_options = json_decode($compile_options);
-		}
-		$this->compile_options = $compile_options;
+		$options=self::processDefaultOptions($options);
+		
+		$this->compile_options=$options;
 		$this->template_str = $template_str;
-	    	$this->program = JsonTemplateModule::pointer()->CompileTemplate($template_str, $compile_options, $builder);
+	    $this->program = JsonTemplateModule::pointer()->CompileTemplate($template_str, $options, $builder);
 	}
 
 	#
@@ -989,7 +1050,12 @@ class JsonTemplate
 		if(is_string($data)){
 			$data = json_decode($data);
 		}
-		return JsonTemplateModule::pointer()->Execute($this->program->Statements(), new JsonTemplateScopedContext($data), $callback);
+		$JM=JsonTemplateModule::pointer();
+		return $JM->Execute(
+			$this->program->Statements(), 
+			new JsonTemplateScopedContext($data,$this->compile_options['undefined_str']), 
+			$callback
+		);
 	}
 
 	/*
