@@ -116,8 +116,8 @@ class SubstitutionsTest(testy.Test):
     t = testy.ClassDef('There are {num} ways to do it')
     self.verify.Expansion(t, {'num': 5}, 'There are 5 ways to do it')
 
-  # TODO: Implement in Java/PHP
-  @testy.no_verify('java', 'php')
+  # TODO: Implement in Java
+  @testy.no_verify('java')
   def testExpandingNull(self):
     t = testy.ClassDef('There are {num|str} ways to do it')
     self.verify.Expansion(t, {'num': None}, 'There are null ways to do it')
@@ -134,8 +134,8 @@ class SubstitutionsTest(testy.Test):
     t = testy.ClassDef('Where is your {name|html}')
     self.verify.EvaluationError(jsontemplate.UndefinedVariable, t, {})
 
-  # TODO: Implement in Java/PHP
-  @testy.no_verify('java', 'php')
+  # TODO: Implement in Java
+  @testy.no_verify('java')
   def testUndefinedVariableUsesUndefinedStr(self):
     t = testy.ClassDef('Where is your {name|html}', undefined_str='')
     self.verify.Expansion(t, {}, 'Where is your ')
@@ -629,7 +629,7 @@ class DottedLookupTest(testy.Test):
 
   LABELS = ['multilanguage']
 
-  @testy.no_verify('java', 'php')
+  @testy.no_verify('java')
   def testDottedLookup(self):
     t = testy.ClassDef('{foo.bar}')
 
@@ -638,7 +638,7 @@ class DottedLookupTest(testy.Test):
         {'foo': {'bar': 'Hello'}},
         'Hello')
 
-  @testy.no_verify('java', 'php')
+  @testy.no_verify('java')
   def testDottedLookupErrors(self):
 
     # TODO: Also test everything with setting undefined_str
@@ -673,7 +673,7 @@ class DottedLookupTest(testy.Test):
         t,
         {})
 
-  @testy.no_verify('java', 'php')
+  @testy.no_verify('java')
   def testDottedLookupErrorsWithUndefinedStr(self):
 
     t = testy.ClassDef('{foo.bar}', undefined_str='UNDEFINED')
@@ -684,7 +684,7 @@ class DottedLookupTest(testy.Test):
         {'foo': {}, 'bar': 100},
         'UNDEFINED')
 
-  @testy.no_verify('java', 'php')
+  @testy.no_verify('java')
   def testThreeLookups(self):
     t = testy.ClassDef('{foo.bar.baz}')
 
@@ -698,7 +698,7 @@ class DottedLookupTest(testy.Test):
         t,
         {'foo': 100})
 
-  @testy.no_verify('java', 'php')
+  @testy.no_verify('java')
   def testScopedLookup(self):
     t = testy.ClassDef(
         B("""
@@ -731,7 +731,7 @@ class SpecialVariableTest(testy.Test):
 
   LABELS = ['multilanguage']
 
-  @testy.no_verify('java', 'php')
+  @testy.no_verify('java')
   def testIndex(self):
     t = testy.ClassDef(
         B("""
@@ -751,7 +751,7 @@ class SpecialVariableTest(testy.Test):
     """)
     self.verify.Expansion(t, data, expected)
 
-  @testy.no_verify('java', 'php')
+  @testy.no_verify('java')
   def testTwoIndices(self):
     t = testy.ClassDef(
         B("""
@@ -782,7 +782,7 @@ class SpecialVariableTest(testy.Test):
     # Whitespace still differs between Python/JS
     self.verify.Expansion(t, data, expected, ignore_all_whitespace=True)
 
-  @testy.no_verify('java', 'php')
+  @testy.no_verify('java')
   def testUndefinedIndex(self):
     t = testy.ClassDef(
         B("""
@@ -1031,7 +1031,7 @@ def main(argv):
       this_dir, 'javascript', 'v8shell', 'linux-i686', 'shell')
   default_java = os.path.join(
       os.getenv('JAVA_HOME', ''), 'bin', 'java')
-  default_php = os.path.join('/','usr', 'bin', 'php')
+  default_php = 'php'
 
   run_params = testy.TEST_RUN_PARAMS + [
       params.OptionalString(
@@ -1071,7 +1071,7 @@ def main(argv):
   js_impl = os.path.join(this_dir, 'javascript', 'json-template.js')
   # This assumes that you have the pan repository checked out
   helpers = os.path.join(
-      this_dir, '..', '..', 'svn', 'pan', 'trunk', 'pan', 'javascript',
+      this_dir, '..', 'testy', 'pan', 'pan', 'javascript',
       'test_helpers.js')
 
   if sys.platform == 'win32':
