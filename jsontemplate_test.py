@@ -1071,7 +1071,7 @@ def main(argv):
   js_impl = os.path.join(this_dir, 'javascript', 'json-template.js')
   # This assumes that you have the pan repository checked out
   helpers = os.path.join(
-      this_dir, '..', 'testy', 'pan', 'pan', 'javascript',
+      this_dir, '..', '..', 'svn', 'pan', 'trunk', 'pan', 'javascript',
       'test_helpers.js')
 
   if sys.platform == 'win32':
