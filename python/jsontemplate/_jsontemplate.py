@@ -174,53 +174,47 @@ class _ProgramBuilder(object):
     formatters = [self._GetFormatter(f) for f in formatters]
     self.current_block.Append((_DoSubstitute, (name, formatters)))
 
+  def _NewSection(self, func, new_block):
+    self.current_block.Append((func, new_block))
+    self.stack.append(new_block)
+    self.current_block = new_block
+
   def NewSection(self, token_type, section_name):
     """For sections or repeated sections."""
 
     # TODO: Consider getting rid of this dispatching, and turn _Do* into methods
     if token_type == REPEATED_SECTION_TOKEN:
-      new_block = _Section(section_name)
+      new_block = _RepeatedSection(section_name)
       func = _DoRepeatedSection
     elif token_type == SECTION_TOKEN:
       new_block = _Section(section_name)
       func = _DoSection
-    elif token_type == PREDICATE_TOKEN:
-      new_block = _PredicateSection()
-      func = _DoPredicates
     else:
       raise AssertionError('Invalid token type %s' % token_type)
 
-    self.current_block.Append((func, new_block))
-    self.stack.append(new_block)
-    self.current_block = new_block
+    self._NewSection(func, new_block)
 
-  def NewPredicateClause(self, name):
-    """Returns whether a new BLOCK was created as a result of this clause."""
-    # All clauses fall under one block.  The first clause to evaluate to true is
-    # executed, and then all other clauses are skipped.
-
-    pred = self._GetPredicate(name)
-
-    if isinstance(self.current_block, _PredicateSection):
-      self.current_block.NewPredicateClause(pred)
-      return False
+  def NewOrClause(self, pred_str):
+    """
+    {.or ...} Can appear inside predicate blocks or section blocks, with
+    slightly different meaning.
+    """
+    if pred_str:
+      pred = self._GetPredicate(pred_str)
     else:
-      self.NewSection(PREDICATE_TOKEN, None)  # No name
-      self.current_block.NewPredicateClause(pred)
-      return True
+      pred = None
+    self.current_block.NewOrClause(pred)
 
-  def NewClause(self, name):
-    if isinstance(self.current_block, _PredicateSection):
-      if name == 'or':
-        # There is no test for 'or'
-        self.current_block.NewPredicateClause(lambda x: True)
-      else:
-        raise CompilationError('Invalid clause %r in predicate section' % name)
-    else:
-      # TODO: Raise errors if the clause isn't appropriate for the current block
-      # isn't a 'repeated section' (e.g. alternates with in a non-repeated
-      # section)
-      self.current_block.NewClause(name)
+  def AlternatesWith(self):
+    self.current_block.AlternatesWith()
+
+  def NewPredicateSection(self, pred_str):
+    """For chains of predicate clauses."""
+    pred = self._GetPredicate(pred_str)
+    block = _PredicateSection()
+    block.NewOrClause(pred)
+
+    self._NewSection(_DoPredicates, block)
 
   def EndSection(self):
     self.stack.pop()
@@ -240,6 +234,13 @@ class _AbstractSection(object):
   def Append(self, statement):
     """Append a statement to this block."""
     self.current_clause.append(statement)
+
+  def AlternatesWith(self):
+    raise CompilationError(
+        '{.alternates with} can only appear with in {.repeated section ...}')
+
+  def NewOrClause(self):
+    raise NotImplementedError
 
 
 class _Section(_AbstractSection):
@@ -264,9 +265,20 @@ class _Section(_AbstractSection):
   def Statements(self, clause='default'):
     return self.statements.get(clause, [])
 
-  def NewClause(self, clause_name):
+  def NewOrClause(self, pred):
+    if pred:
+      raise CompilationError(
+          '{.or} clause only takes a predicate inside predicate blocks')
     self.current_clause = []
-    self.statements[clause_name] = self.current_clause
+    self.statements['or'] = self.current_clause
+
+
+class _RepeatedSection(_Section):
+  """Repeated section is like section, but it supports {.alternates with}"""
+
+  def AlternatesWith(self):
+    self.current_clause = []
+    self.statements['alternates with'] = self.current_clause
 
 
 class _PredicateSection(_AbstractSection):
@@ -277,9 +289,10 @@ class _PredicateSection(_AbstractSection):
     # List of func, statements
     self.clauses = []
 
-  def NewPredicateClause(self, predicate):
+  def NewOrClause(self, pred):
+    pred = pred or (lambda x: True)  # {.or} always executes if reached
     self.current_clause = []
-    self.clauses.append((predicate, self.current_clause))
+    self.clauses.append((pred, self.current_clause))
 
 
 class _Frame(object):
@@ -486,8 +499,8 @@ _DEFAULT_FORMATTERS = {
 
 
 _DEFAULT_PREDICATES = {
-    'singular': lambda x: x == 1,
-    'plural': lambda x: x > 1,
+    'singular?': lambda x: x == 1,
+    'plural?': lambda x: x > 1,
     }
 
 
@@ -537,9 +550,10 @@ def MakeTokenRegex(meta_left, meta_right):
   SECTION_TOKEN,  # {.section name}
   REPEATED_SECTION_TOKEN,  # {.repeated section name}
   PREDICATE_TOKEN,  # {.predicate?}
-  CLAUSE_TOKEN,  # {.or}
+  ALTERNATES_TOKEN,  # {.or}
+  OR_TOKEN,  # {.or}
   END_TOKEN,  # {.end}
-  ) = range(7)
+  ) = range(8)
 
 
 def _MatchDirective(token):
@@ -550,8 +564,15 @@ def _MatchDirective(token):
   else:
     return None, None  # Must start with .
 
-  if token in ('or', 'alternates with'):
-    return CLAUSE_TOKEN, token
+  if token == 'alternates with':
+    return ALTERNATES_TOKEN, token
+
+  if token.startswith('or'):
+    if token.strip() == 'or':
+      return OR_TOKEN, None
+    else:
+      pred_str = token[2:].strip()
+      return OR_TOKEN, pred_str
 
   if token == 'end':
     return END_TOKEN, None
@@ -565,7 +586,7 @@ def _MatchDirective(token):
       return SECTION_TOKEN, section_name
 
   if token.endswith('?'):
-    return PREDICATE_TOKEN, token[:-1]
+    return PREDICATE_TOKEN, token
 
   return None, None  # no match
 
@@ -708,15 +729,17 @@ def CompileTemplate(
       continue
 
     if token_type == PREDICATE_TOKEN:
-      # Everything of the form {.predicate?} implicitly ends and starts a new
-      # clause
-      block_made = builder.NewPredicateClause(token)
-      if block_made:
-        balance_counter += 1
+      # Everything of the form {.predicate?} starts a new predicate section
+      block_made = builder.NewPredicateSection(token)
+      balance_counter += 1
       continue
 
-    if token_type == CLAUSE_TOKEN:
-      builder.NewClause(token)
+    if token_type == OR_TOKEN:
+      builder.NewOrClause(token)
+      continue
+
+    if token_type == ALTERNATES_TOKEN:
+      builder.AlternatesWith()
       continue
 
     if token_type == END_TOKEN:

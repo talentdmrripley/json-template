@@ -866,7 +866,7 @@ class PredicatesTest(testy.Test):
     {.repeated section num}
       {.plural?}
         There are {@} people here.
-      {.singular?}
+      {.or singular?}
         There is one person here.
       {.or}
         There is nobody here.
@@ -892,7 +892,7 @@ class PredicatesTest(testy.Test):
       {.section num}
         {.plural?}
           {@} people in {name}.
-        {.singular?}
+        {.or singular?}
           One person in {name}.
         {.end}
       {.or}
