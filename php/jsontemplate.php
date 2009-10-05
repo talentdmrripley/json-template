@@ -670,25 +670,26 @@ class JsonTemplateModule
 					continue;
 				}
 
+				$literal='';
 				// if it's a keyword directive
 				if(substr($token,0,1)=='.'){
 					$token = substr($token,1);
 					switch($token){
 					case 'meta-left':
 						$literal = $meta_left;
-						continue;
+						break;
 					case 'meta-right':
 						$literal = $meta_right;
-						continue;
+						break;
 					case 'space':
 						$literal = ' ';
-						continue;
+						break;
 					case 'tab':
 						$literal = "\t";
-						continue;
+						break;
 					case 'newline':
 						$literal = "\n";
-						continue;
+						break;
 					}
 				}
 				if($literal){
