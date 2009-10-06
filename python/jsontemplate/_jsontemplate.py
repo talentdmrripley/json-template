@@ -118,7 +118,8 @@ class _ProgramBuilder(object):
   def __init__(self, formatters, predicates):
     """
     Args:
-      more_formatters: See docstring for CompileTemplate
+      formatters: See docstring for CompileTemplate
+      predicates: See docstring for CompileTemplate
     """
     self.current_block = _Section()
     self.stack = [self.current_block]
@@ -160,13 +161,19 @@ class _ProgramBuilder(object):
 
   def _GetPredicate(self, pred_str):
     """
-    The user's predicates are consulted first, then the default formatters.
+    The user's predicates are consulted first, then the default predicates.
     """
     predicate = (
         self.predicates(pred_str) or _DEFAULT_PREDICATES.get(pred_str))
 
+    # TODO: Consider making this convention user-customizable.
+    if pred_str[0].islower():  # a .. z
+      func_type = _NODE_FUNC
+    else:
+      func_type = _CONTEXT_FUNC
+
     if predicate:
-      return predicate
+      return predicate, func_type
     else:
       raise BadPredicate('%r is not a valid predicate' % pred_str)
 
@@ -290,7 +297,8 @@ class _PredicateSection(_AbstractSection):
     self.clauses = []
 
   def NewOrClause(self, pred):
-    pred = pred or (lambda x: True)  # {.or} always executes if reached
+    # {.or} always executes if reached
+    pred = pred or (lambda x: True, _NODE_FUNC)  # 2-tuple
     self.current_clause = []
     self.clauses.append((pred, self.current_clause))
 
@@ -431,7 +439,7 @@ def _HtmlAttrValue(x):
   return cgi.escape(x, quote=True)
 
 
-def _AbsUrl(relative_url, lookup):
+def _AbsUrl(relative_url, context):
   """Returns an absolute URL, given the current node as a relative URL.
   
   Assumes that the context has a value named 'base-url'.  This is a little like
@@ -442,7 +450,7 @@ def _AbsUrl(relative_url, lookup):
   """
   # urljoin is flexible about trailing/leading slashes -- it will add or de-dupe
   # them
-  return urlparse.urljoin(lookup('base-url'), relative_url)
+  return urlparse.urljoin(context.Lookup('base-url'), relative_url)
 
 
 # See http://google-ctemplate.googlecode.com/svn/trunk/doc/howto.html for more
@@ -498,9 +506,17 @@ _DEFAULT_FORMATTERS = {
     }
 
 
+def _IsDebugMode(unused_value, context):
+  try:
+    return bool(context.Lookup('debug'))
+  except UndefinedVariable:
+    return False
+
+
 _DEFAULT_PREDICATES = {
     'singular?': lambda x: x == 1,
     'plural?': lambda x: x > 1,
+    'Debug?': _IsDebugMode,
     }
 
 
@@ -1008,8 +1024,11 @@ def _DoPredicates(args, context, callback):
   """
   block = args
   value = context.Lookup('@')
-  for predicate, statements in block.clauses:
-    do_clause = predicate(value)
+  for (predicate, func_type), statements in block.clauses:
+    if func_type == _NODE_FUNC:
+      do_clause = predicate(value)
+    else:
+      do_clause = predicate(value, context)
     if do_clause:
       _Execute(statements, context, callback)
       break
@@ -1038,7 +1057,7 @@ def _DoSubstitute(args, context, callback):
       else:
         # Pass the Lookup function into the formatter.  It can raise
         # UndefinedVariable.
-        value = func(value, context.Lookup)
+        value = func(value, context)
     except KeyboardInterrupt:
       raise
     except Exception, e:
