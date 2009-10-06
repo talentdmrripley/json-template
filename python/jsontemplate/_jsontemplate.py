@@ -367,11 +367,11 @@ class _ScopedContext(object):
     i = len(self.stack) - 1
     while 1:
       frame = self.stack[i]
-      if name == '$index':
+      if name == '@index':
         if frame.index == -1:  # undefined value
           i -= 1
         else:
-          return frame.index - 1  # $index is 0-based
+          return frame.index  # @index is 1-based
 
       else:
         context = frame.context
