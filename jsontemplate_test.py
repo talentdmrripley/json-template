@@ -884,6 +884,21 @@ class PredicatesTest(testy.Test):
     """)
     self.verify.Expansion(t, data, expected)
 
+    # This is the same template, but uses the optional ".if"
+    t = testy.ClassDef(
+    B("""
+    {.repeated section num}
+      {.if plural?}
+        There are {@} people here.
+      {.or singular?}
+        There is one person here.
+      {.or}
+        There is nobody here.
+      {.end}
+    {.end}
+    """))
+    self.verify.Expansion(t, data, expected)
+
   @testy.no_verify('javascript', 'java', 'php')
   def testValuePredicateWithRecord(self):
     t = testy.ClassDef(
