@@ -585,6 +585,10 @@ def _MatchDirective(token):
     else:
       return SECTION_TOKEN, section_name
 
+  # {.if plural?} and {.plural?} are synonyms.  The ".if" will read better for
+  # expressions, for people who like that kind of dirty thing...
+  if token.startswith('if '):
+    return PREDICATE_TOKEN, token[3:].strip()
   if token.endswith('?'):
     return PREDICATE_TOKEN, token
 
