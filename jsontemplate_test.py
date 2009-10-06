@@ -935,23 +935,20 @@ class PredicatesTest(testy.Test):
 
   @testy.no_verify('javascript', 'java', 'php')
   def testContextPredicate(self):
-    # TODO: Implement predicates that take a context.
-    return
+
+    # The Debug? predicate looks up the stack for a "Debug" predicate
     t = testy.ClassDef(
     B("""
     {.repeated section posts}
       Title: {title}
       Body: {body}
-      {..moderator?}
-        <delete>
-      {..user?}
-        <user>
+      {.Debug?}
+        Rendered in 3 seconds
       {.end}
     {.end}
     """))
 
     data = {
-        'moderator': True,
         'posts': [
             {'title': 'Spam', 'body': 'This is spam'},
             {'title': 'Eggs', 'body': 'These are eggs'},
@@ -961,10 +958,26 @@ class PredicatesTest(testy.Test):
     expected = B("""
       Title: Spam
       Body: This is spam
-        <delete>
       Title: Eggs
       Body: These are eggs
-        <delete>
+    """)
+    self.verify.Expansion(t, data, expected)
+
+    data = {
+        'debug': True,
+        'posts': [
+            {'title': 'Spam', 'body': 'This is spam'},
+            {'title': 'Eggs', 'body': 'These are eggs'},
+            ]
+        }
+
+    expected = B("""
+      Title: Spam
+      Body: This is spam
+        Rendered in 3 seconds
+      Title: Eggs
+      Body: These are eggs
+        Rendered in 3 seconds
     """)
     self.verify.Expansion(t, data, expected)
 
