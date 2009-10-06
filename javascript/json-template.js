@@ -144,11 +144,11 @@ function _ScopedContext(context, undefined_str) {
       var i = stack.length - 1;
       while (true) {
         var frame = stack[i];
-        if (name == '$index') {
+        if (name == '@index') {
           if (frame.index == -1) {  // undefined value
             i--;
           } else {
-            return frame.index - 1;
+            return frame.index;
           }
         } else {
           var context = frame.context;

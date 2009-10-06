@@ -417,12 +417,12 @@ class JsonTemplateScopedContext implements Iterator
 		$i = count($this->stack)-1;
 		while(true){
 			$context = $this->stack[$i];
-			if ($name=='$index'){
+			if ($name=='@index'){
 				$key=$this->key();
 				if($key==-1){
 					$i--;
 				} else {
-					return $key;
+					return $key+1;  // @index is 1-based
 				}
 			} else {
 				if(is_array($context)){

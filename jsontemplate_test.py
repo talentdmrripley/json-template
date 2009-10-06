@@ -727,7 +727,7 @@ class DottedLookupTest(testy.Test):
 
 
 class SpecialVariableTest(testy.Test):
-  """Tests the special $index variable."""
+  """Tests the special @index variable."""
 
   LABELS = ['multilanguage']
 
@@ -736,7 +736,7 @@ class SpecialVariableTest(testy.Test):
     t = testy.ClassDef(
         B("""
         {.repeated section @}
-          {$index} {name}
+          {@index} {name}
         {.end}
         """))
 
@@ -746,8 +746,8 @@ class SpecialVariableTest(testy.Test):
       ]
 
     expected = B("""
-      0 Spam
-      1 Eggs
+      1 Spam
+      2 Eggs
     """)
     self.verify.Expansion(t, data, expected)
 
@@ -756,9 +756,9 @@ class SpecialVariableTest(testy.Test):
     t = testy.ClassDef(
         B("""
         {.repeated section albums}
-          {$index} {name}
+          {@index} {name}
           {.repeated section songs}
-            {$index} {@}
+            {@index} {@}
           {.end}
         {.end}
         """))
@@ -773,11 +773,11 @@ class SpecialVariableTest(testy.Test):
       }
 
     expected = B("""
-      0 Diary of a Madman
-        0 Over the Mountain
-        1 S.A.T.O
-      1 Bark at the Moon
-        0 Waiting for Darkness
+      1 Diary of a Madman
+        1 Over the Mountain
+        2 S.A.T.O
+      2 Bark at the Moon
+        1 Waiting for Darkness
     """)
     # Whitespace still differs between Python/JS
     self.verify.Expansion(t, data, expected, ignore_all_whitespace=True)
@@ -787,7 +787,7 @@ class SpecialVariableTest(testy.Test):
     t = testy.ClassDef(
         B("""
         {.section foo}
-          {$index} {name}
+          {@index} {name}
         {.end}
         """))
     data = {'foo': 'bar'}
