@@ -302,14 +302,35 @@ class FunctionsApiTest(testy.Test):
     self.verify.Equal(t.expand({'name': 'World'}), 'Hello world WORLD')
 
   def testMoreFormattersAsFunction(self):
-    def MyFormatters(name):
-      return {
-        'lower': lambda v: v.lower(),
-        'upper': lambda v: v.upper(),
-        }.get(name)
+
+    def MyFormatters(user_str):
+      if user_str == 'lower':
+        return lambda v: v.lower()
+      elif user_str == 'upper':
+        return lambda v: v.upper()
+      else:
+        return None
 
     t = jsontemplate.Template(
         'Hello {name|lower} {name|upper}', more_formatters=MyFormatters)
+
+    self.verify.Equal(t.expand({'name': 'World'}), 'Hello world WORLD')
+
+  def testMoreFormattersAsClass(self):
+
+    class MyFormatters(object):
+      def Lookup(self, user_str):
+        """Returns func, args, type."""
+        if user_str == 'lower':
+          func = lambda v: v.lower()
+        elif user_str == 'upper':
+          func = lambda v: v.upper()
+        else:
+          func = None
+        return func, (), jsontemplate.CURSOR_FUNC_TYPE
+
+    t = jsontemplate.Template(
+        'Hello {name|lower} {name|upper}', more_formatters=MyFormatters())
 
     self.verify.Equal(t.expand({'name': 'World'}), 'Hello world WORLD')
 
