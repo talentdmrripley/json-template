@@ -301,6 +301,18 @@ class FunctionsApiTest(testy.Test):
 
     self.verify.Equal(t.expand({'name': 'World'}), 'Hello world WORLD')
 
+  def testMoreFormattersAsFunction(self):
+    def MyFormatters(name):
+      return {
+        'lower': lambda v: v.lower(),
+        'upper': lambda v: v.upper(),
+        }.get(name)
+
+    t = jsontemplate.Template(
+        'Hello {name|lower} {name|upper}', more_formatters=MyFormatters)
+
+    self.verify.Equal(t.expand({'name': 'World'}), 'Hello world WORLD')
+
 
 class AdvancedTemplateTest(testy.Test):
 
