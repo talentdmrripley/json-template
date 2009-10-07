@@ -318,16 +318,16 @@ class FunctionsApiTest(testy.Test):
 
   def testMoreFormattersAsClass(self):
 
-    class MyFormatters(object):
+    class MyFormatters(jsontemplate.FunctionRegistry):
       def Lookup(self, user_str):
         """Returns func, args, type."""
         if user_str == 'lower':
-          func = lambda v: v.lower()
+          func = lambda v, context, args: v.lower()
         elif user_str == 'upper':
-          func = lambda v: v.upper()
+          func = lambda v, context, args: v.upper()
         else:
           func = None
-        return func, None, jsontemplate.CURSOR_FUNC_TYPE
+        return func, None
 
     t = jsontemplate.Template(
         'Hello {name|lower} {name|upper}', more_formatters=MyFormatters())

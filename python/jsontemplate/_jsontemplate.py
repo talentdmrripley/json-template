@@ -107,7 +107,7 @@ _SECTION_RE = re.compile(r'(repeated)?\s*section\s+(\S+)')
 # Some formatters and predicates need to look up values in the whole context,
 # rather than just the current node.  'Node functions' start with a lowercase
 # letter; 'Context functions' start with any other character.
-CURSOR_FUNC_TYPE, CONTEXT_FUNC_TYPE = 0, 1
+SIMPLE_FUNC, ENHANCED_FUNC = 0, 1
 
 
 class FunctionRegistry(object):
@@ -121,15 +121,18 @@ class FunctionRegistry(object):
         arguments.  For example, 'pluralize person people' or 'test? admin'
 
     Returns:
-      A 3-tuple of (function, args, type)
+      A 2-tuple of (function, args)
         function: Callable that formats data as a string
         args: Extra arguments to be passed to the function at expansion time
           Should be None to pass NO arguments, since it can pass a 0-tuple too.
-        type: Either CURSOR_FUNC_TYPE or CONTEXT_FUNC_TYPE.  Use
-          CURSOR_FUNC_TYPE if the function needs a full context object instead
-          of just the cursor.
     """
     raise NotImplementedError
+
+  def LookupWithType(self, user_str):
+    func, args = self.Lookup(user_str)
+    # If users need the complexity of FunctionRegistry, then they get the
+    # 3-arguments formatter signature (value, context, args)
+    return func, args, ENHANCED_FUNC
 
 
 def _DecideFuncType(user_str):
@@ -138,9 +141,9 @@ def _DecideFuncType(user_str):
   contexts rather than just the cursor.
   """
   if user_str[0].islower():
-    return CURSOR_FUNC_TYPE
+    return SIMPLE_FUNC
   else:
-    return CONTEXT_FUNC_TYPE
+    return ENHANCED_FUNC
 
 
 class DictRegistry(FunctionRegistry):
@@ -149,7 +152,7 @@ class DictRegistry(FunctionRegistry):
   def __init__(self, func_dict):
     self.func_dict = func_dict
 
-  def Lookup(self, user_str):
+  def LookupWithType(self, user_str):
     return self.func_dict.get(user_str), None, _DecideFuncType(user_str)
 
 
@@ -159,7 +162,7 @@ class CallableRegistry(FunctionRegistry):
   def __init__(self, func):
     self.func = func
 
-  def Lookup(self, user_str):
+  def LookupWithType(self, user_str):
     return self.func(user_str), None, _DecideFuncType(user_str)
 
 
@@ -169,14 +172,14 @@ class ChainedRegistry(FunctionRegistry):
   def __init__(self, registries):
     self.registries = registries
 
-  def Lookup(self, user_str):
+  def LookupWithType(self, user_str):
     for registry in self.registries:
-      func, args, func_type = registry.Lookup(user_str)
+      func, args, func_type = registry.LookupWithType(user_str)
       if func:
         return func, args, func_type
 
     # Nothing found
-    return None, None, CURSOR_FUNC_TYPE
+    return None, None, SIMPLE_FUNC
 
 
 class _ProgramBuilder(object):
@@ -225,7 +228,7 @@ class _ProgramBuilder(object):
     """
     The user's formatters are consulted first, then the default formatters.
     """
-    formatter, args, func_type = self.formatters.Lookup(format_str)
+    formatter, args, func_type = self.formatters.LookupWithType(format_str)
     if formatter:
       return formatter, args, func_type
     else:
@@ -235,7 +238,7 @@ class _ProgramBuilder(object):
     """
     The user's predicates are consulted first, then the default predicates.
     """
-    predicate, args, func_type = self.predicates.Lookup(pred_str)
+    predicate, args, func_type = self.predicates.LookupWithType(pred_str)
     if predicate:
       return predicate, args, func_type
     else:
@@ -362,7 +365,7 @@ class _PredicateSection(_AbstractSection):
 
   def NewOrClause(self, pred):
     # {.or} always executes if reached
-    pred = pred or (lambda x: True, None, CURSOR_FUNC_TYPE)  # 3-tuple
+    pred = pred or (lambda x: True, None, SIMPLE_FUNC)  # 3-tuple
     self.current_clause = []
     self.clauses.append((pred, self.current_clause))
 
@@ -503,9 +506,9 @@ def _HtmlAttrValue(x):
   return cgi.escape(x, quote=True)
 
 
-def _AbsUrl(relative_url, context):
+def _AbsUrl(relative_url, context, unused_args):
   """Returns an absolute URL, given the current node as a relative URL.
-  
+
   Assumes that the context has a value named 'base-url'.  This is a little like
   the HTML <base> tag, but implemented with HTML generation.
 
@@ -570,7 +573,7 @@ _DEFAULT_FORMATTERS = {
     }
 
 
-def _Pluralize(value, args):
+def _Pluralize(value, unused_context, args):
   """Formatter to pluralize words."""
 
   if len(args) == 0:
@@ -607,12 +610,12 @@ class _DefaultFormatters(FunctionRegistry):
       else:
         args = user_str.split(splitchar)[1:]
 
-      return _Pluralize, args, CURSOR_FUNC_TYPE
+      return _Pluralize, args
     else:
-      return None, (), CURSOR_FUNC_TYPE
+      return None, ()
 
 
-def _IsDebugMode(unused_value, context):
+def _IsDebugMode(unused_value, context, unused_args):
   try:
     return bool(context.Lookup('debug'))
   except UndefinedVariable:
@@ -1130,16 +1133,10 @@ def _DoPredicates(args, context, callback):
   block = args
   value = context.Lookup('@')
   for (predicate, args, func_type), statements in block.clauses:
-    # See _DoSubstitute -- same logic for formatters.
-    arg_list = [value]
-
-    if func_type == CONTEXT_FUNC_TYPE:
-      arg_list.append(context)
-
-    if args is not None:
-      arg_list.append(args)
-
-    do_clause = predicate(*arg_list)
+    if func_type == ENHANCED_FUNC:
+      do_clause = predicate(value, context, args)
+    else:
+      do_clause = predicate(value)
 
     if do_clause:
       _Execute(statements, context, callback)
@@ -1163,23 +1160,11 @@ def _DoSubstitute(args, context, callback):
           'Error evaluating %r in context %r: %r' % (name, context, e))
 
   for func, args, func_type in formatters:
-    # Signature could be:
-    #   value
-    #   value, context
-    #   value, args
-    #   value, context, args
-    arg_list = [value]
-
-    if func_type == CONTEXT_FUNC_TYPE:
-      # Pass the Lookup function into the formatter.  It can raise
-      # UndefinedVariable.
-      arg_list.append(context)
-
-    if args is not None:
-      arg_list.append(args)
-
     try:
-      value = func(*arg_list)
+      if func_type == ENHANCED_FUNC:
+        value = func(value, context, args)
+      else:
+        value = func(value)
     except KeyboardInterrupt:
       raise
     except Exception, e:
