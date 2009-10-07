@@ -327,7 +327,7 @@ class FunctionsApiTest(testy.Test):
           func = lambda v: v.upper()
         else:
           func = None
-        return func, (), jsontemplate.CURSOR_FUNC_TYPE
+        return func, None, jsontemplate.CURSOR_FUNC_TYPE
 
     t = jsontemplate.Template(
         'Hello {name|lower} {name|upper}', more_formatters=MyFormatters())

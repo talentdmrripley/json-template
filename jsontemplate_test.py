@@ -840,6 +840,50 @@ class StandardFormattersTest(testy.Test):
     """)
     self.verify.Expansion(t, data, expected)
 
+  # TODO: Do this in 3 other languages
+  @testy.no_verify('javascript', 'php', 'java')
+  def testPluralizeFormatter(self):
+    """
+    'pluralize' is an example of formatters which take arguments (and a
+    variable number of them).  Based on Django's pluralize.
+    """
+    # 0 arguments
+    t = testy.ClassDef('You have {num} message{num|pluralize}.')
+    self.verify.Expansion(t, {'num': 1}, 'You have 1 message.')
+    self.verify.Expansion(t, {'num': 3}, 'You have 3 messages.')
+
+    # 1 argument
+    t = testy.ClassDef('They suffered {num} loss{num|pluralize es}.')
+    self.verify.Expansion(t, {'num': 1}, 'They suffered 1 loss.')
+    self.verify.Expansion(t, {'num': 3}, 'They suffered 3 losses.')
+
+    # 2 arguments
+    t = testy.ClassDef(
+        'There {num|pluralize is are} {num} song{num|pluralize}.')
+    self.verify.Expansion(t, {'num': 1}, 'There is 1 song.')
+    self.verify.Expansion(t, {'num': 3}, 'There are 3 songs.')
+
+  # TODO: Do this in 3 other languages
+  @testy.no_verify('javascript', 'php', 'java')
+  def testPluralizeWithCustomDelimiters(self):
+
+    # Arguments with spaces in them
+    t = testy.ClassDef(
+        '{num-people|pluralize/It depends/They depend} on {num-things} '
+        'thing{num-things|pluralize}.')
+    self.verify.Expansion(
+        t, {'num-people': 1, 'num-things': 1},
+        'It depends on 1 thing.')
+    self.verify.Expansion(
+        t, {'num-people': 1, 'num-things': 3},
+        'It depends on 3 things.')
+    self.verify.Expansion(
+        t, {'num-people': 3, 'num-things': 1},
+        'They depend on 1 thing.')
+    self.verify.Expansion(
+        t, {'num-people': 3, 'num-things': 3},
+        'They depend on 3 things.')
+
 
 class AllFormattersTest(testy.Test):
   """Test that each implementation implements the standard formatters."""

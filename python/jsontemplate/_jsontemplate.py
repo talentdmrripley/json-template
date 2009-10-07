@@ -124,6 +124,7 @@ class FunctionRegistry(object):
       A 3-tuple of (function, args, type)
         function: Callable that formats data as a string
         args: Extra arguments to be passed to the function at expansion time
+          Should be None to pass NO arguments, since it can pass a 0-tuple too.
         type: Either CURSOR_FUNC_TYPE or CONTEXT_FUNC_TYPE.  Use
           CURSOR_FUNC_TYPE if the function needs a full context object instead
           of just the cursor.
@@ -137,7 +138,7 @@ def _DecideFuncType(user_str):
   contexts rather than just the cursor.
   """
   if user_str[0].islower():
-    return CURSOR_FUNC_TYPE 
+    return CURSOR_FUNC_TYPE
   else:
     return CONTEXT_FUNC_TYPE
 
@@ -149,7 +150,7 @@ class DictRegistry(FunctionRegistry):
     self.func_dict = func_dict
 
   def Lookup(self, user_str):
-    return self.func_dict.get(user_str), (), _DecideFuncType(user_str)
+    return self.func_dict.get(user_str), None, _DecideFuncType(user_str)
 
 
 class CallableRegistry(FunctionRegistry):
@@ -159,7 +160,7 @@ class CallableRegistry(FunctionRegistry):
     self.func = func
 
   def Lookup(self, user_str):
-    return self.func(user_str), (), _DecideFuncType(user_str)
+    return self.func(user_str), None, _DecideFuncType(user_str)
 
 
 class ChainedRegistry(FunctionRegistry):
@@ -175,7 +176,7 @@ class ChainedRegistry(FunctionRegistry):
         return func, args, func_type
 
     # Nothing found
-    return None, (), CURSOR_FUNC_TYPE
+    return None, None, CURSOR_FUNC_TYPE
 
 
 class _ProgramBuilder(object):
@@ -202,7 +203,7 @@ class _ProgramBuilder(object):
 
     # First consult user formatters, then the default formatters
     self.formatters = ChainedRegistry(
-        [formatters, DictRegistry(_DEFAULT_FORMATTERS)])
+        [formatters, DictRegistry(_DEFAULT_FORMATTERS), _DefaultFormatters()])
 
     # Same for predicates
     if isinstance(predicates, dict):
@@ -226,7 +227,7 @@ class _ProgramBuilder(object):
     """
     formatter, args, func_type = self.formatters.Lookup(format_str)
     if formatter:
-      return formatter, func_type
+      return formatter, args, func_type
     else:
       raise BadFormatter('%r is not a valid formatter' % format_str)
 
@@ -236,7 +237,7 @@ class _ProgramBuilder(object):
     """
     predicate, args, func_type = self.predicates.Lookup(pred_str)
     if predicate:
-      return predicate, func_type
+      return predicate, args, func_type
     else:
       raise BadPredicate('%r is not a valid predicate' % pred_str)
 
@@ -361,7 +362,7 @@ class _PredicateSection(_AbstractSection):
 
   def NewOrClause(self, pred):
     # {.or} always executes if reached
-    pred = pred or (lambda x: True, CURSOR_FUNC_TYPE)  # 2-tuple
+    pred = pred or (lambda x: True, None, CURSOR_FUNC_TYPE)  # 3-tuple
     self.current_clause = []
     self.clauses.append((pred, self.current_clause))
 
@@ -567,6 +568,48 @@ _DEFAULT_FORMATTERS = {
     'json': None,
     'js-string': None,
     }
+
+
+def _Pluralize(value, args):
+  """Formatter to pluralize words."""
+
+  if len(args) == 0:
+    s, p = '', 's'
+  elif len(args) == 1:
+    s, p = '', args[0]
+  elif len(args) == 2:
+    s, p = args
+  else:
+    # Should have been checked at compile time
+    raise AssertionError
+
+  if value > 1:
+    return p
+  else:
+    return s
+
+
+class _DefaultFormatters(FunctionRegistry):
+  """
+  Default formatters that don't fit in the simple dictionary
+  _DEFAULT_FORMATTERS.
+  """
+
+  def Lookup(self, user_str):
+    if user_str.startswith('pluralize'):
+      i = len('pluralize')
+
+      # Usually a space, but could be something else
+      try:
+        splitchar = user_str[i]
+      except IndexError:
+        args = ()  # No arguments
+      else:
+        args = user_str.split(splitchar)[1:]
+
+      return _Pluralize, args, CURSOR_FUNC_TYPE
+    else:
+      return None, (), CURSOR_FUNC_TYPE
 
 
 def _IsDebugMode(unused_value, context):
@@ -1086,11 +1129,18 @@ def _DoPredicates(args, context, callback):
   """
   block = args
   value = context.Lookup('@')
-  for (predicate, func_type), statements in block.clauses:
-    if func_type == CURSOR_FUNC_TYPE:
-      do_clause = predicate(value)
-    else:
-      do_clause = predicate(value, context)
+  for (predicate, args, func_type), statements in block.clauses:
+    # See _DoSubstitute -- same logic for formatters.
+    arg_list = [value]
+
+    if func_type == CONTEXT_FUNC_TYPE:
+      arg_list.append(context)
+
+    if args is not None:
+      arg_list.append(args)
+
+    do_clause = predicate(*arg_list)
+
     if do_clause:
       _Execute(statements, context, callback)
       break
@@ -1112,14 +1162,24 @@ def _DoSubstitute(args, context, callback):
       raise EvaluationError(
           'Error evaluating %r in context %r: %r' % (name, context, e))
 
-  for func, func_type in formatters:
+  for func, args, func_type in formatters:
+    # Signature could be:
+    #   value
+    #   value, context
+    #   value, args
+    #   value, context, args
+    arg_list = [value]
+
+    if func_type == CONTEXT_FUNC_TYPE:
+      # Pass the Lookup function into the formatter.  It can raise
+      # UndefinedVariable.
+      arg_list.append(context)
+
+    if args is not None:
+      arg_list.append(args)
+
     try:
-      if func_type == CURSOR_FUNC_TYPE:
-        value = func(value)
-      else:
-        # Pass the Lookup function into the formatter.  It can raise
-        # UndefinedVariable.
-        value = func(value, context)
+      value = func(*arg_list)
     except KeyboardInterrupt:
       raise
     except Exception, e:
