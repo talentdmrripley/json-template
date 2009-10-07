@@ -107,7 +107,76 @@ _SECTION_RE = re.compile(r'(repeated)?\s*section\s+(\S+)')
 # Some formatters and predicates need to look up values in the whole context,
 # rather than just the current node.  'Node functions' start with a lowercase
 # letter; 'Context functions' start with any other character.
-_NODE_FUNC, _CONTEXT_FUNC = 0, 1
+CURSOR_FUNC_TYPE, CONTEXT_FUNC_TYPE = 0, 1
+
+
+class FunctionRegistry(object):
+  """Abstract class for looking up formatters or predicates at compile time."""
+
+  def Lookup(self, user_str):
+    """Lookup a function.
+
+    Args:
+      user_str: A raw string from the user, which may include uninterpreted
+        arguments.  For example, 'pluralize person people' or 'test? admin'
+
+    Returns:
+      A 3-tuple of (function, args, type)
+        function: Callable that formats data as a string
+        args: Extra arguments to be passed to the function at expansion time
+        type: Either CURSOR_FUNC_TYPE or CONTEXT_FUNC_TYPE.  Use
+          CURSOR_FUNC_TYPE if the function needs a full context object instead
+          of just the cursor.
+    """
+    raise NotImplementedError
+
+
+def _DecideFuncType(user_str):
+  """
+  By default, formatters/predicates which start with a non-lowercase letter take
+  contexts rather than just the cursor.
+  """
+  if user_str[0].islower():
+    return CURSOR_FUNC_TYPE 
+  else:
+    return CONTEXT_FUNC_TYPE
+
+
+class DictRegistry(FunctionRegistry):
+  """Look up functions in a simple dictionary."""
+
+  def __init__(self, func_dict):
+    self.func_dict = func_dict
+
+  def Lookup(self, user_str):
+    return self.func_dict.get(user_str), (), _DecideFuncType(user_str)
+
+
+class CallableRegistry(FunctionRegistry):
+  """Look up functions in a (higher-order) function."""
+
+  def __init__(self, func):
+    self.func = func
+
+  def Lookup(self, user_str):
+    return self.func(user_str), (), _DecideFuncType(user_str)
+
+
+class ChainedRegistry(FunctionRegistry):
+  """Look up functions in chain of other FunctionRegistry instances."""
+
+  def __init__(self, registries):
+    self.registries = registries
+
+  def Lookup(self, user_str):
+    for registry in self.registries:
+      func, args, func_type = registry.Lookup(user_str)
+      if func:
+        return func, args, func_type
+
+    # Nothing found
+    return None, (), CURSOR_FUNC_TYPE
+
 
 class _ProgramBuilder(object):
   """
@@ -124,15 +193,25 @@ class _ProgramBuilder(object):
     self.current_block = _Section()
     self.stack = [self.current_block]
 
-    # Passing a dictionary instead of a function is often more convenient
-    # .get is a function which returns either a function None
+    # Passing a dictionary or a function is often more convenient than making a
+    # FunctionRegistry
     if isinstance(formatters, dict):
-      formatters = formatters.get
-    self.formatters = formatters
+      formatters = DictRegistry(formatters)
+    elif callable(formatters):
+      formatters = CallableRegistry(formatters)
 
+    # First consult user formatters, then the default formatters
+    self.formatters = ChainedRegistry(
+        [formatters, DictRegistry(_DEFAULT_FORMATTERS)])
+
+    # Same for predicates
     if isinstance(predicates, dict):
-      predicates = predicates.get
-    self.predicates = predicates
+      predicates = DictRegistry(predicates)
+    elif callable(predicates):
+      predicates = CallableRegistry(predicates)
+
+    self.predicates = ChainedRegistry(
+        [predicates, DictRegistry(_DEFAULT_PREDICATES)])
 
   def Append(self, statement):
     """
@@ -145,15 +224,7 @@ class _ProgramBuilder(object):
     """
     The user's formatters are consulted first, then the default formatters.
     """
-    formatter = (
-        self.formatters(format_str) or _DEFAULT_FORMATTERS.get(format_str))
-
-    # TODO: Consider making this convention user-customizable.
-    if format_str[0].islower():  # a .. z
-      func_type = _NODE_FUNC
-    else:
-      func_type = _CONTEXT_FUNC
-
+    formatter, args, func_type = self.formatters.Lookup(format_str)
     if formatter:
       return formatter, func_type
     else:
@@ -163,15 +234,7 @@ class _ProgramBuilder(object):
     """
     The user's predicates are consulted first, then the default predicates.
     """
-    predicate = (
-        self.predicates(pred_str) or _DEFAULT_PREDICATES.get(pred_str))
-
-    # TODO: Consider making this convention user-customizable.
-    if pred_str[0].islower():  # a .. z
-      func_type = _NODE_FUNC
-    else:
-      func_type = _CONTEXT_FUNC
-
+    predicate, args, func_type = self.predicates.Lookup(pred_str)
     if predicate:
       return predicate, func_type
     else:
@@ -298,7 +361,7 @@ class _PredicateSection(_AbstractSection):
 
   def NewOrClause(self, pred):
     # {.or} always executes if reached
-    pred = pred or (lambda x: True, _NODE_FUNC)  # 2-tuple
+    pred = pred or (lambda x: True, CURSOR_FUNC_TYPE)  # 2-tuple
     self.current_clause = []
     self.clauses.append((pred, self.current_clause))
 
@@ -694,14 +757,13 @@ def CompileTemplate(
     meta: The metacharacters to use, e.g. '{}', '[]'.
 
     more_formatters:
-        A function which maps format strings to *other functions*.  The
-        resulting functions should take a data dictionary value (a JSON atom, or
-        a dictionary itself), and return a string to be shown on the page.
-        These are often used for HTML escaping, etc.  There is a default set of
-        formatters available if more_formatters is not passed.
-
-        This argument may also be a dictionary (of strings to functions), in
-        which case it's "converted" to a function in the obvious way.
+        Something that can map format strings to formatter functions.  One of:
+          - A plain dictionary of names -> functions  e.g. {'html': cgi.escape}
+          - A higher-order function which takes format strings and returns
+            formatter functions.  Useful for when formatters have parsed
+            arguments.
+          - A FunctionRegistry instance for the most control.  This allows
+            formatters which takes contexts as well.
 
     more_predicates:
         Like more_formatters, but for predicates.
@@ -1025,7 +1087,7 @@ def _DoPredicates(args, context, callback):
   block = args
   value = context.Lookup('@')
   for (predicate, func_type), statements in block.clauses:
-    if func_type == _NODE_FUNC:
+    if func_type == CURSOR_FUNC_TYPE:
       do_clause = predicate(value)
     else:
       do_clause = predicate(value, context)
@@ -1052,7 +1114,7 @@ def _DoSubstitute(args, context, callback):
 
   for func, func_type in formatters:
     try:
-      if func_type == _NODE_FUNC:
+      if func_type == CURSOR_FUNC_TYPE:
         value = func(value)
       else:
         # Pass the Lookup function into the formatter.  It can raise
