@@ -143,7 +143,7 @@ class ScopedContextTest(testy.Test):
     self.verify.Raises(StopIteration, s.Next)
 
 
-class InternalTemplateTest(testy.PyUnitCompatibleTest):
+class InternalTemplateTest(testy.Test):
   """Tests that can only be run internally."""
 
   VERIFIERS = [python_verifier.InternalTemplateVerifier]
@@ -156,8 +156,8 @@ class InternalTemplateTest(testy.PyUnitCompatibleTest):
     try:
       t.expand({'num': 5})
     except jsontemplate.EvaluationError, e:
-      self.assert_(e.args[0].startswith('Formatting value 5'), e.args[0])
-      self.assertEqual(e.original_exception.__class__, AttributeError)
+      self.verify.IsTrue(e.args[0].startswith('Formatting value 5'), e.args[0])
+      self.verify.Equal(e.original_exception.__class__, AttributeError)
     else:
       self.fail('Expected EvaluationError')
 
@@ -276,7 +276,7 @@ class InternalTemplateTest(testy.PyUnitCompatibleTest):
     program = jsontemplate.CompileTemplate('{}')
     # If no builder is passed, them CompileTemplate should return a _Section
     # instance (the root of the program)
-    self.assertEqual(type(program), jsontemplate._Section)
+    self.verify.Equal(type(program), jsontemplate._Section)
 
   def testSimpleUnicodeSubstitution(self):
     t = jsontemplate.Template(u'Hello {name}')
@@ -286,6 +286,10 @@ class InternalTemplateTest(testy.PyUnitCompatibleTest):
     # TODO: Need a lot more comprehensive *external* unicode tests, as well as
     # ones for the internal API.  Need to test mixing of unicode() and str()
     # instances (or declare it undefined).
+
+
+class FunctionsApiTest(testy.Test):
+  """Tests that can only be run internally."""
 
   def testMoreFormattersAsDict(self):
     t = jsontemplate.Template(
