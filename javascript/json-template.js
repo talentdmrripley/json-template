@@ -31,24 +31,27 @@ var jsontemplate = function() {
 
 // Regex escaping for common metacharacters (note that JavaScript needs 2 \\ --
 // no raw strings!
-var META_ESCAPE = {
-  '{': '\\{',
-  '}': '\\}',
-  '{{': '\\{\\{',
-  '}}': '\\}\\}',
-  '[': '\\[',
-  ']': '\\]'
-};
-
-function _MakeTokenRegex(meta_left, meta_right) {
-  // TODO: check errors
-  return new RegExp(
-      '(' +
-      META_ESCAPE[meta_left] +
-      '.+?' +
-      META_ESCAPE[meta_right] +
-      '\n?)', 'g');  // global for use with .exec()
+var metaFixes={}
+function EscapeMeta(meta){
+	var ret = metaFixes[meta];
+	var escapeChars="^$-|(){}[]";
+	if (!ret) {
+		ret='';
+		for (var i = 0; i < meta.length; i++) {
+			var c = meta.charAt(i);
+			if (escapeChars.indexOf(c) != -1)
+				ret += '\\';
+			ret += c;
+		}
+		metaFixes[meta] = ret;
+	}
+	return ret;
 }
+function _MakeTokenRegex(meta_left, meta_right) {
+	var str = '(' + EscapeMeta(meta_left) + '.*?' + EscapeMeta(meta_right) + '\n?)';
+	return new RegExp(str, 'g');
+}
+
 
 // 
 // Formatters
