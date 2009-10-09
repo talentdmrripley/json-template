@@ -168,8 +168,16 @@ class SubstitutionsTest(testy.Test):
     self.verify.Expansion(t, {}, '<%Hello%>')
 
   def testEscapeMetacharacter(self):
-    t = testy.ClassDef('{-$^|.meta-left|^$-}Hello{-$^|.meta-right|^$-}', meta='{-$^||^$-}')
-    self.verify.Expansion(t, {}, '{-$^|Hello|^$-}')
+    t = testy.ClassDef('(-.meta-left-)Hello(-.meta-right-)', meta='(--)')
+    self.verify.Expansion(t, {}, '(-Hello-)')
+
+  def testEscapeMetacharacter(self):
+    t = testy.ClassDef('^|.meta-left|^Hello^|.meta-right|^', meta='^||^')
+    self.verify.Expansion(t, {}, '^|Hello^|')
+
+  def testEscapeMetacharacter(self):
+    t = testy.ClassDef('$(.meta-left)$Hello$(.meta-right)$', meta='$()$')
+    self.verify.Expansion(t, {}, '$(Hello)$')
 
   def testMeta(self):
     t = testy.ClassDef('Hello {{# Comment}} There', meta='{{}}')
