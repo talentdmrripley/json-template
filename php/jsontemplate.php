@@ -588,7 +588,7 @@ class JsonTemplateModule
 	{
 		$key = $meta_left.$meta_right;
 		if(!in_array($key,array_keys($this->token_re_cache))){
-			$this->token_re_cache[$key] = '/('.quotemeta($meta_left).'.+?'.quotemeta($meta_right).'\n?)/';
+			$this->token_re_cache[$key] = '/('.preg_quote($meta_left).'.+?'.preg_quote($meta_right).'\n?)/';
 		}
 		return $this->token_re_cache[$key];
 	}

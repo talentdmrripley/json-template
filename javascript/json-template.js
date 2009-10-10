@@ -31,25 +31,22 @@ var jsontemplate = function() {
 
 // Regex escaping for common metacharacters (note that JavaScript needs 2 \\ --
 // no raw strings!
-var metaFixes={}
-function EscapeMeta(meta){
-	var ret = metaFixes[meta];
-	var escapeChars="^$-|(){}[]";
-	if (!ret) {
-		ret='';
-		for (var i = 0; i < meta.length; i++) {
-			var c = meta.charAt(i);
-			if (escapeChars.indexOf(c) != -1)
-				ret += '\\';
-			ret += c;
-		}
-		metaFixes[meta] = ret;
-	}
-	return ret;
+var escaped_meta_cache = {};
+function EscapeMeta(meta) {
+  var ret = escaped_meta_cache[meta];
+  if (!ret) {
+  	ret = meta.replace(/([\{\}\(\)\[\]\|\^\$\-\+\+\?])/g,'\\$1');
+  	escaped_meta_cache[meta] = ret;
+  }
+  return ret;
 }
 function _MakeTokenRegex(meta_left, meta_right) {
-	var str = '(' + EscapeMeta(meta_left) + '.*?' + EscapeMeta(meta_right) + '\n?)';
-	return new RegExp(str, 'g');
+  var str = '(' + 
+               EscapeMeta(meta_left) + 
+			   '.*?' + 
+			   EscapeMeta(meta_right) + 
+         '\n?)';
+  return new RegExp(str, 'g');
 }
 
 
