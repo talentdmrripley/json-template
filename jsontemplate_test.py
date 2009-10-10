@@ -159,23 +159,23 @@ class SubstitutionsTest(testy.Test):
         jsontemplate.MissingFormatter, 'What is your {name}',
         default_formatter=None)
 
-  def testEscapeMetacharacter(self):
+  def testEscapeMetacharacter1(self):
     t = testy.ClassDef('[.meta-left]Hello[.meta-right]', meta='[]')
     self.verify.Expansion(t, {}, '[Hello]')
 
-  def testEscapeMetacharacter(self):
+  def testEscapeMetacharacter2(self):
     t = testy.ClassDef('<%.meta-left%>Hello<%.meta-right%>', meta='<%%>')
     self.verify.Expansion(t, {}, '<%Hello%>')
 
-  def testEscapeMetacharacter(self):
+  def testEscapeMetacharacter3(self):
     t = testy.ClassDef('(-.meta-left-)Hello(-.meta-right-)', meta='(--)')
     self.verify.Expansion(t, {}, '(-Hello-)')
 
-  def testEscapeMetacharacter(self):
+  def testEscapeMetacharacter4(self):
     t = testy.ClassDef('^|.meta-left|^Hello^|.meta-right|^', meta='^||^')
-    self.verify.Expansion(t, {}, '^|Hello^|')
+    self.verify.Expansion(t, {}, '^|Hello|^')
 
-  def testEscapeMetacharacter(self):
+  def testEscapeMetacharacter5(self):
     t = testy.ClassDef('$(.meta-left)$Hello$(.meta-right)$', meta='$()$')
     self.verify.Expansion(t, {}, '$(Hello)$')
 
