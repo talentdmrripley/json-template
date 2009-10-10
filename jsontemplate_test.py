@@ -163,19 +163,15 @@ class SubstitutionsTest(testy.Test):
     t = testy.ClassDef('[.meta-left]Hello[.meta-right]', meta='[]')
     self.verify.Expansion(t, {}, '[Hello]')
 
-  def testEscapeMetacharacter2(self):
     t = testy.ClassDef('<%.meta-left%>Hello<%.meta-right%>', meta='<%%>')
     self.verify.Expansion(t, {}, '<%Hello%>')
 
-  def testEscapeMetacharacter3(self):
     t = testy.ClassDef('(-.meta-left-)Hello(-.meta-right-)', meta='(--)')
     self.verify.Expansion(t, {}, '(-Hello-)')
 
-  def testEscapeMetacharacter4(self):
     t = testy.ClassDef('^|.meta-left|^Hello^|.meta-right|^', meta='^||^')
     self.verify.Expansion(t, {}, '^|Hello|^')
 
-  def testEscapeMetacharacter5(self):
     t = testy.ClassDef('$(.meta-left)$Hello$(.meta-right)$', meta='$()$')
     self.verify.Expansion(t, {}, '$(Hello)$')
 
