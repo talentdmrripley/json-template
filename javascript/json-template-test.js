@@ -40,11 +40,13 @@ var results = jsUnity.run({
   },
 
   testMoreFormattersAsClass: function () {
+    print("---------------------------");
 
-    var formatters = new jsontemplate.FunctionRegistry();
-    print("f! " + typeof(formatters));
+    var MyFormatters = function() {};
+    MyFormatters.prototype = new jsontemplate.FunctionRegistry();
+    print("f! " + typeof(MyFormatters));
 
-    formatters.prototype.Lookup = function(user_str) {
+    MyFormatters.prototype.Lookup = function(user_str) {
       var func;
       if (user_str == 'lower') {
         func = function (s) { return s.toLowerCase(); };
@@ -56,9 +58,7 @@ var results = jsUnity.run({
       return [func, null];
     };
 
-    print("f! " + typeof(formatters));
-    print("f! " + typeof(formatters.prototype));
-    print("f! " + typeof(formatters.Lookup));
+    formatters = new MyFormatters();
 
     var t = jsontemplate.Template(
         'Hello {name|lower} {name|upper}',

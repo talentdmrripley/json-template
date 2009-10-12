@@ -88,7 +88,8 @@ function FunctionRegistry() {
 }
 
 FunctionRegistry.prototype.Lookup = function(user_str) {
-  return null;
+  dummy = function(value) { return 'dummy'; };
+  return [dummy, null];
 };
 
 
@@ -327,8 +328,11 @@ var _SECTION_RE = /(repeated)?\s*(section)\s+(\S+)?/;
 // compile on the server side.
 function _Compile(template_str, options) {
   var more_formatters = options.more_formatters;
-  // Allow more_formatters as an object too
-  if (typeof more_formatters === 'object') {
+  if (more_formatters instanceof FunctionRegistry) {
+    var m = options.more_formatters;
+    more_formatters = function (x) { return m.Lookup(x)[0]; };
+  } else if (typeof more_formatters === 'object') {
+    // Allow more_formatters as an "hash" (object literal) too
     var m = options.more_formatters;
     more_formatters = function (x) { return m[x]; };
   }
