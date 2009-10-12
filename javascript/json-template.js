@@ -315,8 +315,13 @@ var _SECTION_RE = /(repeated)?\s*(section)\s+(\S+)?/;
 // TODO: The compile function could be in a different module, in case we want to
 // compile on the server side.
 function _Compile(template_str, options) {
-  var more_formatters = options.more_formatters ||
-                        function (x) { return null; };
+  var more_formatters = options.more_formatters;
+  // Allow more_formatters as an object too
+  if (typeof more_formatters === 'object') {
+    var m = options.more_formatters;
+    more_formatters = function (x) { return m[x]; };
+  }
+  more_formatters = more_formatters || function (x) { return null; };
 
   // We want to allow an explicit null value for default_formatter, which means
   // that an error is raised if no formatter is specified.

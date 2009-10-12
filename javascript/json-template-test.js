@@ -30,5 +30,12 @@ var results = jsUnity.run({
         'lower': function (s) { return s.toLowerCase(); },
         'upper': function (s) { return s.toUpperCase(); }
         };
+
+    var t = jsontemplate.Template(
+        'Hello {name|lower} {name|upper}',
+        {more_formatters: formatters});
+
+    var actual = t.expand({'name': 'World'});
+    jsUnity.assertions.assertEqual(actual, 'Hello world WORLD');
   }
 });
