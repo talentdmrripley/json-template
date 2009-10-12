@@ -118,6 +118,23 @@ CallableRegistry.prototype.Lookup = function(user_str) {
   return [func, null];
 };
 
+var ChainedRegistry = function(registries) {
+  // Add 'new' if we were not called with 'new', so prototyping works.
+  if(!(this instanceof ChainedRegistry)) {
+    return new ChainedRegistry();
+  }
+  this.registries = registries;
+}
+
+ChainedRegistry.prototype.Lookup = function(user_str) {
+  for (var i=0; i<this.registries.length; i++) {
+    var result = this.registries[i].Lookup(user_str);
+    if (result[0]) {
+      return result;
+    }
+  }
+  return [null, null];  // Nothing found
+};
 
 
 //
@@ -571,7 +588,7 @@ Template.prototype.expand = function(data_dict) {
 return {
     Template: Template, HtmlEscape: HtmlEscape,
     FunctionRegistry: FunctionRegistry, SimpleRegistry: SimpleRegistry,
-    CallableRegistry: CallableRegistry
+    CallableRegistry: CallableRegistry, ChainedRegistry: ChainedRegistry
     };
 
 }();

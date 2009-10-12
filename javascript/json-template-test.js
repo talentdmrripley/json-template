@@ -72,19 +72,34 @@ var results = jsUnity.run({
     print("TODO");
   },
 
-  testSimpleRegistry: function () {
+  testSimpleRegistryLookup: function () {
     var foo = function(value) {return 'foo'};
     var s = new jsontemplate.SimpleRegistry({'foo': foo});
-    actual = s.Lookup('foo');
+    var actual = s.Lookup('foo');
     jsUnity.assertions.assertEqual(actual[0], foo);
   },
 
-  testCallableRegistry: function () {
+  testCallableRegistryLookup: function () {
     var foo = function(value) {return 'foo'};
     var s = new jsontemplate.CallableRegistry(
         function(user_str) { return foo; });
-    actual = s.Lookup('anything');
+    var actual = s.Lookup('anything');
     jsUnity.assertions.assertEqual(actual[0], foo);
-  }
+  },
+
+  testChainedRegistryLokup: function () {
+    var foo = function(value) {return 'foo'};
+    var bar = function(value) {return 'bar'};
+    var simple = new jsontemplate.SimpleRegistry({'foo': foo});
+    var callable = new jsontemplate.CallableRegistry(
+        function(user_str) { return bar; });
+
+    var chained = new jsontemplate.ChainedRegistry([simple, callable]);
+    var actual = chained.Lookup('foo');
+    jsUnity.assertions.assertEqual(actual[0], foo);
+
+    actual = chained.Lookup('anything');
+    jsUnity.assertions.assertEqual(actual[0], bar);
+  },
 
 });
