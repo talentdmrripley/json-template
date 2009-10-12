@@ -85,7 +85,7 @@ var FunctionRegistry = function() {
   if(!(this instanceof FunctionRegistry)) {
     return new FunctionRegistry();
   }
-}
+};
 
 // This "base class" implements an empty registry
 FunctionRegistry.prototype.Lookup = function(user_str) {
@@ -98,7 +98,7 @@ var SimpleRegistry = function(obj) {
     return new SimpleRegistry();
   }
   this.obj = obj;
-}
+};
 
 SimpleRegistry.prototype.Lookup = function(user_str) {
   var func = this.obj[user_str] || null;
@@ -111,7 +111,7 @@ var CallableRegistry = function(callable) {
     return new CallableRegistry();
   }
   this.callable = callable;
-}
+};
 
 CallableRegistry.prototype.Lookup = function(user_str) {
   var func = this.callable(user_str);
@@ -124,7 +124,7 @@ var ChainedRegistry = function(registries) {
     return new ChainedRegistry();
   }
   this.registries = registries;
-}
+};
 
 ChainedRegistry.prototype.Lookup = function(user_str) {
   for (var i=0; i<this.registries.length; i++) {
