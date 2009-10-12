@@ -77,6 +77,14 @@ var results = jsUnity.run({
     var s = new jsontemplate.SimpleRegistry({'foo': foo});
     actual = s.Lookup('foo');
     jsUnity.assertions.assertEqual(actual[0], foo);
+  },
+
+  testCallableRegistry: function () {
+    var foo = function(value) {return 'foo'};
+    var s = new jsontemplate.CallableRegistry(
+        function(user_str) { return foo; });
+    actual = s.Lookup('anything');
+    jsUnity.assertions.assertEqual(actual[0], foo);
   }
 
 });
