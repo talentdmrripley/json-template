@@ -80,6 +80,17 @@ var DEFAULT_FORMATTERS = {
   'raw': function(x) {return x;}
 };
 
+function FunctionRegistry() {
+  // Add 'new' if we were not called with 'new', so prototyping works.
+  if(!(this instanceof FunctionRegistry)) {
+    return new FunctionRegistry();
+  }
+}
+
+FunctionRegistry.prototype.Lookup = function(user_str) {
+  return null;
+};
+
 
 //
 // Template implementation
@@ -526,6 +537,9 @@ Template.prototype.expand = function(data_dict) {
 // We just export one name for now, the Template "class".
 // We need HtmlEscape in the browser tests, so might as well export it.
 
-return {Template: Template, HtmlEscape: HtmlEscape};
+return {
+    Template: Template, HtmlEscape: HtmlEscape,
+    FunctionRegistry: FunctionRegistry
+    };
 
 }();
