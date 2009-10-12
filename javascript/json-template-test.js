@@ -3,7 +3,7 @@
 jsUnity.log = print;  // From cscript-shell
 
 var results = jsUnity.run({
-  // for fixing bug
+
   testMoreFormattersAsFunction: function () {
 
     formatters = function(user_str) {
@@ -37,5 +37,14 @@ var results = jsUnity.run({
 
     var actual = t.expand({'name': 'World'});
     jsUnity.assertions.assertEqual(actual, 'Hello world WORLD');
+  },
+
+  testMoreFormattersAsClass: function () {
+    print("TODO");
+  },
+
+  testChainedRegistry: function () {
+    print("TODO");
   }
+
 });
