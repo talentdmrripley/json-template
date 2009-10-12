@@ -40,7 +40,32 @@ var results = jsUnity.run({
   },
 
   testMoreFormattersAsClass: function () {
-    print("TODO");
+
+    var formatters = new jsontemplate.FunctionRegistry();
+    print("f! " + typeof(formatters));
+
+    formatters.prototype.Lookup = function(user_str) {
+      var func;
+      if (user_str == 'lower') {
+        func = function (s) { return s.toLowerCase(); };
+      } else if (user_str == 'upper') {
+        func = function (s) { return s.toUpperCase(); };
+      } else {
+        func = null;
+      }
+      return [func, null];
+    };
+
+    print("f! " + typeof(formatters));
+    print("f! " + typeof(formatters.prototype));
+    print("f! " + typeof(formatters.Lookup));
+
+    var t = jsontemplate.Template(
+        'Hello {name|lower} {name|upper}',
+        {more_formatters: formatters});
+
+    var actual = t.expand({'name': 'World'});
+    jsUnity.assertions.assertEqual(actual, 'Hello world WORLD');
   },
 
   testChainedRegistry: function () {
