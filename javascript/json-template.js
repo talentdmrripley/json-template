@@ -87,9 +87,9 @@ var FunctionRegistry = function() {
   }
 }
 
+// This "base class" implements an empty registry
 FunctionRegistry.prototype.Lookup = function(user_str) {
-  dummy = function(value) { return 'dummy'; };
-  return [dummy, null];
+  return [null, null];
 };
 
 var SimpleRegistry = function(obj) {
@@ -373,14 +373,17 @@ var _SECTION_RE = /(repeated)?\s*(section)\s+(\S+)?/;
 function _Compile(template_str, options) {
   var more_formatters = options.more_formatters;
   if (more_formatters instanceof FunctionRegistry) {
-    var m = options.more_formatters;
-    more_formatters = function (x) { return m.Lookup(x)[0]; };
+    ;
+  } else if (typeof more_formatters === 'function') {
+    more_formatters = new CallableRegistry(more_formatters);
   } else if (typeof more_formatters === 'object') {
-    // Allow more_formatters as an "hash" (object literal) too
-    var m = options.more_formatters;
-    more_formatters = function (x) { return m[x]; };
+    more_formatters = new SimpleRegistry(more_formatters);
   }
-  more_formatters = more_formatters || function (x) { return null; };
+  // if null/undefined, use a totally empty FunctionRegistry
+  more_formatters = more_formatters || new FunctionRegistry();
+
+  var all_formatters = new ChainedRegistry(
+      [more_formatters, new SimpleRegistry(DEFAULT_FORMATTERS)]);
 
   // We want to allow an explicit null value for default_formatter, which means
   // that an error is raised if no formatter is specified.
@@ -392,9 +395,9 @@ function _Compile(template_str, options) {
   }
 
   function GetFormatter(format_str) {
-    var formatter = more_formatters(format_str) ||
-                    DEFAULT_FORMATTERS[format_str];
-    if (formatter === undefined) {
+    var def = all_formatters.Lookup(format_str);
+    var formatter = def[0];  // TODO: process args
+    if (!formatter) {
       throw {
         name: 'BadFormatter',
         message: format_str + ' is not a valid formatter'

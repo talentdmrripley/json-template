@@ -44,7 +44,6 @@ var results = jsUnity.run({
 
     var MyFormatters = function() {};
     MyFormatters.prototype = new jsontemplate.FunctionRegistry();
-    print("f! " + typeof(MyFormatters));
 
     MyFormatters.prototype.Lookup = function(user_str) {
       var func;
