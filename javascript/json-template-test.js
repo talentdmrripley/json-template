@@ -70,6 +70,13 @@ var results = jsUnity.run({
 
   testChainedRegistry: function () {
     print("TODO");
+  },
+
+  testSimpleRegistry: function () {
+    var foo = function(value) {return 'foo'};
+    var s = new jsontemplate.SimpleRegistry({'foo': foo});
+    actual = s.Lookup('foo');
+    jsUnity.assertions.assertEqual(actual[0], foo);
   }
 
 });

@@ -80,7 +80,7 @@ var DEFAULT_FORMATTERS = {
   'raw': function(x) {return x;}
 };
 
-function FunctionRegistry() {
+var FunctionRegistry = function() {
   // Add 'new' if we were not called with 'new', so prototyping works.
   if(!(this instanceof FunctionRegistry)) {
     return new FunctionRegistry();
@@ -91,6 +91,33 @@ FunctionRegistry.prototype.Lookup = function(user_str) {
   dummy = function(value) { return 'dummy'; };
   return [dummy, null];
 };
+
+var SimpleRegistry = function(obj) {
+  // Add 'new' if we were not called with 'new', so prototyping works.
+  if(!(this instanceof SimpleRegistry)) {
+    return new SimpleRegistry();
+  }
+  this.obj = obj;
+}
+
+SimpleRegistry.prototype.Lookup = function(user_str) {
+  var func = this.obj[user_str] || null;
+  return [func, null];
+};
+
+var CallableRegistry = function(callable) {
+  // Add 'new' if we were not called with 'new', so prototyping works.
+  if(!(this instanceof CallableRegistry)) {
+    return new CallableRegistry();
+  }
+  this.callable = callable;
+}
+
+CallableRegistry.prototype.Lookup = function(user_str) {
+  var func = this.callable(user_str);
+  return [func, null];
+};
+
 
 
 //
@@ -543,7 +570,8 @@ Template.prototype.expand = function(data_dict) {
 
 return {
     Template: Template, HtmlEscape: HtmlEscape,
-    FunctionRegistry: FunctionRegistry
+    FunctionRegistry: FunctionRegistry, SimpleRegistry: SimpleRegistry,
+    CallableRegistry: CallableRegistry
     };
 
 }();
