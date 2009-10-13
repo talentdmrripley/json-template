@@ -148,25 +148,25 @@ var ChainedRegistry = function(registries) {
 
 
 // Default formatters which can't be expressed in DEFAULT_FORMATTERS
+var DefaultFormatters = function() {
+  return {
+    Lookup: function(user_str) {
+      if (user_str.slice(0, 9) == 'pluralize') {
+        // Delimiter is usually a space, but could be something else
+        var args;
+        var splitchar = user_str.charAt(9);
+        if (splitchar === "") {
+          args = [];  // No arguments
+        } else {
+          args = user_str.split(splitchar).slice(1);
+        }
+        return [_Pluralize, args];
 
-var DefaultFormatters = function() {};
-
-DefaultFormatters.prototype.Lookup = function(user_str) {
-
-  if (user_str.slice(0, 9) == 'pluralize') {
-    // Delimiter is usually a space, but could be something else
-    var args;
-    var splitchar = user_str.charAt(9);
-    if (splitchar === "") {
-      args = [];  // No arguments
-    } else {
-      args = user_str.split(splitchar).slice(1);
+      } else {
+        return [null, null];  // No formatter
+      }
     }
-    return [_Pluralize, args];
-
-  } else {
-    return [null, null];  // No formatter
-  }
+  };
 };
 
 //
@@ -437,8 +437,7 @@ function _Compile(template_str, options) {
   more_formatters = more_formatters || new FunctionRegistry();
 
   var all_formatters = new ChainedRegistry([
-      more_formatters, new SimpleRegistry(DEFAULT_FORMATTERS),
-      new DefaultFormatters()
+      more_formatters, SimpleRegistry(DEFAULT_FORMATTERS), DefaultFormatters(),
       ]);
 
   // We want to allow an explicit null value for default_formatter, which means
