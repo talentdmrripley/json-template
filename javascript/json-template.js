@@ -283,7 +283,7 @@ var _AbstractSection = function(spec) {
   that.current_clause = [];
 
   that.Append = function(statement) {
-    spec.current_clause.push(statement);
+    that.current_clause.push(statement);
   };
 
   that.AlternatesWith = function() {
@@ -301,8 +301,7 @@ var _AbstractSection = function(spec) {
   return that;
 };
 
-
-var _TestSection = function (spec) {
+var _Section = function (spec) {
   var that = _AbstractSection(spec);
   var statements = {'default': that.current_clause};
 
@@ -316,41 +315,11 @@ var _TestSection = function (spec) {
   that.NewClause = function(clause_name) {
     var new_clause = [];
     statements[clause_name] = new_clause;
-    current_clause = new_clause;
+    that.current_clause = new_clause;
   };
-
-  that.Append = function(statement) {
-    current_clause.push(statement);
-  }
 
   return that;
 };
-
-
-function _Section(section_name) {
-  var current_clause = [];
-  var statements = {'default': current_clause};
-
-  return {
-    section_name: section_name, // public attribute
-
-    Statements: function(clause) {
-      clause = clause || 'default';
-      return statements[clause] || [];
-    },
-
-    NewClause: function(clause_name) {
-      var new_clause = [];
-      statements[clause_name] = new_clause;
-      current_clause = new_clause;
-    },
-
-    Append: function(statement) {
-      current_clause.push(statement);
-    }
-  };
-}
-
 
 function _Execute(statements, context, callback) {
   for (var i=0; i<statements.length; i++) {
@@ -366,7 +335,6 @@ function _Execute(statements, context, callback) {
   }
 }
 
-
 function _DoSubstitute(statement, context, callback) {
   var value;
   value = context.Lookup(statement.name);
@@ -381,7 +349,6 @@ function _DoSubstitute(statement, context, callback) {
 
   callback(value);
 }
-
 
 // for [section foo]
 function _DoSection(args, context, callback) {
@@ -407,7 +374,6 @@ function _DoSection(args, context, callback) {
     _Execute(block.Statements('or'), context, callback);
   }
 }
-
 
 function _DoRepeatedSection(args, context, callback) {
   var block = args;
@@ -452,7 +418,6 @@ function _DoRepeatedSection(args, context, callback) {
 
 
 var _SECTION_RE = /(repeated)?\s*(section)\s+(\S+)?/;
-
 
 // TODO: The compile function could be in a different module, in case we want to
 // compile on the server side.
@@ -516,7 +481,7 @@ function _Compile(template_str, options) {
   var meta_right = meta.substring(n/2, n);
 
   var token_re = _MakeTokenRegex(meta_left, meta_right);
-  var current_block = _Section();
+  var current_block = _Section({});
   var stack = [current_block];
 
   var strip_num = meta_left.length;  // assume they're the same length
@@ -574,7 +539,7 @@ function _Compile(template_str, options) {
         var section_name = section_match[3];
         var func = repeated ? _DoRepeatedSection : _DoSection;
 
-        var new_block = _Section(section_name);
+        var new_block = _Section({section_name: section_name});
         current_block.Append([func, new_block]);
         stack.push(new_block);
         current_block = new_block;
@@ -682,7 +647,7 @@ return {
     FunctionRegistry: FunctionRegistry, SimpleRegistry: SimpleRegistry,
     CallableRegistry: CallableRegistry, ChainedRegistry: ChainedRegistry,
     // Private but exposed for testing
-    _TestSection: _TestSection
+    _Section: _Section
     };
 
 }();
