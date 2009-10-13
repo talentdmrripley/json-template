@@ -90,7 +90,6 @@ function _Pluralize(value, unused_context, args) {
       throw {
         name: 'EvaluationError', message: 'pluralize got too many args'
       };
-      break;
   }
   return (value > 1) ? p : s;
 }
@@ -183,7 +182,7 @@ DefaultFormatters.prototype.Lookup = function(user_str) {
   } else {
     return [null, null];  // No formatter
   }
-}
+};
 
 //
 // Template implementation
