@@ -297,7 +297,7 @@ var _AbstractSection = function(spec) {
   that.NewOrClause = function() {
     throw { name: 'NotImplemented' };  // "Abstract"
   };
-}
+};
 
 
 function _Section(section_name) {
