@@ -297,6 +297,33 @@ var _AbstractSection = function(spec) {
   that.NewOrClause = function() {
     throw { name: 'NotImplemented' };  // "Abstract"
   };
+
+  return that;
+};
+
+
+var _TestSection = function (spec) {
+  var that = _AbstractSection(spec);
+  var statements = {'default': that.current_clause};
+
+  that.section_name = spec.section_name;
+
+  that.Statements = function(clause) {
+    clause = clause || 'default';
+    return statements[clause] || [];
+  };
+
+  that.NewClause = function(clause_name) {
+    var new_clause = [];
+    statements[clause_name] = new_clause;
+    current_clause = new_clause;
+  };
+
+  that.Append = function(statement) {
+    current_clause.push(statement);
+  }
+
+  return that;
 };
 
 
@@ -653,7 +680,9 @@ Template.prototype.expand = function(data_dict) {
 return {
     Template: Template, HtmlEscape: HtmlEscape,
     FunctionRegistry: FunctionRegistry, SimpleRegistry: SimpleRegistry,
-    CallableRegistry: CallableRegistry, ChainedRegistry: ChainedRegistry
+    CallableRegistry: CallableRegistry, ChainedRegistry: ChainedRegistry,
+    // Private but exposed for testing
+    _TestSection: _TestSection
     };
 
 }();
