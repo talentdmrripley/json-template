@@ -2,6 +2,11 @@
 
 jsUnity.log = print;  // From cscript-shell
 
+var module = function() {
+
+// Data for multiple tests
+var foo = function(value) { return 'foo'; };
+
 var FunctionsApiTest  = {
   suiteName: "FunctionsApiTest",
 
@@ -73,22 +78,19 @@ var FunctionsApiTest  = {
   },
 
   testSimpleRegistryLookup: function () {
-    var foo = function(value) {return 'foo';};
     var s = new jsontemplate.SimpleRegistry({'foo': foo});
     var actual = s.Lookup('foo');
     jsUnity.assertions.assertEqual(actual[0], foo);
   },
 
   testCallableRegistryLookup: function () {
-    var foo = function(value) {return 'foo';};
     var s = new jsontemplate.CallableRegistry(
         function(user_str) { return foo; });
     var actual = s.Lookup('anything');
     jsUnity.assertions.assertEqual(actual[0], foo);
   },
 
-  testChainedRegistryLokup: function () {
-    var foo = function(value) {return 'foo';};
+  testChainedRegistryLookup: function () {
     var bar = function(value) {return 'bar';};
     var simple = new jsontemplate.SimpleRegistry({'foo': foo});
     var callable = new jsontemplate.CallableRegistry(
@@ -105,3 +107,5 @@ var FunctionsApiTest  = {
 };
 
 jsUnity.run(FunctionsApiTest);
+
+}();
