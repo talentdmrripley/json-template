@@ -821,8 +821,8 @@ class StandardFormattersTest(testy.Test):
     self.verify.Expansion(
         t, {'url': '"<>&'}, '<a href="&quot;&lt;&gt;&amp;">')
 
-  # TODO: Do this in 3 other languages
-  @testy.no_verify('javascript', 'php', 'java')
+  # TODO: Do this in 2 other languages
+  @testy.no_verify('php', 'java')
   def testAbsUrlFormatter(self):
     """AbsUrl is mainly an example of 'context formatters'.
 
