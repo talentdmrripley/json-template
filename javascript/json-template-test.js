@@ -48,20 +48,22 @@ var FunctionsApiTest  = {
   testMoreFormattersAsClass: function () {
     print("---------------------------");
 
-    var MyFormatters = function() {};
-    MyFormatters.prototype = new jsontemplate.FunctionRegistry();
-
-    MyFormatters.prototype.Lookup = function(user_str) {
-      var func;
-      if (user_str == 'lower') {
-        func = function (s) { return s.toLowerCase(); };
-      } else if (user_str == 'upper') {
-        func = function (s) { return s.toUpperCase(); };
-      } else {
-        func = null;
-      }
-      return [func, null];
+    var MyFormatters = function() {
+      return {
+        Lookup: function(user_str) {
+          var func;
+          if (user_str == 'lower') {
+            func = function (s) { return s.toLowerCase(); };
+          } else if (user_str == 'upper') {
+            func = function (s) { return s.toUpperCase(); };
+          } else {
+            func = null;
+          }
+          return [func, null];
+        }
+      };
     };
+    MyFormatters.prototype = jsontemplate.FunctionRegistry();
 
     formatters = new MyFormatters();
 
