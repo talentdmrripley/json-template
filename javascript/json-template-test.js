@@ -2,7 +2,8 @@
 
 jsUnity.log = print;  // From cscript-shell
 
-var results = jsUnity.run({
+var FunctionsApiTest  = {
+  suiteName: "FunctionsApiTest",
 
   testMoreFormattersAsFunction: function () {
 
@@ -101,4 +102,6 @@ var results = jsUnity.run({
     jsUnity.assertions.assertEqual(actual[0], bar);
   }
 
-});
+};
+
+jsUnity.run(FunctionsApiTest);
