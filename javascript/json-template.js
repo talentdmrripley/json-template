@@ -289,7 +289,7 @@ var _AbstractSection = function(spec) {
   that.AlternatesWith = function() {
     throw {
       name: 'TemplateSyntaxError',
-      message: 
+      message:
           '{.alternates with} can only appear with in {.repeated section ...}'
     };
   };
@@ -301,25 +301,38 @@ var _AbstractSection = function(spec) {
   return that;
 };
 
-var _Section = function (spec) {
+var _Section = function(spec) {
   var that = _AbstractSection(spec);
-  var statements = {'default': that.current_clause};
+  that.statements = {'default': that.current_clause};
 
   that.section_name = spec.section_name;
 
   that.Statements = function(clause) {
     clause = clause || 'default';
-    return statements[clause] || [];
+    return that.statements[clause] || [];
   };
 
   that.NewClause = function(clause_name) {
     var new_clause = [];
-    statements[clause_name] = new_clause;
+    that.statements[clause_name] = new_clause;
     that.current_clause = new_clause;
   };
 
   return that;
 };
+
+// Repeated section is like section, but it supports {.alternates with}
+var _RepeatedSection = function(spec) {
+  var that = _Section(spec);
+
+  that.AlternatesWith = function() {
+    that.current_clause = [];
+    that.statements['alternates with'] = that.current_clause;
+  };
+
+  return that;
+};
+
 
 function _Execute(statements, context, callback) {
   for (var i=0; i<statements.length; i++) {
@@ -536,9 +549,15 @@ function _Compile(template_str, options) {
       if (section_match) {
         var repeated = section_match[1];
         var section_name = section_match[3];
-        var func = repeated ? _DoRepeatedSection : _DoSection;
 
-        var new_block = _Section({section_name: section_name});
+        var new_block, func;
+        if (repeated) {
+          func = _DoRepeatedSection;
+          new_block = _Section({section_name: section_name});
+        } else {
+          func = _DoSection;
+          new_block = _RepeatedSection({section_name: section_name});
+        }
         current_block.Append([func, new_block]);
         stack.push(new_block);
         current_block = new_block;
