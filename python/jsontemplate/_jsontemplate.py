@@ -310,7 +310,7 @@ class _AbstractSection(object):
     self.current_clause.append(statement)
 
   def AlternatesWith(self):
-    raise CompilationError(
+    raise TemplateSyntaxError(
         '{.alternates with} can only appear with in {.repeated section ...}')
 
   def NewOrClause(self):
@@ -341,7 +341,7 @@ class _Section(_AbstractSection):
 
   def NewOrClause(self, pred):
     if pred:
-      raise CompilationError(
+      raise TemplateSyntaxError(
           '{.or} clause only takes a predicate inside predicate blocks')
     self.current_clause = []
     self.statements['or'] = self.current_clause

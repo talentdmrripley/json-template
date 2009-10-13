@@ -337,6 +337,19 @@ class SectionsTest(testy.PyUnitCompatibleTest):
           Name: Carol Age: 30
         """))
 
+  @testy.no_verify('javascript', 'java', 'php')
+  def testAlternatesWith(self):
+    self.verify.CompilationError(jsontemplate.TemplateSyntaxError,
+        B("""
+        [header]
+        ---------
+        [.section people]
+          Name: [name] Age: [age]
+        [.alternates with]
+          *****
+        [.end]
+        """), meta='[]')
+
   def testSection(self):
 
     t = testy.ClassDef(
@@ -519,6 +532,19 @@ class SectionsTest(testy.PyUnitCompatibleTest):
         http://example.com
         """)
     self.verify.Expansion(t, d, expected)
+
+  @testy.no_verify('javascript', 'java', 'php')
+  def testSectionOrWithBadPredicate(self):
+    self.verify.CompilationError(jsontemplate.TemplateSyntaxError,
+        B("""
+        [header]
+        ---------
+        [.section people]
+          Name: [name] Age: [age]
+        [.or singular?]
+          *****
+        [.end]
+        """), meta='[]')
 
   @testy.labels('documentation')
   def testRepeatedSectionOr(self):
