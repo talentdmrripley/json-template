@@ -337,7 +337,7 @@ class SectionsTest(testy.PyUnitCompatibleTest):
           Name: Carol Age: 30
         """))
 
-  @testy.no_verify('javascript', 'java', 'php')
+  @testy.no_verify('java', 'php')
   def testAlternatesWithInvalid(self):
     self.verify.CompilationError(jsontemplate.TemplateSyntaxError,
         B("""

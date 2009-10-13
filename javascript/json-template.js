@@ -327,7 +327,7 @@ var _RepeatedSection = function(spec) {
 
   that.AlternatesWith = function() {
     that.current_clause = [];
-    that.statements['alternates with'] = that.current_clause;
+    that.statements['alternate'] = that.current_clause;
   };
 
   return that;
@@ -553,10 +553,10 @@ function _Compile(template_str, options) {
         var new_block, func;
         if (repeated) {
           func = _DoRepeatedSection;
-          new_block = _Section({section_name: section_name});
+          new_block = _RepeatedSection({section_name: section_name});
         } else {
           func = _DoSection;
-          new_block = _RepeatedSection({section_name: section_name});
+          new_block = _Section({section_name: section_name});
         }
         current_block.Append([func, new_block]);
         stack.push(new_block);
@@ -565,7 +565,7 @@ function _Compile(template_str, options) {
       }
 
       if (token == 'alternates with') {
-        current_block.NewClause('alternate');
+        current_block.AlternatesWith();
         continue;
       }
 
