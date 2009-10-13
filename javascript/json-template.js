@@ -77,7 +77,11 @@ var DEFAULT_FORMATTERS = {
   'htmltag': HtmlTagEscape,
   'html-attr-value': HtmlTagEscape,
   'str': ToString,
-  'raw': function(x) {return x;}
+  'raw': function(x) { return x; },
+  'AbsUrl': function(value, context) {
+    // TODO: Normalize leading/trailing slashes
+    return context.Lookup('base-url') + '/' + value;
+  }
 };
 
 var FunctionRegistry = function() {
@@ -290,7 +294,7 @@ function _DoSubstitute(statement, context, callback) {
 
   // Format values
   for (var i=0; i<statement.formatters.length; i++) {
-    value = statement.formatters[i](value);
+    value = statement.formatters[i](value, context);
   }
 
   callback(value);
@@ -527,8 +531,7 @@ function _Compile(template_str, options) {
             message: 'This template requires explicit formatters.'
           };
       }
-      // If no formatter is specified, the default is the 'str' formatter,
-      // which the user can define however they desire.
+      // If no formatter is specified, use the default.
       formatters = [GetFormatter(default_formatter)];
       name = token;
     } else {
