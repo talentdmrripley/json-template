@@ -245,6 +245,7 @@ def RunWithCScript(code):
   Returns:
     A 3 tuple of (exit code, stdout string, stderr string)
   """
+  # TODO: Use test_helpers so I have a log() function here
   argv = ['cscript', '//Nologo', 'javascript/cscript-shell.js']
   p = subprocess.Popen(argv,
       stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE,
