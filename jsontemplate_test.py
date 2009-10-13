@@ -875,8 +875,8 @@ class StandardFormattersTest(testy.Test):
     self.verify.Expansion(t, {'num': 1}, 'There is 1 song.')
     self.verify.Expansion(t, {'num': 3}, 'There are 3 songs.')
 
-  # TODO: Do this in 3 other languages
-  @testy.no_verify('javascript', 'php', 'java')
+  # TODO: Do this in 2 other languages
+  @testy.no_verify('php', 'java')
   def testPluralizeWithCustomDelimiters(self):
 
     # Arguments with spaces in them
