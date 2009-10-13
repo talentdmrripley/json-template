@@ -72,6 +72,29 @@ function ToString(s) {
   return s.toString();
 }
 
+// Formatter to pluralize words
+function _Pluralize(value, unused_context, args) {
+  var s, p;
+  switch (args.length) {
+    case 0:
+      s = ''; p = 's';
+      break;
+    case 1:
+      s = ''; p = args[0];
+      break;
+    case 2:
+      s = args[0]; p = args[1];
+      break;
+    default:
+      // Should have been checked at compile time
+      throw {
+        name: 'EvaluationError', message: 'pluralize got too many args'
+      };
+      break;
+  }
+  return (value > 1) ? p : s;
+}
+
 var DEFAULT_FORMATTERS = {
   'html': HtmlEscape,
   'htmltag': HtmlTagEscape,
@@ -140,6 +163,27 @@ ChainedRegistry.prototype.Lookup = function(user_str) {
   return [null, null];  // Nothing found
 };
 
+// Default formatters which can't be expressed in DEFAULT_FORMATTERS
+
+var DefaultFormatters = function() {};
+
+DefaultFormatters.prototype.Lookup = function(user_str) {
+
+  if (user_str.slice(0, 10) == 'pluralize') {
+    // Delimiter is usually a space, but could be something else
+    var args;
+    var splitchar = user_str.charAt(10);
+    if (splitchar === undefined) {
+      args = [];  // No arguments
+    } else {
+      args = user_str.split(splitchar).slice(1);;
+    }
+    return [_Pluralize, args];
+
+  } else {
+    return [null, null];  // No formatter
+  }
+}
 
 //
 // Template implementation
@@ -294,7 +338,10 @@ function _DoSubstitute(statement, context, callback) {
 
   // Format values
   for (var i=0; i<statement.formatters.length; i++) {
-    value = statement.formatters[i](value, context);
+    var pair = statement.formatters[i];
+    var formatter = pair[0];
+    var args = pair[1];
+    value = formatter(value, context, args);
   }
 
   callback(value);
@@ -386,8 +433,10 @@ function _Compile(template_str, options) {
   // if null/undefined, use a totally empty FunctionRegistry
   more_formatters = more_formatters || new FunctionRegistry();
 
-  var all_formatters = new ChainedRegistry(
-      [more_formatters, new SimpleRegistry(DEFAULT_FORMATTERS)]);
+  var all_formatters = new ChainedRegistry([
+      more_formatters, new SimpleRegistry(DEFAULT_FORMATTERS),
+      new DefaultFormatters()
+      ]);
 
   // We want to allow an explicit null value for default_formatter, which means
   // that an error is raised if no formatter is specified.
@@ -399,15 +448,14 @@ function _Compile(template_str, options) {
   }
 
   function GetFormatter(format_str) {
-    var def = all_formatters.Lookup(format_str);
-    var formatter = def[0];  // TODO: process args
-    if (!formatter) {
+    var pair = all_formatters.Lookup(format_str);
+    if (!pair[0]) {
       throw {
         name: 'BadFormatter',
         message: format_str + ' is not a valid formatter'
       };
     }
-    return formatter;
+    return pair;
   }
 
   var format_char = options.format_char || '|';
