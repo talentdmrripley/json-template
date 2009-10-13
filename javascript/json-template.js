@@ -107,60 +107,45 @@ var DEFAULT_FORMATTERS = {
 };
 
 var FunctionRegistry = function() {
-  // Add 'new' if we were not called with 'new', so prototyping works.
-  if(!(this instanceof FunctionRegistry)) {
-    return new FunctionRegistry();
-  }
-};
-
-// This "base class" implements an empty registry
-FunctionRegistry.prototype.Lookup = function(user_str) {
-  return [null, null];
+  return {
+    Lookup: function(user_str) {
+      return [null, null];
+    }
+  };
 };
 
 var SimpleRegistry = function(obj) {
-  // Add 'new' if we were not called with 'new', so prototyping works.
-  if(!(this instanceof SimpleRegistry)) {
-    return new SimpleRegistry();
-  }
-  this.obj = obj;
-};
-
-SimpleRegistry.prototype.Lookup = function(user_str) {
-  var func = this.obj[user_str] || null;
-  return [func, null];
+  return {
+    Lookup: function(user_str) {
+      var func = obj[user_str] || null;
+      return [func, null];
+    }
+  };
 };
 
 var CallableRegistry = function(callable) {
-  // Add 'new' if we were not called with 'new', so prototyping works.
-  if(!(this instanceof CallableRegistry)) {
-    return new CallableRegistry();
-  }
-  this.callable = callable;
-};
-
-CallableRegistry.prototype.Lookup = function(user_str) {
-  var func = this.callable(user_str);
-  return [func, null];
+  return {
+    Lookup: function(user_str) {
+      var func = callable(user_str);
+      return [func, null];
+    }
+  };
 };
 
 var ChainedRegistry = function(registries) {
-  // Add 'new' if we were not called with 'new', so prototyping works.
-  if(!(this instanceof ChainedRegistry)) {
-    return new ChainedRegistry();
-  }
-  this.registries = registries;
+  return {
+    Lookup: function(user_str) {
+      for (var i=0; i<registries.length; i++) {
+        var result = registries[i].Lookup(user_str);
+        if (result[0]) {
+          return result;
+        }
+      }
+      return [null, null];  // Nothing found
+    }
+  };
 };
 
-ChainedRegistry.prototype.Lookup = function(user_str) {
-  for (var i=0; i<this.registries.length; i++) {
-    var result = this.registries[i].Lookup(user_str);
-    if (result[0]) {
-      return result;
-    }
-  }
-  return [null, null];  // Nothing found
-};
 
 // Default formatters which can't be expressed in DEFAULT_FORMATTERS
 
@@ -287,6 +272,30 @@ function _ScopedContext(context, undefined_str) {
       return value;
     }
 
+  };
+}
+
+
+// Crockford's "functional inheritance" pattern
+
+var _AbstractSection = function(spec) {
+  var that = {};
+  that.current_clause = [];
+
+  that.Append = function(statement) {
+    spec.current_clause.push(statement);
+  };
+
+  that.AlternatesWith = function() {
+    throw {
+      name: 'TemplateSyntaxError',
+      message: 
+          '{.alternates with} can only appear with in {.repeated section ...}'
+    };
+  };
+
+  that.NewOrClause = function() {
+    throw { name: 'NotImplemented' };  // "Abstract"
   };
 }
 
@@ -422,7 +431,10 @@ var _SECTION_RE = /(repeated)?\s*(section)\s+(\S+)?/;
 // compile on the server side.
 function _Compile(template_str, options) {
   var more_formatters = options.more_formatters;
-  if (more_formatters instanceof FunctionRegistry) {
+  // TODO: Is this a good pattern?  There is a namespace conflict where Lookup
+  // could be either a formatter or a method on a FunctionRegistry.
+  // instanceof might be more robust.
+  if (more_formatters && more_formatters.Lookup !== undefined) {
     ;
   } else if (typeof more_formatters === 'function') {
     more_formatters = new CallableRegistry(more_formatters);

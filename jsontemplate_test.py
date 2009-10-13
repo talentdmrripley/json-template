@@ -338,7 +338,7 @@ class SectionsTest(testy.PyUnitCompatibleTest):
         """))
 
   @testy.no_verify('javascript', 'java', 'php')
-  def testAlternatesWith(self):
+  def testAlternatesWithInvalid(self):
     self.verify.CompilationError(jsontemplate.TemplateSyntaxError,
         B("""
         [header]
