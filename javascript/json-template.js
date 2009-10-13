@@ -169,14 +169,14 @@ var DefaultFormatters = function() {};
 
 DefaultFormatters.prototype.Lookup = function(user_str) {
 
-  if (user_str.slice(0, 10) == 'pluralize') {
+  if (user_str.slice(0, 9) == 'pluralize') {
     // Delimiter is usually a space, but could be something else
     var args;
-    var splitchar = user_str.charAt(10);
-    if (splitchar === undefined) {
+    var splitchar = user_str.charAt(9);
+    if (splitchar === "") {
       args = [];  // No arguments
     } else {
-      args = user_str.split(splitchar).slice(1);;
+      args = user_str.split(splitchar).slice(1);
     }
     return [_Pluralize, args];
 
