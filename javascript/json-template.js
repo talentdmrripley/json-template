@@ -313,9 +313,8 @@ var _Section = function(spec) {
   };
 
   that.NewClause = function(clause_name) {
-    var new_clause = [];
-    that.statements[clause_name] = new_clause;
-    that.current_clause = new_clause;
+    that.current_clause = [];
+    that.statements[clause_name] = that.current_clause;
   };
 
   return that;
