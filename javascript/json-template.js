@@ -291,6 +291,30 @@ function _ScopedContext(context, undefined_str) {
 }
 
 
+// Crockford's "functional inheritance" pattern
+
+var _AbstractSection = function(spec) {
+  var that = {};
+  that.current_clause = [];
+
+  that.Append = function(statement) {
+    spec.current_clause.push(statement);
+  };
+
+  that.AlternatesWith = function() {
+    throw {
+      name: 'TemplateSyntaxError',
+      message: 
+          '{.alternates with} can only appear with in {.repeated section ...}'
+    };
+  };
+
+  that.NewOrClause = function() {
+    throw { name: 'NotImplemented' };  // "Abstract"
+  };
+}
+
+
 function _Section(section_name) {
   var current_clause = [];
   var statements = {'default': current_clause};
