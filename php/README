@@ -1,0 +1,20 @@
+PHP version
+
+Tested on Ubuntu 8.10 with PHP 5.2.6
+
+All class names start with JsonTemplate, since namespaces won't be
+introduced until version 5.3
+
+Global funcions are wrapped into the JsonTemplateModule class.
+
+print JsonTemplateModule::expand('Template {var}',array('var'=>'test'));
+
+The variable data can also be passed directly in json format,
+the library uses json_decode to convert the data.
+
+The library can also be called from commandline:
+
+php jsontemplate.php 'Template {var}' '{"var":"test"}'
+
+jsontemplate_phpunit_test.php contains some phpunit tests
+working with phpunit 3.3.11.
