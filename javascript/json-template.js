@@ -230,23 +230,19 @@ function _ScopedContext(context, undefined_str) {
       while (true) {
         var frame = stack[i];
         if (name == '@index') {
-          if (frame.index == -1) {  // undefined value
-            i--;
-          } else {
+          if (frame.index != -1) {  // undefined value
             return frame.index;
           }
+          i--;
         } else {
           var context = frame.context;
-          if (typeof context !== 'object') {
-            i--;
-          } else {
+          if (typeof context === 'object') {
             var value = context[name];
-            if (value === undefined) {
-              i--;
-            } else {
+            if (value !== undefined) {
               return value;
             }
           }
+          i--;
         }
 
         if (i <= -1) {
@@ -449,7 +445,7 @@ function _Compile(template_str, options) {
   more_formatters = more_formatters || new FunctionRegistry();
 
   var all_formatters = new ChainedRegistry([
-      more_formatters, SimpleRegistry(DEFAULT_FORMATTERS), DefaultFormatters(),
+      more_formatters, SimpleRegistry(DEFAULT_FORMATTERS), DefaultFormatters()
       ]);
 
   // We want to allow an explicit null value for default_formatter, which means
