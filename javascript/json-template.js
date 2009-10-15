@@ -230,10 +230,9 @@ function _ScopedContext(context, undefined_str) {
       while (true) {
         var frame = stack[i];
         if (name == '@index') {
-          if (frame.index != -1) {  // undefined value
+          if (frame.index != -1) {  // -1 is undefined
             return frame.index;
           }
-          i--;
         } else {
           var context = frame.context;
           if (typeof context === 'object') {
@@ -242,9 +241,8 @@ function _ScopedContext(context, undefined_str) {
               return value;
             }
           }
-          i--;
         }
-
+        i--;
         if (i <= -1) {
           return this._Undefined(name);
         }
