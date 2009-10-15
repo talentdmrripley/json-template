@@ -427,10 +427,10 @@ function _DoPredicates(args, context, callback) {
   for (var i=0; i<block.clauses.length; i++) {
     var clause = block.clauses[i];
     var predicate = clause[0][0];
-    var args = clause[0][1];
+    var pred_args = clause[0][1];
     var statements = clause[1];
 
-    var do_clause = predicate(value, context, args);
+    var do_clause = predicate(value, context, pred_args);
     if (do_clause) {
       _Execute(statements, context, callback);
       break;

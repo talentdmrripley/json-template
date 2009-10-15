@@ -112,7 +112,7 @@ var SectionsTest = {
   suiteName: "SectionsTest",
 
   testSection: function () {
-    var s = jsontemplate._Section({section_name: "foo"})
+    var s = jsontemplate._Section({section_name: "foo"});
     jsUnity.assertions.assertEqual(s.section_name, "foo");
   }
 };
