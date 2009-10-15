@@ -533,7 +533,7 @@ class SectionsTest(testy.PyUnitCompatibleTest):
         """)
     self.verify.Expansion(t, d, expected)
 
-  @testy.no_verify('javascript', 'java', 'php')
+  @testy.no_verify('java', 'php')
   def testSectionOrWithBadPredicate(self):
     self.verify.CompilationError(jsontemplate.TemplateSyntaxError,
         B("""
