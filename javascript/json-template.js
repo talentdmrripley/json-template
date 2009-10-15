@@ -106,6 +106,14 @@ var DEFAULT_FORMATTERS = {
   }
 };
 
+var DEFAULT_PREDICATES = {
+  'singular?': function(x) { return  x == 1; },
+  'plural?': function(x) { return x > 1; },
+  'Debug?': function(unused, context) {
+    return !!context.Lookup('debug') || false;
+  }
+};
+
 var FunctionRegistry = function() {
   return {
     Lookup: function(user_str) {
@@ -447,26 +455,40 @@ function _DoRepeatedSection(args, context, callback) {
 
 var _SECTION_RE = /(repeated)?\s*(section)\s+(\S+)?/;
 var _OR_RE = /or(?:\s+(.+))?/;
+var _IF_RE = /if(?:\s+(.+))?/;
+
+
+// Turn a object literal, function, or Registry into a Registry
+function MakeRegistry(obj) {
+  if (!obj) {
+    // if null/undefined, use a totally empty FunctionRegistry
+    return new FunctionRegistry();
+  } else if (typeof obj === 'function') {
+    return new CallableRegistry(obj);
+  } else if (obj.Lookup !== undefined) {
+    // TODO: Is this a good pattern?  There is a namespace conflict where Lookup
+    // could be either a formatter or a method on a FunctionRegistry.
+    // instanceof might be more robust.
+    return obj;
+  } else if (typeof obj === 'object') {
+    return new SimpleRegistry(obj);
+  }
+}
 
 // TODO: The compile function could be in a different module, in case we want to
 // compile on the server side.
 function _Compile(template_str, options) {
-  var more_formatters = options.more_formatters;
-  // TODO: Is this a good pattern?  There is a namespace conflict where Lookup
-  // could be either a formatter or a method on a FunctionRegistry.
-  // instanceof might be more robust.
-  if (more_formatters && more_formatters.Lookup !== undefined) {
-    ;
-  } else if (typeof more_formatters === 'function') {
-    more_formatters = new CallableRegistry(more_formatters);
-  } else if (typeof more_formatters === 'object') {
-    more_formatters = new SimpleRegistry(more_formatters);
-  }
-  // if null/undefined, use a totally empty FunctionRegistry
-  more_formatters = more_formatters || new FunctionRegistry();
+  var more_formatters = MakeRegistry(options.more_formatters);
 
   var all_formatters = new ChainedRegistry([
       more_formatters, SimpleRegistry(DEFAULT_FORMATTERS), DefaultFormatters()
+      ]);
+
+  var more_predicates = MakeRegistry(options.more_predicates);
+
+  // TODO: Add defaults
+  var all_predicates = new ChainedRegistry([
+      more_predicates, SimpleRegistry(DEFAULT_PREDICATES)
       ]);
 
   // We want to allow an explicit null value for default_formatter, which means
@@ -484,6 +506,17 @@ function _Compile(template_str, options) {
       throw {
         name: 'BadFormatter',
         message: format_str + ' is not a valid formatter'
+      };
+    }
+    return pair;
+  }
+
+  function GetPredicate(pred_str) {
+    var pair = all_predicates.Lookup(pred_str);
+    if (!pair[0]) {
+      throw {
+        name: 'BadPredicate',
+        message: pred_str + ' is not a valid predicate'
       };
     }
     return pair;
@@ -560,13 +593,13 @@ function _Compile(template_str, options) {
         continue;
       }
 
-      var section_match = token.match(_SECTION_RE);
+      var new_block, func;
 
+      var section_match = token.match(_SECTION_RE);
       if (section_match) {
         var repeated = section_match[1];
         var section_name = section_match[3];
 
-        var new_block, func;
         if (repeated) {
           func = _DoRepeatedSection;
           new_block = _RepeatedSection({section_name: section_name});
@@ -580,15 +613,39 @@ function _Compile(template_str, options) {
         continue;
       }
 
-      if (token == 'alternates with') {
-        current_block.AlternatesWith();
-        continue;
-      }
-
+      // Check {.or pred?} before {.pred?}
       var or_match = token.match(_OR_RE);
       if (or_match) {
         var pred = or_match[1];
         current_block.NewOrClause(pred);
+        continue;
+      }
+
+      // Match either {.pred?} or {.if pred?}
+      var matched = false;
+      var pred_str;
+
+      var if_match = token.match(_IF_RE);
+      if (if_match) {
+        pred_str = if_match[1];
+        matched = true;
+      }
+      if (token.charAt(token.length-1) == '?') {
+        pred_str = token;
+        matched = true;
+      }
+      if (matched) {
+        var pred = GetPredicate(pred_str);
+        new_block = _PredicateSection();
+        new_block.NewOrClause(pred);
+        current_block.Append([_DoPredicates, new_block]);
+        stack.push(new_block);
+        current_block = new_block;
+        continue;
+      }
+
+      if (token == 'alternates with') {
+        current_block.AlternatesWith();
         continue;
       }
 
@@ -628,8 +685,7 @@ function _Compile(template_str, options) {
       }
       name = parts[0];
     }
-    current_block.Append(
-        [_DoSubstitute, { name: name, formatters: formatters}]);
+    current_block.Append([_DoSubstitute, {name: name, formatters: formatters}]);
     if (had_newline) {
       current_block.Append('\n');
     }

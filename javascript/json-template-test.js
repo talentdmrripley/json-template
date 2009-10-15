@@ -65,11 +65,10 @@ var FunctionsApiTest  = {
     };
     MyFormatters.prototype = jsontemplate.FunctionRegistry();
 
-    formatters = new MyFormatters();
+    var formatters = MyFormatters();
 
     var t = jsontemplate.Template(
-        'Hello {name|lower} {name|upper}',
-        {more_formatters: formatters});
+        'Hello {name|lower} {name|upper}', {more_formatters: formatters});
 
     var actual = t.expand({'name': 'World'});
     jsUnity.assertions.assertEqual(actual, 'Hello world WORLD');
