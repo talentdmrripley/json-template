@@ -443,22 +443,17 @@ class _ScopedContext(object):
     while 1:
       frame = self.stack[i]
       if name == '@index':
-        if frame.index == -1:  # undefined value
-          i -= 1
-        else:
+        if frame.index != -1:  # -1 is undefined
           return frame.index  # @index is 1-based
-
       else:
         context = frame.context
-
-        if not hasattr(context, 'get'):  # Can't look up names in a list or atom
-          i -= 1
-        else:
+        if hasattr(context, 'get'):  # Can't look up names in a list or atom
           try:
             return context[name]
           except KeyError:
-            i -= 1
+            pass
 
+      i -= 1  # Next frame
       if i <= -1:  # Couldn't find it anywhere
         return self._Undefined(name)
 
