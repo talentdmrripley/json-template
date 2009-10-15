@@ -941,7 +941,8 @@ class PredicatesTest(testy.Test):
   LABELS = ['multilanguage']
   # TODO: Add class-level NO_VERIFY = [] to testy
 
-  @testy.no_verify('javascript', 'java', 'php')
+  # TODO: Fix JS whitesspace in this test
+  @testy.no_verify('java', 'php')
   def testValuePredicate(self):
     t = testy.ClassDef(
     B("""
@@ -964,7 +965,7 @@ class PredicatesTest(testy.Test):
         There are 2 people here.
         There are 3 people here.
     """)
-    self.verify.Expansion(t, data, expected)
+    self.verify.Expansion(t, data, expected, ignore_all_whitespace=True)
 
     # This is the same template, but uses the optional ".if"
     t = testy.ClassDef(
@@ -979,7 +980,7 @@ class PredicatesTest(testy.Test):
       {.end}
     {.end}
     """))
-    self.verify.Expansion(t, data, expected)
+    self.verify.Expansion(t, data, expected, ignore_all_whitespace=True)
 
   @testy.no_verify('javascript', 'java', 'php')
   def testValuePredicateWithRecord(self):

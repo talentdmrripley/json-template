@@ -411,6 +411,26 @@ function _DoSection(args, context, callback) {
   }
 }
 
+// {.pred1?} A {.or pred2?} B ... {.or} Z {.end}
+function _DoPredicates(args, context, callback) {
+  // Here we execute the first clause that evaluates to true, and then stop.
+  var block = args;
+  var value = context.Lookup('@');
+  for (var i=0; i<block.clauses.length; i++) {
+    var clause = block.clauses[i];
+    var predicate = clause[0][0];
+    var args = clause[0][1];
+    var statements = clause[1];
+
+    var do_clause = predicate(value, context, args);
+    if (do_clause) {
+      _Execute(statements, context, callback);
+      break;
+    }
+  }
+}
+
+
 function _DoRepeatedSection(args, context, callback) {
   var block = args;
   var pushed;
@@ -613,29 +633,30 @@ function _Compile(template_str, options) {
         continue;
       }
 
+      var pred_str, pred;
+
       // Check {.or pred?} before {.pred?}
       var or_match = token.match(_OR_RE);
       if (or_match) {
-        var pred = or_match[1];
+        pred_str = or_match[1];
+        pred = pred_str ? GetPredicate(pred_str) : null;
         current_block.NewOrClause(pred);
         continue;
       }
 
       // Match either {.pred?} or {.if pred?}
       var matched = false;
-      var pred_str;
 
       var if_match = token.match(_IF_RE);
       if (if_match) {
         pred_str = if_match[1];
         matched = true;
-      }
-      if (token.charAt(token.length-1) == '?') {
+      } else if (token.charAt(token.length-1) == '?') {
         pred_str = token;
         matched = true;
       }
       if (matched) {
-        var pred = GetPredicate(pred_str);
+        pred = pred_str ? GetPredicate(pred_str) : null;
         new_block = _PredicateSection();
         new_block.NewOrClause(pred);
         current_block.Append([_DoPredicates, new_block]);
