@@ -288,7 +288,7 @@ var _AbstractSection = function(spec) {
     };
   };
 
-  that.NewOrClause = function() {
+  that.NewOrClause = function(pred) {
     throw { name: 'NotImplemented' };  // "Abstract"
   };
 
@@ -306,9 +306,15 @@ var _Section = function(spec) {
     return that.statements[clause] || [];
   };
 
-  that.NewClause = function(clause_name) {
+  that.NewOrClause = function(pred) {
+    if (pred) {
+      throw {
+        name: 'TemplateSyntaxError',
+        message: '{.or} clause only takes a predicate inside predicate blocks'
+      };
+    }
     that.current_clause = [];
-    that.statements[clause_name] = that.current_clause;
+    that.statements['or'] = that.current_clause;
   };
 
   return that;
@@ -321,6 +327,22 @@ var _RepeatedSection = function(spec) {
   that.AlternatesWith = function() {
     that.current_clause = [];
     that.statements['alternate'] = that.current_clause;
+  };
+
+  return that;
+};
+
+// Represents a sequence of predicate clauses.
+var _PredicateSection = function(spec) {
+  var that = _AbstractSection(spec);
+  // Array of func, statements
+  that.clauses = [];
+
+  that.NewOrClause = function(pred) {
+    // {.or} always executes if reached, so use identity func with no args
+    pred = pred || [function(x) { return true; }, null];
+    that.current_clause = [];
+    that.clauses.push([pred, that.current_clause]);
   };
 
   return that;
@@ -563,7 +585,7 @@ function _Compile(template_str, options) {
       }
 
       if (token == 'or') {
-        current_block.NewClause('or');
+        current_block.NewOrClause(undefined);  // TODO: predicates
         continue;
       }
 
