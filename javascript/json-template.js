@@ -446,6 +446,7 @@ function _DoRepeatedSection(args, context, callback) {
 
 
 var _SECTION_RE = /(repeated)?\s*(section)\s+(\S+)?/;
+var _OR_RE = /or(?:\s+(.+))?/;
 
 // TODO: The compile function could be in a different module, in case we want to
 // compile on the server side.
@@ -584,8 +585,10 @@ function _Compile(template_str, options) {
         continue;
       }
 
-      if (token == 'or') {
-        current_block.NewOrClause(undefined);  // TODO: predicates
+      var or_match = token.match(_OR_RE);
+      if (or_match) {
+        var pred = or_match[1];
+        current_block.NewOrClause(pred);
         continue;
       }
 
