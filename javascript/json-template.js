@@ -110,7 +110,15 @@ var DEFAULT_PREDICATES = {
   'singular?': function(x) { return  x == 1; },
   'plural?': function(x) { return x > 1; },
   'Debug?': function(unused, context) {
-    return !!context.Lookup('debug') || false;
+    try {
+      return context.Lookup('debug');
+    } catch(err) {
+      if (err.name == 'UndefinedVariable') {
+        return false;
+      } else {
+        throw err;
+      }
+    }
   }
 };
 

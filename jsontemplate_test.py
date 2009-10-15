@@ -982,7 +982,7 @@ class PredicatesTest(testy.Test):
     """))
     self.verify.Expansion(t, data, expected, ignore_all_whitespace=True)
 
-  @testy.no_verify('javascript', 'java', 'php')
+  @testy.no_verify('java', 'php')
   def testValuePredicateWithRecord(self):
     t = testy.ClassDef(
     B("""
@@ -1014,9 +1014,9 @@ class PredicatesTest(testy.Test):
           One person in Intermediate.
           Nobody in Advanced.
     """)
-    self.verify.Expansion(t, data, expected)
+    self.verify.Expansion(t, data, expected, ignore_all_whitespace=True)
 
-  @testy.no_verify('javascript', 'java', 'php')
+  @testy.no_verify('java', 'php')
   def testContextPredicate(self):
 
     # The Debug? predicate looks up the stack for a "Debug" predicate
@@ -1044,7 +1044,7 @@ class PredicatesTest(testy.Test):
       Title: Eggs
       Body: These are eggs
     """)
-    self.verify.Expansion(t, data, expected)
+    self.verify.Expansion(t, data, expected, ignore_all_whitespace=True)
 
     data = {
         'debug': True,
@@ -1062,7 +1062,7 @@ class PredicatesTest(testy.Test):
       Body: These are eggs
         Rendered in 3 seconds
     """)
-    self.verify.Expansion(t, data, expected)
+    self.verify.Expansion(t, data, expected, ignore_all_whitespace=True)
 
 
 class DocumentationTest(testy.Test):
