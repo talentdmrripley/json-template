@@ -1064,6 +1064,12 @@ class PredicatesTest(testy.Test):
     """)
     self.verify.Expansion(t, data, expected, ignore_all_whitespace=True)
 
+    # Test it at the top level too
+
+    t = testy.ClassDef("{.Debug?}Rendered in 3 seconds{.end}")
+    self.verify.Expansion(t, {'debug': True}, 'Rendered in 3 seconds')
+    self.verify.Expansion(t, {'debug': False}, '')
+
 
 class DocumentationTest(testy.Test):
   """Test cases added for the sake of documentation."""
