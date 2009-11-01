@@ -8,7 +8,7 @@ var module = function() {
 var foo = function(value) { return 'foo'; };
 
 var FunctionsApiTest  = {
-  suiteName: "FunctionsApiTest",
+  suiteName: 'FunctionsApiTest',
 
   testMoreFormattersAsFunction: function () {
 
@@ -107,9 +107,30 @@ var FunctionsApiTest  = {
 
 };
 
+var FromStringTest = {
+  suiteName: 'FromString',
+
+  testGoodTemplate: function () {
+    var t = jsontemplate.FromString(
+        'meta: [] \n' +
+        'format-char: : \n' +
+        'default-formatter: html \n' +
+        'undefined-str: UNDEF \n' +
+        '\n' +
+        'foo [foo:html] [foo] [junk]\n');
+    jsUnity.assertions.assertEqual(
+        t.expand({'foo': '<a>'}), 'foo &lt;a&gt; &lt;a&gt; UNDEF\n');
+  },
+
+  testOptionsWithEmptyTemplate: function () {
+    var t = jsontemplate.FromString('meta: []\n');
+    jsUnity.assertions.assertEqual(
+        t.expand({'foo': '<a>'}), '');
+  },
+};
 
 var SectionsTest = {
-  suiteName: "SectionsTest",
+  suiteName: 'SectionsTest',
 
   testSection: function () {
     var s = jsontemplate._Section({section_name: "foo"});
@@ -117,6 +138,6 @@ var SectionsTest = {
   }
 };
 
-jsUnity.run(FunctionsApiTest, SectionsTest);
+jsUnity.run(FunctionsApiTest, FromStringTest, SectionsTest);
 
 }();
