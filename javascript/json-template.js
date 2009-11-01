@@ -759,7 +759,7 @@ Template.prototype.expand = function(data_dict) {
   return tokens.join('');
 };
 
-// FromString is a construction method that allows metadata to be written at the
+// fromString is a construction method that allows metadata to be written at the
 // beginning of the template string.  See Python's FromFile for a detailed
 // description of the format.
 //
@@ -770,7 +770,7 @@ var OPTION_RE = /^([a-zA-Z\-]+):\s*(.*)/;
 var OPTION_NAMES = [
     'meta', 'format-char', 'default-formatter', 'undefined-str'];
 
-function FromString(s, options, _constructor) {
+function fromString(s, options, _constructor) {
   _constructor = _constructor || Template;  // for testing only
 
   var options = {};
@@ -819,7 +819,7 @@ return {
     Template: Template, HtmlEscape: HtmlEscape,
     FunctionRegistry: FunctionRegistry, SimpleRegistry: SimpleRegistry,
     CallableRegistry: CallableRegistry, ChainedRegistry: ChainedRegistry,
-    FromString: FromString,
+    fromString: fromString,
     // Private but exposed for testing
     _Section: _Section
     };

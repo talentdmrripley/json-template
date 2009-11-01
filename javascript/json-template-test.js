@@ -111,7 +111,7 @@ var FromStringTest = {
   suiteName: 'FromString',
 
   testGoodTemplate: function () {
-    var t = jsontemplate.FromString(
+    var t = jsontemplate.fromString(
         'meta: [] \n' +
         'format-char: : \n' +
         'default-formatter: html \n' +
@@ -123,7 +123,7 @@ var FromStringTest = {
   },
 
   testOptionsWithEmptyTemplate: function () {
-    var t = jsontemplate.FromString('meta: []\n');
+    var t = jsontemplate.fromString('meta: []\n');
     jsUnity.assertions.assertEqual(
         t.expand({'foo': '<a>'}), '');
   },
