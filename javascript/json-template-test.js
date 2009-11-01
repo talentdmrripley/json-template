@@ -110,15 +110,24 @@ var FunctionsApiTest  = {
 var FromStringTest = {
   suiteName: 'FromString',
 
-  testFromString: function () {
+  testGoodTemplate: function () {
     var t = jsontemplate.FromString(
-        'meta: []\n' +
+        'meta: [] \n' +
+        'format-char: : \n' +
+        'default-formatter: html \n' +
+        'undefined-str: UNDEF \n' +
         '\n' +
-        'foo [foo]\n');
-    jsUnity.assertions.assertEqual(t.expand({'foo': 'bar'}), 'foo bar\n');
-  }
-};
+        'foo [foo:html] [foo] [junk]\n');
+    jsUnity.assertions.assertEqual(
+        t.expand({'foo': '<a>'}), 'foo &lt;a&gt; &lt;a&gt; UNDEF\n');
+  },
 
+  testOptionsWithEmptyTemplate: function () {
+    var t = jsontemplate.FromString('meta: []\n');
+    jsUnity.assertions.assertEqual(
+        t.expand({'foo': '<a>'}), '');
+  },
+};
 
 var SectionsTest = {
   suiteName: 'SectionsTest',

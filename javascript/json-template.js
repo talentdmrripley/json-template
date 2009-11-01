@@ -789,8 +789,7 @@ function FromString(s, options, _constructor) {
       var name = match[1].toLowerCase(), value = match[2];
       if (OPTION_NAMES.indexOf(name) != -1) {
         name = name.replace('-', '_');
-        // TODO: trim
-        //value = value.strip()
+        value = value.replace(/^\s+/, '').replace(/\s+$/, '');
         if (name == 'default_formatter' && value.toLowerCase() == 'none') {
           value = null;
         }
@@ -802,15 +801,9 @@ function FromString(s, options, _constructor) {
       break;
     }
   }
-  if (options) {
-    line = line;  // TODO: trim
-    if (line != '') {
-      throw {
-         name: 'CompilationError',
-         message: 'Must be one blank line between template options and body: '
-                  + line
-      };
-    }
+  // TODO: This doesn't enforce the blank line between options and template, but
+  // that might be more trouble than it's worth
+  if (options !== {}) {
     body = s.slice(begin);
   } else {
     body = s;
