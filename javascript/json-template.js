@@ -770,10 +770,8 @@ var OPTION_RE = /^([a-zA-Z\-]+):\s*(.*)/;
 var OPTION_NAMES = [
     'meta', 'format-char', 'default-formatter', 'undefined-str'];
 
-function fromString(s, options, _constructor) {
-  _constructor = _constructor || Template;  // for testing only
-
-  var options = {};
+function fromString(s, options) {
+  var parsed = {};
   var begin = 0, end = 0;
 
   while (true) {
@@ -793,7 +791,7 @@ function fromString(s, options, _constructor) {
         if (name == 'default_formatter' && value.toLowerCase() == 'none') {
           value = null;
         }
-        options[name] = value;
+        parsed[name] = value;
         parsedOption = true;
       }
     }
@@ -803,12 +801,15 @@ function fromString(s, options, _constructor) {
   }
   // TODO: This doesn't enforce the blank line between options and template, but
   // that might be more trouble than it's worth
-  if (options !== {}) {
+  if (parsed !== {}) {
     body = s.slice(begin);
   } else {
     body = s;
   }
-  return _constructor(body, options);
+  for (var o in options) {
+    parsed[o] = options[o];
+  }
+  return Template(body, parsed);
 }
 
 

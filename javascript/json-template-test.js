@@ -122,6 +122,16 @@ var FromStringTest = {
         t.expand({'foo': '<a>'}), 'foo &lt;a&gt; &lt;a&gt; UNDEF\n');
   },
 
+  testOptionsArgument: function () {
+    var t = jsontemplate.fromString(
+        'meta: [] \n' +
+        '\n' +
+        'foo [var|html] [var|foo]\n',
+        {more_formatters: {'foo': foo}});  // Custom formatters
+    jsUnity.assertions.assertEqual(
+        t.expand({'var': '<a>'}), 'foo &lt;a&gt; foo\n');
+  },
+
   testOptionsWithEmptyTemplate: function () {
     var t = jsontemplate.fromString('meta: []\n');
     jsUnity.assertions.assertEqual(
