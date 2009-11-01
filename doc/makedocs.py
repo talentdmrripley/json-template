@@ -14,9 +14,9 @@ import sys
 import subprocess
 
 if __name__ == '__main__':
-  sys.path.insert(0, os.path.join(os.path.dirname(sys.argv[0]), '..'))
+  sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'python'))
 
-from python import jsontemplate
+import jsontemplate
 from pan.core import json
 
 
@@ -173,7 +173,7 @@ def main(argv):
   # Don't show private variables, and don't assume the docstrings have epydoc
   # markup.
   argv = [
-      'epydoc', 'python/jsontemplate.py', '--html', '-v',
+      'epydoc', 'python/jsontemplate/_jsontemplate.py', '--html', '-v',
       '--docformat=plaintext', '--no-private', '--include-log', '--no-frames',
       '--name', 'JSON Template',
       '-o', 'epydoc']
