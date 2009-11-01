@@ -759,6 +759,65 @@ Template.prototype.expand = function(data_dict) {
   return tokens.join('');
 };
 
+// FromString is a construction method that allows metadata to be written at the
+// beginning of the template string.  See Python's FromFile for a detailed
+// description of the format.
+//
+// The argument 'options' takes precedence over the options in the template, and
+// can be used for non-serializable options like template formatters.
+
+var OPTION_RE = /^([a-zA-Z\-]+):\s*(.*)/;
+var OPTION_NAMES = [
+    'meta', 'format-char', 'default-formatter', 'undefined-str'];
+
+function FromString(s, options, _constructor) {
+  _constructor = _constructor || Template;  // for testing only
+
+  var options = {};
+  var begin = 0, end = 0;
+
+  while (true) {
+    var parsedOption = false;
+    var end = s.indexOf('\n', begin);
+    if (end == -1) {
+      break;
+    }
+    var line = s.slice(begin, end);
+    begin = end+1;
+    var match = line.match(OPTION_RE);
+    if (match !== null) {
+      var name = match[1].toLowerCase(), value = match[2];
+      if (OPTION_NAMES.indexOf(name) != -1) {
+        name = name.replace('-', '_');
+        // TODO: trim
+        //value = value.strip()
+        if (name == 'default_formatter' && value.toLowerCase() == 'none') {
+          value = null;
+        }
+        options[name] = value;
+        parsedOption = true;
+      }
+    }
+    if (!parsedOption) {
+      break;
+    }
+  }
+  if (options) {
+    line = line;  // TODO: trim
+    if (line != '') {
+      throw {
+         name: 'CompilationError',
+         message: 'Must be one blank line between template options and body: '
+                  + line
+      };
+    }
+    body = s.slice(begin);
+  } else {
+    body = s;
+  }
+  return _constructor(body, options);
+}
+
 
 // We just export one name for now, the Template "class".
 // We need HtmlEscape in the browser tests, so might as well export it.
@@ -767,6 +826,7 @@ return {
     Template: Template, HtmlEscape: HtmlEscape,
     FunctionRegistry: FunctionRegistry, SimpleRegistry: SimpleRegistry,
     CallableRegistry: CallableRegistry, ChainedRegistry: ChainedRegistry,
+    FromString: FromString,
     // Private but exposed for testing
     _Section: _Section
     };
