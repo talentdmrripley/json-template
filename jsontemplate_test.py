@@ -922,6 +922,33 @@ class StandardFormattersTest(testy.Test):
         t, {'num-people': 3, 'num-things': 3},
         'They depend on 3 things.')
 
+  # TODO: Do this in 3 other languages
+  @testy.no_verify('php', 'java', 'javascript')
+  def testCycleFormatter(self):
+    return
+    # Arguments with spaces in them
+    t = testy.ClassDef(
+        B("""
+        {.repeated section @}
+          {@index|cycle red blue} {name}
+        {.end}
+        """))
+
+    data = [
+      {'name': 'Andy'},
+      {'name': 'Bob'},
+      {'name': 'Carol'},
+      {'name': 'Dirk'},
+      ]
+
+    self.verify.Expansion(t, data,
+        B("""
+        red Andy
+        blue Bob
+        red Carol
+        blue Dirk
+        """))
+
 
 class AllFormattersTest(testy.Test):
   """Test that each implementation implements the standard formatters."""

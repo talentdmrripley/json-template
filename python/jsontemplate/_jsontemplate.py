@@ -166,6 +166,39 @@ class CallableRegistry(FunctionRegistry):
     return self.func(user_str), None, _DecideFuncType(user_str)
 
 
+class PrefixRegistry(FunctionRegistry):
+  """Lookup functions with arguments.
+  
+  The function name is identified by a prefix.  The character after the prefix,
+  usually a space, is considered the argument delimiter (similar to sed/perl's
+  s/foo/bar s|foo|bar syntax).
+  """
+
+  def __init__(self, functions):
+    """
+    Args:
+      functions: List of 2-tuples (prefix, function), e.g.
+      [('pluralize', _Pluralize), ('cycle', _Cycle)]
+    """
+    self.functions = functions
+
+  def Lookup(self, user_str):
+    for prefix, func in self.functions:
+      if user_str.startswith(prefix):
+        i = len(prefix)
+
+        # Usually a space, but could be something else
+        try:
+          splitchar = user_str[i]
+        except IndexError:
+          args = ()  # No arguments
+        else:
+          args = user_str.split(splitchar)[1:]
+
+        return func, args
+    return None, ()
+
+
 class ChainedRegistry(FunctionRegistry):
   """Look up functions in chain of other FunctionRegistry instances."""
 
@@ -204,9 +237,12 @@ class _ProgramBuilder(object):
     elif callable(formatters):
       formatters = CallableRegistry(formatters)
 
+    # defaults
+    with_args = PrefixRegistry([('pluralize', _Pluralize)])
+
     # First consult user formatters, then the default formatters
     self.formatters = ChainedRegistry(
-        [formatters, DictRegistry(_DEFAULT_FORMATTERS), _DefaultFormatters()])
+        [formatters, DictRegistry(_DEFAULT_FORMATTERS), with_args])
 
     # Same for predicates
     if isinstance(predicates, dict):
@@ -585,29 +621,6 @@ def _Pluralize(value, unused_context, args):
     return p
   else:
     return s
-
-
-class _DefaultFormatters(FunctionRegistry):
-  """
-  Default formatters that don't fit in the simple dictionary
-  _DEFAULT_FORMATTERS.
-  """
-
-  def Lookup(self, user_str):
-    if user_str.startswith('pluralize'):
-      i = len('pluralize')
-
-      # Usually a space, but could be something else
-      try:
-        splitchar = user_str[i]
-      except IndexError:
-        args = ()  # No arguments
-      else:
-        args = user_str.split(splitchar)[1:]
-
-      return _Pluralize, args
-    else:
-      return None, ()
 
 
 def _IsDebugMode(unused_value, context, unused_args):
