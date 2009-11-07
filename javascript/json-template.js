@@ -94,6 +94,12 @@ function _Pluralize(value, unused_context, args) {
   return (value > 1) ? p : s;
 }
 
+function _Cycle(value, unused_context, args) {
+  // Cycle between various values on consecutive integers."""
+  // @index starts from 1, so used 1-based indexing
+  return args[(value - 1) % args.length];
+}
+
 var DEFAULT_FORMATTERS = {
   'html': HtmlEscape,
   'htmltag': HtmlTagEscape,
@@ -512,7 +518,8 @@ function _Compile(template_str, options) {
 
   // default formatters with arguments
   var default_formatters = PrefixRegistry([
-      {name: 'pluralize', func: _Pluralize}
+      {name: 'pluralize', func: _Pluralize},
+      {name: 'cycle', func: _Cycle}
       ]);
   var all_formatters = new ChainedRegistry([
       more_formatters,
