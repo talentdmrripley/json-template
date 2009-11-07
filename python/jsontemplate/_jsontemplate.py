@@ -238,7 +238,7 @@ class _ProgramBuilder(object):
       formatters = CallableRegistry(formatters)
 
     # defaults
-    with_args = PrefixRegistry([('pluralize', _Pluralize)])
+    with_args = PrefixRegistry([('pluralize', _Pluralize), ('cycle', _Cycle)])
 
     # First consult user formatters, then the default formatters
     self.formatters = ChainedRegistry(
@@ -621,6 +621,12 @@ def _Pluralize(value, unused_context, args):
     return p
   else:
     return s
+
+
+def _Cycle(value, unused_context, args):
+  """Cycle between various values on consecutive integers."""
+  # @index starts from 1, so used 1-based indexing
+  return args[(value - 1) % len(args)]
 
 
 def _IsDebugMode(unused_value, context, unused_args):
