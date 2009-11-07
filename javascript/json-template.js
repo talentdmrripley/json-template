@@ -769,6 +769,8 @@ Template.prototype.expand = function(data_dict) {
 var OPTION_RE = /^([a-zA-Z\-]+):\s*(.*)/;
 var OPTION_NAMES = [
     'meta', 'format-char', 'default-formatter', 'undefined-str'];
+// Use this "linear search" instead of Array.indexOf, which is nonstandard
+var OPTION_NAMES_RE = new RegExp(OPTION_NAMES.join('|'));
 
 function fromString(s, options) {
   var parsed = {};
@@ -776,7 +778,7 @@ function fromString(s, options) {
 
   while (true) {
     var parsedOption = false;
-    var end = s.indexOf('\n', begin);
+    end = s.indexOf('\n', begin);
     if (end == -1) {
       break;
     }
@@ -785,7 +787,7 @@ function fromString(s, options) {
     var match = line.match(OPTION_RE);
     if (match !== null) {
       var name = match[1].toLowerCase(), value = match[2];
-      if (OPTION_NAMES.indexOf(name) != -1) {
+      if (name.match(OPTION_NAMES_RE)) {
         name = name.replace('-', '_');
         value = value.replace(/^\s+/, '').replace(/\s+$/, '');
         if (name == 'default_formatter' && value.toLowerCase() == 'none') {
