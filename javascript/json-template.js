@@ -162,24 +162,26 @@ var ChainedRegistry = function(registries) {
   };
 };
 
-
 // Default formatters which can't be expressed in DEFAULT_FORMATTERS
-var DefaultFormatters = function() {
+var PrefixRegistry = function(functions) {
   return {
     Lookup: function(user_str) {
-      if (user_str.slice(0, 9) == 'pluralize') {
-        // Delimiter is usually a space, but could be something else
-        var args;
-        var splitchar = user_str.charAt(9);
-        if (splitchar === "") {
-          args = [];  // No arguments
-        } else {
-          args = user_str.split(splitchar).slice(1);
-        }
-        return [_Pluralize, args];
+      for (var i = 0; i < functions.length; i++) {
+        var name = functions[i].name, func = functions[i].func;
+        if (user_str.slice(0, name.length) == name) {
+          // Delimiter is usually a space, but could be something else
+          var args;
+          var splitchar = user_str.charAt(name.length);
+          if (splitchar === "") {
+            args = [];  // No arguments
+          } else {
+            args = user_str.split(splitchar).slice(1);
+          }
+          return [func, args];
 
-      } else {
-        return [null, null];  // No formatter
+        } else {
+          return [null, null];  // No formatter
+        }
       }
     }
   };
@@ -508,8 +510,14 @@ function MakeRegistry(obj) {
 function _Compile(template_str, options) {
   var more_formatters = MakeRegistry(options.more_formatters);
 
+  // default formatters with arguments
+  var default_formatters = PrefixRegistry([
+      {name: 'pluralize', func: _Pluralize}
+      ]);
   var all_formatters = new ChainedRegistry([
-      more_formatters, SimpleRegistry(DEFAULT_FORMATTERS), DefaultFormatters()
+      more_formatters,
+      SimpleRegistry(DEFAULT_FORMATTERS),
+      default_formatters
       ]);
 
   var more_predicates = MakeRegistry(options.more_predicates);
