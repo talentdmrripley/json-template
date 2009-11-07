@@ -148,6 +148,6 @@ var SectionsTest = {
   }
 };
 
-jsUnity.run(FunctionsApiTest, FromStringTest, SectionsTest);
+var results = jsUnity.run(FunctionsApiTest, FromStringTest, SectionsTest);
 
 }();
