@@ -237,12 +237,14 @@ class _ProgramBuilder(object):
     elif callable(formatters):
       formatters = CallableRegistry(formatters)
 
-    # defaults
-    with_args = PrefixRegistry([('pluralize', _Pluralize), ('cycle', _Cycle)])
+    # default formatters with arguments
+    default_formatters = PrefixRegistry([
+        ('pluralize', _Pluralize), ('cycle', _Cycle)
+        ])
 
     # First consult user formatters, then the default formatters
     self.formatters = ChainedRegistry(
-        [formatters, DictRegistry(_DEFAULT_FORMATTERS), with_args])
+        [formatters, DictRegistry(_DEFAULT_FORMATTERS), default_formatters])
 
     # Same for predicates
     if isinstance(predicates, dict):
