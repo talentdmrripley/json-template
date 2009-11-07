@@ -136,7 +136,7 @@ var FromStringTest = {
     var t = jsontemplate.fromString('meta: []\n');
     jsUnity.assertions.assertEqual(
         t.expand({'foo': '<a>'}), '');
-  },
+  }
 };
 
 var SectionsTest = {
