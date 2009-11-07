@@ -925,8 +925,7 @@ class StandardFormattersTest(testy.Test):
   # TODO: Do this in 3 other languages
   @testy.no_verify('php', 'java', 'javascript')
   def testCycleFormatter(self):
-    return
-    # Arguments with spaces in them
+
     t = testy.ClassDef(
         B("""
         {.repeated section @}
@@ -943,10 +942,25 @@ class StandardFormattersTest(testy.Test):
 
     self.verify.Expansion(t, data,
         B("""
-        red Andy
-        blue Bob
-        red Carol
-        blue Dirk
+          red Andy
+          blue Bob
+          red Carol
+          blue Dirk
+        """))
+
+    t = testy.ClassDef(
+        B("""
+        {.repeated section @}
+          {@index|cycle/x x/y y/z z} {name}
+        {.end}
+        """))
+
+    self.verify.Expansion(t, data,
+        B("""
+          x x Andy
+          y y Bob
+          z z Carol
+          x x Dirk
         """))
 
 
