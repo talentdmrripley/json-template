@@ -170,11 +170,9 @@ var PrefixRegistry = function(functions) {
             args = user_str.split(splitchar).slice(1);
           }
           return [func, args];
-
-        } else {
-          return [null, null];  // No formatter
-        }
+        } 
       }
+      return [null, null];  // No formatter
     }
   };
 };
