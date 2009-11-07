@@ -148,20 +148,6 @@ var CallableRegistry = function(callable) {
   };
 };
 
-var ChainedRegistry = function(registries) {
-  return {
-    Lookup: function(user_str) {
-      for (var i=0; i<registries.length; i++) {
-        var result = registries[i].Lookup(user_str);
-        if (result[0]) {
-          return result;
-        }
-      }
-      return [null, null];  // Nothing found
-    }
-  };
-};
-
 // Default formatters which can't be expressed in DEFAULT_FORMATTERS
 var PrefixRegistry = function(functions) {
   return {
@@ -183,6 +169,20 @@ var PrefixRegistry = function(functions) {
           return [null, null];  // No formatter
         }
       }
+    }
+  };
+};
+
+var ChainedRegistry = function(registries) {
+  return {
+    Lookup: function(user_str) {
+      for (var i=0; i<registries.length; i++) {
+        var result = registries[i].Lookup(user_str);
+        if (result[0]) {
+          return result;
+        }
+      }
+      return [null, null];  // Nothing found
     }
   };
 };
