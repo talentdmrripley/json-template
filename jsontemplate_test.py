@@ -923,7 +923,7 @@ class StandardFormattersTest(testy.Test):
         'They depend on 3 things.')
 
   # TODO: Do this in 3 other languages
-  @testy.no_verify('php', 'java', 'javascript')
+  @testy.no_verify('php', 'java')
   def testCycleFormatter(self):
 
     t = testy.ClassDef(
