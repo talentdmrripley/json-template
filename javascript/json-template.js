@@ -95,8 +95,8 @@ function _Pluralize(value, unused_context, args) {
 }
 
 function _Cycle(value, unused_context, args) {
-  // Cycle between various values on consecutive integers."""
-  // @index starts from 1, so used 1-based indexing
+  // Cycle between various values on consecutive integers.
+  // @index starts from 1, so use 1-based indexing.
   return args[(value - 1) % args.length];
 }
 
@@ -164,7 +164,7 @@ var PrefixRegistry = function(functions) {
           // Delimiter is usually a space, but could be something else
           var args;
           var splitchar = user_str.charAt(name.length);
-          if (splitchar === "") {
+          if (splitchar === '') {
             args = [];  // No arguments
           } else {
             args = user_str.split(splitchar).slice(1);
