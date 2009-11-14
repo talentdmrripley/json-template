@@ -46,11 +46,9 @@ var FunctionsApiTest  = {
   },
 
   testMoreFormattersAsClass: function () {
-    print("---------------------------");
-
     var MyFormatters = function() {
       return {
-        Lookup: function(user_str) {
+        lookup: function(user_str) {
           var func;
           if (user_str == 'lower') {
             func = function (s) { return s.toLowerCase(); };
@@ -63,8 +61,6 @@ var FunctionsApiTest  = {
         }
       };
     };
-    MyFormatters.prototype = jsontemplate.FunctionRegistry();
-
     var formatters = MyFormatters();
 
     var t = jsontemplate.Template(
@@ -74,20 +70,16 @@ var FunctionsApiTest  = {
     jsUnity.assertions.assertEqual(actual, 'Hello world WORLD');
   },
 
-  testChainedRegistry: function () {
-    print("TODO");
-  },
-
   testSimpleRegistryLookup: function () {
     var s = new jsontemplate.SimpleRegistry({'foo': foo});
-    var actual = s.Lookup('foo');
+    var actual = s.lookup('foo');
     jsUnity.assertions.assertEqual(actual[0], foo);
   },
 
   testCallableRegistryLookup: function () {
     var s = new jsontemplate.CallableRegistry(
         function(user_str) { return foo; });
-    var actual = s.Lookup('anything');
+    var actual = s.lookup('anything');
     jsUnity.assertions.assertEqual(actual[0], foo);
   },
 
@@ -98,10 +90,10 @@ var FunctionsApiTest  = {
         function(user_str) { return bar; });
 
     var chained = new jsontemplate.ChainedRegistry([simple, callable]);
-    var actual = chained.Lookup('foo');
+    var actual = chained.lookup('foo');
     jsUnity.assertions.assertEqual(actual[0], foo);
 
-    actual = chained.Lookup('anything');
+    actual = chained.lookup('anything');
     jsUnity.assertions.assertEqual(actual[0], bar);
   }
 
