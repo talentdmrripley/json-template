@@ -108,7 +108,7 @@ var DEFAULT_FORMATTERS = {
   'raw': function(x) { return x; },
   'AbsUrl': function(value, context) {
     // TODO: Normalize leading/trailing slashes
-    return context.Lookup('base-url') + '/' + value;
+    return context.get('base-url') + '/' + value;
   }
 };
 
@@ -117,7 +117,7 @@ var DEFAULT_PREDICATES = {
   'plural?': function(x) { return x > 1; },
   'Debug?': function(unused, context) {
     try {
-      return context.Lookup('debug');
+      return context.get('debug');
     } catch(err) {
       if (err.name == 'UndefinedVariable') {
         return false;
@@ -130,7 +130,7 @@ var DEFAULT_PREDICATES = {
 
 var FunctionRegistry = function() {
   return {
-    Lookup: function(user_str) {
+    lookup: function(user_str) {
       return [null, null];
     }
   };
@@ -138,7 +138,7 @@ var FunctionRegistry = function() {
 
 var SimpleRegistry = function(obj) {
   return {
-    Lookup: function(user_str) {
+    lookup: function(user_str) {
       var func = obj[user_str] || null;
       return [func, null];
     }
@@ -147,7 +147,7 @@ var SimpleRegistry = function(obj) {
 
 var CallableRegistry = function(callable) {
   return {
-    Lookup: function(user_str) {
+    lookup: function(user_str) {
       var func = callable(user_str);
       return [func, null];
     }
@@ -157,7 +157,7 @@ var CallableRegistry = function(callable) {
 // Default formatters which can't be expressed in DEFAULT_FORMATTERS
 var PrefixRegistry = function(functions) {
   return {
-    Lookup: function(user_str) {
+    lookup: function(user_str) {
       for (var i = 0; i < functions.length; i++) {
         var name = functions[i].name, func = functions[i].func;
         if (user_str.slice(0, name.length) == name) {
@@ -179,9 +179,9 @@ var PrefixRegistry = function(functions) {
 
 var ChainedRegistry = function(registries) {
   return {
-    Lookup: function(user_str) {
+    lookup: function(user_str) {
       for (var i=0; i<registries.length; i++) {
-        var result = registries[i].Lookup(user_str);
+        var result = registries[i].lookup(user_str);
         if (result[0]) {
           return result;
         }
@@ -271,7 +271,7 @@ function _ScopedContext(context, undefined_str) {
       }
     },
 
-    Lookup: function(name) {
+    get: function(name) {
       if (name == '@') {
         return stack[stack.length-1].context;
       }
@@ -387,7 +387,7 @@ function _Execute(statements, context, callback) {
 
 function _DoSubstitute(statement, context, callback) {
   var value;
-  value = context.Lookup(statement.name);
+  value = context.get(statement.name);
 
   // Format values
   for (var i=0; i<statement.formatters.length; i++) {
@@ -429,7 +429,7 @@ function _DoSection(args, context, callback) {
 function _DoPredicates(args, context, callback) {
   // Here we execute the first clause that evaluates to true, and then stop.
   var block = args;
-  var value = context.Lookup('@');
+  var value = context.get('@');
   for (var i=0; i<block.clauses.length; i++) {
     var clause = block.clauses[i];
     var predicate = clause[0][0];
@@ -452,7 +452,7 @@ function _DoRepeatedSection(args, context, callback) {
   if (block.section_name == '@') {
     // If the name is @, we stay in the enclosing context, but assume it's a
     // list, and repeat this block many times.
-    items = context.Lookup('@');
+    items = context.get('@');
     // TODO: check that items is an array; apparently this is hard in JavaScript
     //if type(items) is not list:
     //  raise EvaluationError('Expected a list; got %s' % type(items))
@@ -499,8 +499,8 @@ function MakeRegistry(obj) {
     return new FunctionRegistry();
   } else if (typeof obj === 'function') {
     return new CallableRegistry(obj);
-  } else if (obj.Lookup !== undefined) {
-    // TODO: Is this a good pattern?  There is a namespace conflict where Lookup
+  } else if (obj.lookup !== undefined) {
+    // TODO: Is this a good pattern?  There is a namespace conflict where get
     // could be either a formatter or a method on a FunctionRegistry.
     // instanceof might be more robust.
     return obj;
@@ -542,7 +542,7 @@ function _Compile(template_str, options) {
   }
 
   function GetFormatter(format_str) {
-    var pair = all_formatters.Lookup(format_str);
+    var pair = all_formatters.lookup(format_str);
     if (!pair[0]) {
       throw {
         name: 'BadFormatter',
@@ -553,7 +553,7 @@ function _Compile(template_str, options) {
   }
 
   function GetPredicate(pred_str) {
-    var pair = all_predicates.Lookup(pred_str);
+    var pair = all_predicates.lookup(pred_str);
     if (!pair[0]) {
       throw {
         name: 'BadPredicate',
