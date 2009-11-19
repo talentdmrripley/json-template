@@ -206,7 +206,12 @@ function _ScopedContext(context, undefined_str) {
       if (name === undefined || name === null) {
         return null;
       }
-      var new_context = stack[stack.length-1].context[name] || null;
+      var new_context;
+      if (name == '@') {
+        new_context = stack[stack.length-1].context;
+      } else {
+        new_context = stack[stack.length-1].context[name] || null;
+      }
       stack.push({context: new_context, index: -1});
       return new_context;
     },
@@ -447,22 +452,15 @@ function _DoPredicates(args, context, callback) {
 
 function _DoRepeatedSection(args, context, callback) {
   var block = args;
-  var pushed;
 
-  if (block.section_name == '@') {
-    // If the name is @, we stay in the enclosing context, but assume it's a
-    // list, and repeat this block many times.
-    items = context.get('@');
+  items = context.PushSection(block.section_name);
+  pushed = true;
+
+  if (items && items.length > 0) {
     // TODO: check that items is an array; apparently this is hard in JavaScript
     //if type(items) is not list:
     //  raise EvaluationError('Expected a list; got %s' % type(items))
-    pushed = false;
-  } else {
-    items = context.PushSection(block.section_name);
-    pushed = true;
-  }
 
-  if (items && items.length > 0) {
     // Execute the statements in the block for every item in the list.
     // Execute the alternate block on every iteration except the last.  Each
     // item could be an atom (string, integer, etc.) or a dictionary.
@@ -481,9 +479,7 @@ function _DoRepeatedSection(args, context, callback) {
     _Execute(block.Statements('or'), context, callback);
   }
 
-  if (pushed) {
-    context.Pop();
-  }
+  context.Pop();
 }
 
 

@@ -300,7 +300,7 @@ class SectionsTest(testy.PyUnitCompatibleTest):
           Bob: nice mean fun 
         """), ignore_all_whitespace=True)
 
-  @testy.no_verify('javascript', 'php', 'java')
+  @testy.no_verify('php', 'java')
   def testNestedAnonymousRepeatedSections(self):
     t = testy.ClassDef(
         B("""
