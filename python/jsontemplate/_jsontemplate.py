@@ -416,6 +416,9 @@ class _Frame(object):
     self.context = context
     self.index = index   # An iteration index.  -1 means we're NOT iterating.
 
+  def __str__(self):
+    return 'Frame %s (%s)' % (self.context, self.index)
+
 
 class _ScopedContext(object):
   """Allows scoped lookup of variables.
@@ -438,7 +441,10 @@ class _ScopedContext(object):
     Returns:
       The new section, or None if there is no such section.
     """
-    new_context = self.stack[-1].context.get(name)
+    if name == '@':
+      new_context = self.stack[-1].context
+    else:
+      new_context = self.stack[-1].context.get(name)
     self.stack.append(_Frame(new_context))
     return new_context
 
@@ -1089,20 +1095,13 @@ def _DoRepeatedSection(args, context, callback):
 
   block = args
 
-  if block.section_name == '@':
-    # If the name is @, we stay in the enclosing context, but assume it's a
-    # list, and repeat this block many times.
-    items = context.Lookup('@')
-    if not isinstance(items, list):
-      raise EvaluationError('Expected a list; got %s' % type(items))
-    pushed = False
-  else:
-    items = context.PushSection(block.section_name)
-    pushed = True
-
-  # TODO: what if items is a dictionary?
+  items = context.PushSection(block.section_name)
+  # TODO: if 'items' is a dictionary, allow @name and @value.
 
   if items:
+    if not isinstance(items, list):
+      raise EvaluationError('Expected a list; got %s' % type(items))
+
     last_index = len(items) - 1
     statements = block.Statements()
     alt_statements = block.Statements('alternates with')
@@ -1123,8 +1122,7 @@ def _DoRepeatedSection(args, context, callback):
   else:
     _Execute(block.Statements('or'), context, callback)
 
-  if pushed:
-    context.Pop()
+  context.Pop()
 
 
 def _DoSection(args, context, callback):
