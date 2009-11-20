@@ -140,6 +140,36 @@ var SectionsTest = {
   }
 };
 
-var results = jsUnity.run(FunctionsApiTest, FromStringTest, SectionsTest);
+var ContextTest = {
+  suiteName: 'ContextTest',
+
+  testContext: function () {
+    var t = jsontemplate.Template("Hello {name} ({get})");
+
+    // Normal dictionary
+    var actual = t.expand({'name': 'World', 'get': 'dummy'});
+    jsUnity.assertions.assertEqual(actual, 'Hello World (dummy)');
+
+    // Custom context.  IMPORTANT: We're only testing simple substitution now,
+    // not iteration on the context.
+    var Context = function() {
+      return {
+        get: function(name) {
+          if (name == 'name') {
+            return 'World';
+          } else if (name == 'get') {
+            return 'dummy';
+          }
+          return undefined;
+       }
+      }
+    };
+    actual = t.expand(Context());
+    jsUnity.assertions.assertEqual(actual, 'Hello World (dummy)');
+  }
+};
+
+var results = jsUnity.run(
+    FunctionsApiTest, FromStringTest, SectionsTest, ContextTest);
 
 }();
