@@ -891,6 +891,15 @@ class StandardFormattersTest(testy.Test):
     self.verify.Expansion(
         t, {'url': '"<>&'}, '<a href="&quot;&lt;&gt;&amp;">')
 
+  @testy.only_verify('python', 'javascript')
+  def testPlainUrlFormatter(self):
+    t = testy.ClassDef('{url|plain-url}')
+    self.verify.Expansion(
+        t, {'url': 'http://foo/bar?foo=1&bar=2'},
+        '<a href="http://foo/bar?foo=1&amp;bar=2">'
+           'http://foo/bar?foo=1&amp;bar=2'
+        '</a>')
+
   # TODO: Do this in 2 other languages
   @testy.no_verify('php', 'java')
   def testAbsUrlFormatter(self):
