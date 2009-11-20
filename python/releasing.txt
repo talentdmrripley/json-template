@@ -1,0 +1,92 @@
+How to release the Python code
+==============================
+
+1. Make sure all tests pass. See the testing information in
+   ``README.txt`` and run the tests using Python 2.4, Python 2.5 and
+   Python 2.6.
+
+2. Fill in the release date in ``CHANGES.txt``. Check whether the
+   changelog is complete. Correct the release version number to that
+   of a feature release (``x.y``) if this is not just a bugfix release
+   (``x.y.z``).
+
+3. Test whether the the long description of this
+   package is proper restructured text (this will show up on 
+   PyPI)::
+
+     $ python setup.py --long-description | rst2html > test.html
+ 
+   And open ``test.html`` in a web browser.
+
+   Optionally, if you want to examine what would be created when doing
+   a release, you can do the following::
+
+     $ python setup.py sdist
+
+   A tarball will appear in the ``dist`` directory. Do **not** upload
+   this tarball anywhere, instead proceed with the steps below to
+   ensure consistency in releasing.
+
+4. Create a release tag (of the entire trunk, not just the Python
+   parts).  Name the tag: ``python-<version number>``, where the
+   version number is the release version number as on top in
+   ``CHANGES.txt``.
+
+5. Get a separate, clean checkout of the release tag. This is to
+   prevent mistakes such as forgetting to tag or using the wrong
+   release number.
+
+   1. Remove the ``dev`` marker from the ``version`` entry in ``setup.py``.
+
+   2. Commit this change on the tag (this is release management
+      information only, not a code change).
+
+   3. Now create and upload the release::
+
+      $ python setup.py register sdist upload
+
+   (this only works with Python 2.5 and up)
+
+   The release has now been made public. We now need to do a "version
+   bump" to prepare the development version for the work afterwards.
+
+6. Go back to the trunk or release branch checkout. Increase the
+   version number in ``setup.py`` to the expected next release, but
+   do leave the ``dev`` marker in there. 
+
+   The convention is that the trunk or release branch always points to
+   the next release that is being worked on, not the one released
+   already. So, if you have just released ``0.5.2``, the ``setup.py``
+   should be changed to talk about ``0.5.3``::
+
+     setup(
+         name='....',
+         version='0.5.3dev',
+         ...
+         )
+
+7. In ``CHANGES.txt`` add a new section for the upcoming release. The
+   release date for that release should say ``unreleased`` so that
+   committers recording change information don't accidentally add the
+   information to the entry for an already released version.
+
+   Here is an example::
+
+     0.5.3 (unreleased)
+     ~~~~~~~~~~~~~~~~~~
+    
+     * ...
+ 
+     0.5.2 (2009-10-10)
+     ~~~~~~~~~~~~~~~~~~
+
+     * Foobled the qux.
+
+     * Fixed a bug in the bar compensator.
+
+8. Commit these changes.
+
+**Important**: Once a release has been made to PyPI or another public
+location, a release should *never* be removed, as people can start to
+depend on it very quickly in their own projects. In such a case it
+should simply be superseded immediately by a new, improved, release.

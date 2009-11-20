@@ -1,0 +1,309 @@
+<!DOCTYPE HTML>
+
+
+<html lang=en>
+
+<head>
+<meta charset=utf-8>
+<title>reusing_the_inside.py</title>
+
+  <script type='text/javascript' src="http://google-code-prettify.googlecode.com/svn/trunk/src/prettify.js"></script>
+
+  <link rel="stylesheet" type="text/css"
+        href="http://google-code-prettify.googlecode.com/svn/trunk/src/prettify.css" />
+
+
+<style type=text/css>
+/* Literals are blocks, maybe not the best name. */
+.literal {
+  background-color: #EEE;
+  padding: 0.5em;
+}
+
+/* Override what's in the google-code-prettify CSS */
+pre.prettyprint {
+  background-color: #EEE;
+  padding: 0.5em;
+  border: none;
+}
+
+/* Make keywords bold, and comments italicized.
+See http://google-code-prettify.googlecode.com/svn/trunk/src/prettify.css 
+*/
+.kwd { color: #008; font-weight: bold; }
+.com { color: #800; font-style: italic; }
+
+/* Inline code */
+code {
+  color: green;
+}
+
+.footnotes {
+  font-size: small;
+}
+
+</style>
+</head>
+
+<body onload="prettyPrint();">
+<table>
+  <tr>
+    <td>
+    </td>
+    <td width="40%">
+<p>
+<b>This CGI script as a live example</b>: <a href="http://www.chubot.org/json-template/cgi-bin/examples/reusing_the_inside.py/">http://www.chubot.org/json-template/cgi-bin/examples/reusing_the_inside.py/</a>
+</p>
+
+<p>
+<b>Raw Source Code</b>: <a href="http://json-template.googlecode.com/svn/trunk/python/examples/reusing_the_inside.py">http://json-template.googlecode.com/svn/trunk/python/examples/reusing_the_inside.py</a>
+</p>
+
+
+<pre class="prettyprint literal lang-py">#!/usr/bin/python -S
+"""reusing_the_inside.py
+
+Example of reusing a "panel" or subcomponent across multiple pages.
+"""
+
+import cgi
+import os
+import sys
+
+try:
+  import jsontemplate
+except ImportError:
+  # For development
+  sys.path.insert(0, '..')
+  import jsontemplate
+
+
+# This builds on reusing_the_outside.py.  Read that first if you haven't.
+#
+# Now let's add a *list* of user profiles to page one ...
+
+PAGE_ONE_DATA = {
+    'title': "List of profiles",
+    'profiles': [
+        { 'name': 'Itchy',
+          'pic_url': 'http://www.anvari.org/db/cols/'
+                     'The_Simpsons_Characters_Picture_Gallery/Itchy.gif',
+          },
+        { 'name': 'Scratchy',
+          'pic_url': 'http://www.tvacres.com/images/scratchy2.jpg',
+          },
+        ],
+    'ONE_THIRD': 1.0 / 3,  # to show how to format a floating point number.
+    }
+
+# ... and a *single* profile to page two.
+
+PAGE_TWO_DATA = {
+    'title': 'Profile page for Ralph',
+    'profile': {
+        'name': 'Ralph Wiggum',
+        'pic_url': 'http://www.anvari.org/db/cols/'
+                   'The_Simpsons_Characters_Picture_Gallery/Ralph_Wiggum.gif',
+        },
+    }
+
+
+# Define a template for the user profile.  This is the thing we're going to
+# reuse across multiple pages.
+#
+# (This is also an example of the FromString construction method, which allows
+# compilation options in the template string itself).
+
+USER_PROFILE_TEMPLATE = jsontemplate.FromString("""\
+default-formatter: html
+
+&lt;center&gt; &lt;!-- Good old center tag --&gt;
+  &lt;img src="{pic_url}" /&gt;&lt;br&gt;
+  &lt;b&gt;
+  &lt;a href="http://google.com/search?q={name|url-param-value}"&gt;
+  {name}
+  &lt;/a&gt;
+  &lt;/b&gt;
+&lt;/center&gt;
+""")
+
+
+# Now we define a wrapper for templates that can render user profiles.
+#
+# To do this, we must specify a *function* MoreFormatters that maps formatter
+# names (strings in the template) to other functions (which take *JSON node*
+# values and return strings to be output in the template).
+
+
+def MoreFormatters(formatter_name):
+
+  # TIP: Name formatters to be read with "as" in the middle.  They should be
+  # nouns that describe what is returned:
+  #
+  # "itchy profile node as a user profile"
+  # "name as html"
+  # "query as html-attr-value"
+  #
+  # We want to write things as {itchy_profile|user-profile}, so:
+
+  if formatter_name == 'user-profile':
+    # We are returning a function (or more specifically a 'bound method' in
+    # Python)
+    #
+    # Note that this function will only work on valid profiles, which are
+    # dictionaries.
+    return USER_PROFILE_TEMPLATE.expand
+
+  elif formatter_name.startswith('%'):
+    # This is also a function.  It allows use printf style formatting in
+    # templates, e.g. '{percent|%.3f}'
+    #
+    # Note that this function will only work on atoms.
+    return lambda x: formatter_name % x
+
+  else:
+    # We don't recognize the formatter_name, so return None.  The built-in set
+    # of default formatters will now be consulted.
+    return None
+
+
+# Wrapper for templates that can use the |user-profile formatter
+
+def TemplateThatCanRenderProfiles(template_str):
+  return jsontemplate.Template(
+      template_str, more_formatters=MoreFormatters, default_formatter='html')
+
+
+# On page one, we show a table where each cell is a user profile.  Things to
+# note:
+#
+# 1. If profiles is [], then the &lt;table&gt;&lt;/table&gt; tags aren't shown at all, which
+# is what you want.
+#
+# 2. The @ symbol means the *cursor*.  
+#    a. '.section profiles' puts the cursor in the "profiles" node.
+#    b. '.repeated section @' means repeat over the current node, which is
+#    "profiles".
+#    c. Now we are in a repeated section, and the cursor traverses over the
+#    individual items in the JSON array.
+#
+# 3. We are formatting the cursor values in the repeated section (which are
+# dictionaries in this case) as a user profile.
+
+PAGE_ONE_TEMPLATE = TemplateThatCanRenderProfiles("""\
+&lt;b&gt;{title}&lt;/b&gt;
+
+{.section profiles}
+  &lt;table border=1 width="100%"&gt;&lt;tr&gt;
+  {.repeated section @}
+    &lt;td&gt;{@|user-profile}&lt;/td&gt;
+  {.end}
+  &lt;/tr&gt;&lt;/table&gt;
+{.end}
+
+
+&lt;!-- You don't need to read this part yet --&gt;
+
+&lt;p&gt;
+OK that worked well.  We have multiple profiles on the page, without mentioning
+the details of how format profiles in the template for this page.  That logic is
+&lt;b&gt;encapsulated&lt;/b&gt; in its own template and can be &lt;b&gt;reused&lt;/b&gt; across multiple
+pages.  &lt;/p&gt;
+
+&lt;p&gt;Oh yeah, and to demonstrate that we also enabled &lt;code&gt;printf&lt;/code&gt;-style
+formatting in &lt;code&gt;MoreFormatters&lt;/code&gt;, here we format the variable
+&lt;code&gt;ONE_THIRD&lt;/code&gt; to two significant places, using the syntax
+&lt;code&gt;{.meta-left}ONE_THIRD|%.2f{.meta-right}&lt;/code&gt;:
+&lt;/p&gt;
+&lt;p&gt;
+&lt;b&gt;{ONE_THIRD|%.2f}&lt;/b&gt;.
+&lt;/p&gt;
+
+&lt;p&gt;
+Easy.
+&lt;/p&gt;
+""")
+
+# Now on page two, we just show the profile itself, along with the *literal
+# HTML* of the profile, "for debugging purposes".  This demonstrates *chaining*
+# of formatters.
+#
+# Can be read: "the profile formatted as a user profile, as escaped HTML"
+
+PAGE_TWO_TEMPLATE = TemplateThatCanRenderProfiles("""\
+{profile|user-profile}
+
+&lt;p&gt;Here is the HTML for the profile above:&lt;/p&gt;
+
+&lt;pre&gt;{profile|user-profile|html}&lt;/pre&gt;
+""")
+
+
+# The same HTML template from reusing_the_outside.py.
+
+HTML_TEMPLATE = jsontemplate.Template("""
+&lt;html&gt;
+  &lt;head&gt;
+    &lt;title&gt;{title}&lt;/title&gt;
+  &lt;/head&gt;
+  &lt;body&gt;{body|raw}&lt;/body&gt;
+&lt;/html&gt;
+""", default_formatter='html')
+
+
+# Same site as last time.
+#
+# Now go back to the 'Design Minimalism' blog post (linked from
+# http://code.google.com/p/json-template/).
+
+def Site(path_info):
+  """Returns an HTML page."""
+
+  if path_info == '/one':
+    body = PAGE_ONE_TEMPLATE.expand(PAGE_ONE_DATA)
+    title = PAGE_ONE_DATA['title']
+  elif path_info == '/two':
+    body = PAGE_TWO_TEMPLATE.expand(PAGE_TWO_DATA)
+    title = PAGE_TWO_DATA['title']
+  else:
+    # Note: Request it with trailing slash: cgi-bin/reusing_the_inside.py/
+    body = """
+    &lt;p&gt;&lt;a href="one"&gt;List of Profiles&lt;/a&gt; &lt;a href="two"&gt;Single Profile&lt;/a&gt;&lt;/p&gt;
+    &lt;p&gt;(&lt;b&gt;View Source&lt;/b&gt; to see that both are using the same HTML for the
+    profile)&lt;/p&gt;
+    """
+    title = 'Index'
+
+  return HTML_TEMPLATE.expand({'body': body, 'title': title})
+
+
+def main():
+  """Returns an exit code."""
+
+  print 'Content-Type: text/html'
+  print
+  print Site(os.getenv('PATH_INFO'))
+
+
+if __name__ == '__main__':
+  main()
+</pre>
+
+    </td> 
+    <td>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript">
+try {
+var pageTracker = _gat._getTracker("UA-7815217-2");
+pageTracker._trackPageview();
+} catch(err) {}</script>
+</body>
+
+</html>
