@@ -323,6 +323,27 @@ class SectionsTest(testy.PyUnitCompatibleTest):
           7 8 9 
         """), ignore_all_whitespace=True)
 
+  @testy.no_verify('php', 'java')
+  def testNestedAnonymousRepeatedSectionsWithIndex(self):
+    t = testy.ClassDef(
+        B("""
+        {.repeated section cells}
+          {@index} : {.repeated section @}{@index}{@}-{.end}
+        {.end}
+        """))
+
+    d = {
+        'cells': [
+            ['a', 'b', 'c'],
+            ['d', 'e', 'f'],
+            ],
+        }
+
+    self.verify.Expansion(t, d, B("""
+          1 : 1a-2b-3c-
+          2 : 1d-2e-3f-
+        """), ignore_all_whitespace=True)
+
   def testRepeatedSectionAtRoot(self):
     # This tests expansion of a JSON *list* -- no dictionary in sight
 
