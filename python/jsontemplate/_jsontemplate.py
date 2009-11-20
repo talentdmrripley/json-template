@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# $Id: _jsontemplate.py 290 2009-09-26 18:39:58Z andy@chubot.org $
-
 """Python implementation of json-template.
 
 JSON Template is a minimal and powerful templating language for transforming a
