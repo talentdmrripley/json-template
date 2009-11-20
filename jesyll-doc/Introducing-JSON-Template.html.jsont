@@ -1,3 +1,7 @@
+---
+$filename/example1: testTableExample-01.html
+template: html
+---
 meta: {{}}
 default-formatter: raw
 

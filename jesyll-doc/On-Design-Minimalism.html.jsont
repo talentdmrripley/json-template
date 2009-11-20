@@ -1,3 +1,7 @@
+---
+$filename/table-of-contents: __ODM-TOC.html
+template: html
+---
 meta: {{}}
 default-formatter: raw
 
