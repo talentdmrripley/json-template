@@ -140,6 +140,21 @@ var SectionsTest = {
   }
 };
 
+// Custom context.  IMPORTANT: We're only testing simple substitution now,
+// not iteration on the context.
+var CustomContext = function() {
+  return {
+    get: function(name) {
+      if (name == 'name') {
+        return 'World';
+      } else if (name == 'get') {
+        return 'dummy';
+      }
+      return undefined;
+   }
+  }
+};
+
 var ContextTest = {
   suiteName: 'ContextTest',
 
@@ -150,22 +165,18 @@ var ContextTest = {
     var actual = t.expand({'name': 'World', 'get': 'dummy'});
     jsUnity.assertions.assertEqual(actual, 'Hello World (dummy)');
 
-    // Custom context.  IMPORTANT: We're only testing simple substitution now,
-    // not iteration on the context.
-    var Context = function() {
-      return {
-        get: function(name) {
-          if (name == 'name') {
-            return 'World';
-          } else if (name == 'get') {
-            return 'dummy';
-          }
-          return undefined;
-       }
-      }
-    };
-    actual = t.expand(Context());
+    actual = t.expand(CustomContext());
     jsUnity.assertions.assertEqual(actual, 'Hello World (dummy)');
+  },
+
+  testBadContextThrowsException: function () {
+    var t = jsontemplate.Template("{junk}");
+    try {
+      var actual = t.expand(CustomContext());
+    } catch (e) {
+      jsUnity.assertions.assertEqual(e.name, 'UndefinedVariable');
+      jsUnity.assertions.assertEqual(e.message, 'junk is not defined');
+    }
   }
 };
 
