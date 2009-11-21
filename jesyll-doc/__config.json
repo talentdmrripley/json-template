@@ -1,0 +1,11 @@
+# JSON Template docs
+{ "globals": {
+    
+  # TODO: don't hotlink it
+  "prettify-base-url":
+      "http://google-code-prettify.googlecode.com/svn/trunk/src/",
+
+  "raw-base": "http://json-template.googlecode.com/svn/trunk/python/examples/",
+  "live-base": "http://www.chubot.org/json-template/cgi-bin/examples/"
+  }
+}

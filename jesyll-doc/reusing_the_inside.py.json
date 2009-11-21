@@ -1,14 +1,15 @@
 ---
 template: html
+title: yo
 ---
-{ "title": "Hello in JSON",
-  # TODO: Expand templates
-  "$template.raw": "{raw-base}hello.py/",
-  "$template.live": "{live-base}hello.py",
-  "$filename/code": "reusing_the_inside.py",
+#$template/title: {filename}!
+{ 
+  "filename": "reusing_the_inside.py",
 
-  "raw": "dummy raw",
-  "live": "dummy live",
+  "$template/raw": "{raw-base}{filename}/",
+  "$template/live": "{live-base}{filename}",
+
+  "$filename/code": "reusing_the_inside.py",
 
   # TODO: Should this be template or $template?
   "$template": "python-examples"
