@@ -1,9 +1,7 @@
----
-template: html
-title: yo
----
-#$template/title: {filename}!
 { 
+  "title": "yo",
+  "template": "html",
+
   "filename": "reusing_the_inside.py",
 
   "$template/raw": "{raw-base}{filename}/",
