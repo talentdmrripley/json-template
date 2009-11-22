@@ -1,5 +1,5 @@
 ---
-$filename/example1: testTableExample-01.html
+&example1: testTableExample-01.html
 .template: html
 ---
 meta: {{}}
