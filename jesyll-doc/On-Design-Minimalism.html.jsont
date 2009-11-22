@@ -1,5 +1,5 @@
 ---
-$filename/table-of-contents: __ODM-TOC.html
+&table-of-contents: __ODM-TOC.html
 .template: html
 ---
 meta: {{}}

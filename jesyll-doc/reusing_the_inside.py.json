@@ -1,14 +1,14 @@
 { 
-  "title": "yo",
-  "template": "html",
+  "$title": "source listing: {filename}",
+  ".template": "html",
 
   "filename": "reusing_the_inside.py",
 
-  "$template/raw": "{raw-base}{filename}/",
-  "$template/live": "{live-base}{filename}",
+  "$raw": "{raw-base}{filename}/",
+  "$live": "{live-base}{filename}",
 
-  "$filename/code": "reusing_the_inside.py",
+  "&code": "reusing_the_inside.py",
 
-  # TODO: Should this be template or $template?
-  "$template": "python-examples"
-  }
+  # TODO: Make this work
+  "&$body": "__templates/python-examples.jsont",
+}
