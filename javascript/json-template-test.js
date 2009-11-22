@@ -180,7 +180,20 @@ var ContextTest = {
   }
 };
 
+// Test for public APIs
+var PublicTest = {
+  suiteName: 'PublicTest',
+
+  testExpand: function () {
+    var s = jsontemplate.expand(
+        "Hello [name] ([get])", 
+        {'name': 'World', 'get': 'dummy'}, {meta: '[]'});
+
+    jsUnity.assertions.assertEqual(s, 'Hello World (dummy)');
+  }
+};
+
 var results = jsUnity.run(
-    FunctionsApiTest, FromStringTest, SectionsTest, ContextTest);
+    FunctionsApiTest, FromStringTest, SectionsTest, ContextTest, PublicTest);
 
 }();
