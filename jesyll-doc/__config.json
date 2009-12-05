@@ -1,5 +1,5 @@
 # JSON Template docs
-{ "globals": {
+{ "vars": {
     
   # TODO: don't hotlink it
   "prettify-base-url":
