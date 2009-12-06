@@ -128,6 +128,12 @@ var FromStringTest = {
     var t = jsontemplate.fromString('meta: []\n');
     jsUnity.assertions.assertEqual(
         t.expand({'foo': '<a>'}), '');
+  },
+
+  testNoOptions: function () {
+    var t = jsontemplate.fromString('hello\n');
+    jsUnity.assertions.assertEqual(
+        t.expand({'foo': '<a>'}), 'hello\n');
   }
 };
 
