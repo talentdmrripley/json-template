@@ -196,14 +196,15 @@ var ChainedRegistry = function(registries) {
 // Template implementation
 //
 
-function _ScopedContext(context, undefined_str) {
+// Context wraps a data dictionary and makes it "walkable".
+function Context(context, undefined_str) {
   // The stack contains:
   //   The current context (an object).
   //   An iteration index.  -1 means we're NOT iterating.
   var stack = [{context: context, index: -1}];
 
   return {
-    PushSection: function(name) {
+    pushName: function(name) {
       if (name === undefined || name === null) {
         return null;
       }
@@ -217,7 +218,7 @@ function _ScopedContext(context, undefined_str) {
       return new_context;
     },
 
-    Pop: function() {
+    pop: function() {
       stack.pop();
     },
 
@@ -409,7 +410,7 @@ function _DoSubstitute(statement, context, callback) {
 function _DoSection(args, context, callback) {
 
   var block = args;
-  var value = context.PushSection(block.section_name);
+  var value = context.pushName(block.section_name);
   var do_section = false;
 
   // "truthy" values should have their sections executed.
@@ -423,9 +424,9 @@ function _DoSection(args, context, callback) {
 
   if (do_section) {
     _Execute(block.Statements(), context, callback);
-    context.Pop();
+    context.pop();
   } else {  // Empty list, None, False, etc.
-    context.Pop();
+    context.pop();
     _Execute(block.Statements('or'), context, callback);
   }
 }
@@ -453,7 +454,7 @@ function _DoPredicates(args, context, callback) {
 function _DoRepeatedSection(args, context, callback) {
   var block = args;
 
-  items = context.PushSection(block.section_name);
+  items = context.pushName(block.section_name);
   pushed = true;
 
   if (items && items.length > 0) {
@@ -479,7 +480,7 @@ function _DoRepeatedSection(args, context, callback) {
     _Execute(block.Statements('or'), context, callback);
   }
 
-  context.Pop();
+  context.pop();
 }
 
 
@@ -761,7 +762,7 @@ Template.prototype.render = function(context, callback) {
   // can use.
   if (typeof context.get !== 'function') {
     // options.undefined_str can either be a string or undefined
-    context = _ScopedContext(context, this._options.undefined_str);
+    context = Context(context, this._options.undefined_str);
   }
   _Execute(this._program.Statements(), context, callback);
 };
@@ -841,7 +842,7 @@ return {
     Template: Template, HtmlEscape: HtmlEscape,
     FunctionRegistry: FunctionRegistry, SimpleRegistry: SimpleRegistry,
     CallableRegistry: CallableRegistry, ChainedRegistry: ChainedRegistry,
-    fromString: fromString, expand: expand,
+    fromString: fromString, expand: expand, Context: Context,
     // Private but exposed for testing
     _Section: _Section
     };
