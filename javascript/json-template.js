@@ -243,14 +243,8 @@ function _ScopedContext(context, undefined_str) {
       return true;  // OK, we mutated the stack
     },
 
-    _Undefined: function(name) {
-      if (undefined_str === undefined) {
-        throw {
-          name: 'UndefinedVariable', message: name + ' is not defined'
-        };
-      } else {
-        return undefined_str;
-      }
+    _Undefined: function() {
+      return (undefined_str === undefined) ? undefined : undefined_str;
     },
 
     _LookUpStack: function(name) {
@@ -281,14 +275,15 @@ function _ScopedContext(context, undefined_str) {
       if (name == '@') {
         return stack[stack.length-1].context;
       }
-      var parts = name.split('.');
-      var value = this._LookUpStack(parts[0]);
-      if (parts.length > 1) {
-        for (var i=1; i<parts.length; i++) {
-          value = value[parts[i]];
-          if (value === undefined) {
-            return this._Undefined(parts[i]);
-          }
+      var parts = name.split('.'),
+          value = this._LookUpStack(parts[0]);  // First lookup is special 
+      if (value === undefined) {
+        return this._Undefined();
+      }
+      for (var i=1; i<parts.length; i++) {
+        value = value[parts[i]];
+        if (value === undefined) {
+          return this._Undefined();
         }
       }
       return value;
@@ -393,9 +388,6 @@ function _Execute(statements, context, callback) {
 
 function _DoSubstitute(statement, context, callback) {
   var value = context.get(statement.name);
-  // A user-provided context shouldn't return undefined -- it should return a
-  // string (undefined_str) or raise an exception.  As a safeguard, throw an
-  // exception here on undefined.
   if (value === undefined) {
     throw {
       name: 'UndefinedVariable', message: statement.name + ' is not defined'
