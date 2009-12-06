@@ -35,23 +35,6 @@ TEST_CASE_INDEX_HTML_TEMPLATE = """
 {.end}
 """
 
-_HEADING_RE = re.compile(
-  '<a name="(?P<target>[^"]+)"><h3>(?P<name>[^<]+)</h3></a>')
-
-def MakeToc(blog_template):
-  """
-  """
-  headings = []
-  for match in _HEADING_RE.finditer(blog_template):
-    headings.append(
-        dict(target=match.group('target'), name=match.group('name')))
-
-  print headings
-  toc = jsontemplate.expand(TOC_TEMPLATE, {'headings': headings})
-  print toc
-  return toc
-
-
 def BlogPosts(directory):
   assert directory.endswith('/')
 

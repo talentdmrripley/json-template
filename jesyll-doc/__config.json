@@ -6,6 +6,9 @@
       "http://google-code-prettify.googlecode.com/svn/trunk/src/",
 
   "raw-base": "http://json-template.googlecode.com/svn/trunk/python/examples/",
-  "live-base": "http://www.chubot.org/json-template/cgi-bin/examples/"
+  "live-base": "http://www.chubot.org/json-template/cgi-bin/examples/",
+
+  # Every page under this dir uses the same analytics account
+  "google-analytics-id": "UA-7815217-2"
   }
 }
