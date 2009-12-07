@@ -1,6 +1,7 @@
 ---
 { "&table-of-contents": "__ODM-TOC.html",
   ".template": "html",
+  "pretty": true,
   "img-right": {
     "src": "thagomizer.jpg",
     "href": "http://en.wikipedia.org/wiki/Thagomizer",
