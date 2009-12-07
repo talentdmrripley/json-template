@@ -73,7 +73,7 @@ default-formatter: html
 # values and return strings to be output in the template).
 
 
-def MoreFormatters(formatter_name):
+class MoreFormatters(object):
 
   # TIP: Name formatters to be read with "as" in the middle.  They should be
   # nouns that describe what is returned:
@@ -84,32 +84,34 @@ def MoreFormatters(formatter_name):
   #
   # We want to write things as {itchy_profile|user-profile}, so:
 
-  if formatter_name == 'user-profile':
-    # We are returning a function (or more specifically a 'bound method' in
-    # Python)
-    #
-    # Note that this function will only work on valid profiles, which are
-    # dictionaries.
-    return USER_PROFILE_TEMPLATE.expand
+  def LookupWithType(self, user_str):
 
-  elif formatter_name.startswith('%'):
-    # This is also a function.  It allows use printf style formatting in
-    # templates, e.g. '{percent|%.3f}'
-    #
-    # Note that this function will only work on atoms.
-    return lambda x: formatter_name % x
+    if user_str == 'user-profile':
+      # We are returning a function (or more specifically a 'bound method' in
+      # Python)
+      #
+      # Note that this function will only work on valid profiles, which are
+      # dictionaries.
+      return USER_PROFILE_TEMPLATE.expand, None, jsontemplate.SIMPLE_FUNC
 
-  else:
-    # We don't recognize the formatter_name, so return None.  The built-in set
-    # of default formatters will now be consulted.
-    return None
+    elif user_str.startswith('%'):
+      # This is also a function.  It allows use printf style formatting in
+      # templates, e.g. '{percent|%.3f}'
+      #
+      # Note that this function will only work on atoms.
+      return (lambda x: user_str % x), None, jsontemplate.SIMPLE_FUNC
+
+    else:
+      # We don't recognize the formatter_name, so return None.  The built-in set
+      # of default formatters will now be consulted.
+      return None, None, None
 
 
 # Wrapper for templates that can use the |user-profile formatter
 
 def TemplateThatCanRenderProfiles(template_str):
   return jsontemplate.Template(
-      template_str, more_formatters=MoreFormatters, default_formatter='html')
+      template_str, more_formatters=MoreFormatters(), default_formatter='html')
 
 
 # On page one, we show a table where each cell is a user profile.  Things to
