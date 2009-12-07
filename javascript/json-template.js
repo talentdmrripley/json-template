@@ -841,7 +841,7 @@ return {
     Template: Template, HtmlEscape: HtmlEscape,
     FunctionRegistry: FunctionRegistry, SimpleRegistry: SimpleRegistry,
     CallableRegistry: CallableRegistry, ChainedRegistry: ChainedRegistry,
-    fromString: fromString, expand: expand, Context: Context,
+    fromString: fromString, expand: expand,
     // Private but exposed for testing
     _Section: _Section
     };
