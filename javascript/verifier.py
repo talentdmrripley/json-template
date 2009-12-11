@@ -27,6 +27,7 @@ if __name__ == '__main__':
   sys.path.insert(0, os.path.join(os.path.dirname(sys.argv[0]), '..'))
 
 from pan.core import json
+from pan.core import os_process
 from pan.core import records
 from pan.test import testy
 
@@ -138,6 +139,7 @@ class V8ShellVerifier(JavaScriptVerifier):
     JavaScriptVerifier.__init__(
         self, script_path, helpers_path, debug_mode=debug_mode)
     self.v8_path = v8_path
+    self.runner = os_process.Runner()
 
     # Flip this when you can't figure out what's going on in v8!
     #self.debug_mode = True
@@ -158,12 +160,8 @@ class V8ShellVerifier(JavaScriptVerifier):
 
     argv = [
         self.v8_path, self.script_path, self.helpers_path, temp_js_file.name]
-    # TODO: Use a  log
-    print argv
 
-    p = subprocess.Popen(
-        argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-        universal_newlines=True)  # for Windows too
+    p = self.runner.Pipe(argv)
 
     # Read the lines one at a time.  This makes it possible to see if we have an
     # infinite loop.
