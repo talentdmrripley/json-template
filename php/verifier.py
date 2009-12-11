@@ -19,12 +19,9 @@
 __author__ = 'Miguel Ibero'
 
 import os
-import subprocess
-import sys
-import tempfile
 
 from pan.core import json
-from pan.core import records
+from pan.core import os_process
 from pan.test import testy
 
 
@@ -39,6 +36,7 @@ class PhpVerifier(testy.StandardVerifier):
     testy.StandardVerifier.__init__(self)
     self.php_interpreter_path = php_interpreter_path
     self.script_path = script_path
+    self.runner = os_process.Runner()
 
   def CheckIfRunnable(self):
     if not os.path.exists(self.php_interpreter_path):
@@ -52,30 +50,19 @@ class PhpVerifier(testy.StandardVerifier):
     argv = [
         self.php_interpreter_path, self.script_path,
         template_str, json.dumps(dictionary), json.dumps(options)]
-    p = subprocess.Popen(
-        argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-        universal_newlines=True)  # for Windows too
-
-    stdout = p.stdout.read()
-    print stdout
-    stderr = p.stderr.read()
-    p.stdout.close()
-    p.stderr.close()
-    exit_code = p.wait()
+    result = self.runner.Result(argv)
 
     # Important: keep line breaks
-    lines = stdout.splitlines(True)
-    # Filter out log messages
-    stdout = ''.join(lines)
+    lines = result.stdout.splitlines(True)
 
     exception = None
     for line in lines:
       if line.startswith('EXCEPTION: '):
         exception = line[len('EXCEPTION: '):]
 
-    return records.Record(
-        stderr=stderr, stdout=stdout, exit_code=exit_code,
-        exception=exception)
+    result.exception = exception
+
+    return result
 
   def Expansion(
       self, template_def, dictionary, expected, ignore_whitespace=False,
