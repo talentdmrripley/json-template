@@ -1,0 +1,23 @@
+<html>
+  <head>
+
+  <script src="json-template.js" > </script>
+  <script src="json-template-test.js"> </script>
+  <script>
+    var t = jsontemplate.fromString(
+        'meta: []\n' + 
+        '\n' +
+        '[foo]\n');
+    var text = t.expand({'foo': 'hello'});
+    document.write("<pre>\n");
+    document.write("jsontemplate: " + jsontemplate + "\n");
+    document.write(text);
+    document.write("</pre>\n");
+  </script>
+
+  </head>
+
+<body>
+  Stub for debugging IE
+</body>
+</html>

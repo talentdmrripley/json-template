@@ -1,0 +1,10 @@
+Java version
+
+Tested on OSX with Apple's Java 1.6.0_07 and 1.5.0_16.
+
+(Perhaps needlessly) uses Java 5 features (generics, ConcurrentHashMap).
+
+No external dependencies, but the test interface (jsontemplate_test.jar) uses
+json.org's JSON library (included).
+
+Currently uses a Makefile to build. Ant script contributions welcome.

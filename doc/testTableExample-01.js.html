@@ -1,0 +1,33 @@
+<html>
+  <head>
+    <script type="text/javascript" src="../javascript/json-template.js">
+    </script>
+    <script type="text/javascript">
+    function write() {
+      var t = jsontemplate.Template("{# This is a comment and will be removed from the output.}\n\n{.section songs}\n  <h2>Songs in '{playlist-name}'</h2>\n\n  <table width=\"100%\">\n  {.repeated section @}\n    <tr>\n      <td><a href=\"{url-base|htmltag}{url|htmltag}\">Play</a>\n      <td><i>{title}</i></td>\n      <td>{artist}</td>\n    </tr>\n  {.end}\n  </table>\n{.or}\n  <p><em>(No page content matches)</em></p>\n{.end}\n");
+      var s = t.expand({
+  "url-base": "http://example.com/music/", 
+  "playlist-name": "Epic Playlist", 
+  "songs": [
+    {
+      "url": "1.mp3", 
+      "artist": "Grayceon", 
+      "title": "Sounds Like Thunder"
+    }, 
+    {
+      "url": "2.mp3", 
+      "artist": "Thou", 
+      "title": "Their Hooves Carve Craters in the Earth"
+    }
+  ]
+});
+      document.getElementById("replace").innerHTML = s;
+    }
+    </script>
+  </head>
+  <body onload="write();">
+    <h4>Here is the same example rendered in JavaScript.  <b>View Source</b> to
+    see how it works.</h4>
+    <div id="replace"></div>
+  </body>
+</html>
