@@ -38,7 +38,7 @@ class LuaVerifier(base_verifier.JsonTemplateVerifier):
     self.lua_exe = lua_exe
     # Set the working directory to where verifier.lua and Json.lua live --
     # otherwise require doesn't work
-    self.runner = os_process.Runner(cwd=lua_dir)
+    self.runner = os_process.Runner(cwd=lua_dir, universal_newlines=True)
     self.script_path = os.path.join(lua_dir, 'verifier.lua')
 
   def _RunScript(self, template_def, dictionary, all_formatters=False):
@@ -47,8 +47,11 @@ class LuaVerifier(base_verifier.JsonTemplateVerifier):
     argv = [
         self.lua_exe, self.script_path, template_str, json.dumps(dictionary),
         json.dumps(options)]
-    print argv
-    return self.runner.Result(argv)
+    result = self.runner.Result(argv)
+    # Remove the extra newline from "print"
+    assert result.stdout.endswith('\n')
+    result.stdout = result.stdout[:-1]
+    return result
 
   def Expansion(
       self, template_def, dictionary, expected, ignore_whitespace=False,
