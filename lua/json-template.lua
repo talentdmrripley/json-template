@@ -3,5 +3,11 @@
 module("json-template")
 
 function Template(template_str)
-  return 5
+  self = {}
+
+  return {
+    expand = function(data)
+      return template_str
+    end
+  }
 end
