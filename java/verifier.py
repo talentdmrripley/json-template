@@ -18,12 +18,11 @@
 
 __author__ = 'Andy Chu, William Shallum'
 
-import subprocess
-import sys
-import tempfile
 import os
+import tempfile
 
 from pan.core import json
+from pan.core import os_process
 from pan.core import records
 from pan.test import testy
 
@@ -40,6 +39,7 @@ class JavaVerifier(testy.StandardVerifier):
     self.java_interpreter_path = java_interpreter_path
     self.impl_path = impl_path
     self.test_classes_path = test_classes_path
+    self.runner = os_process.Runner()
 
   def CheckIfRunnable(self):
     if not os.path.exists(self.java_interpreter_path):
@@ -61,32 +61,25 @@ class JavaVerifier(testy.StandardVerifier):
     temp_json_file.flush()
 
     argv = [
-        self.java_interpreter_path, '-cp', self.impl_path + os.path.pathsep + self.test_classes_path, 'jsontemplate_test.Test', temp_json_file.name]
-    p = subprocess.Popen(
-        argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-        universal_newlines=True)  # for Windows too
+        self.java_interpreter_path, '-cp', 
+        # pathset is : or ;
+        self.impl_path + os.path.pathsep + self.test_classes_path, 
+        'jsontemplate_test.Test', temp_json_file.name]
 
-    stdout = p.stdout.read()
-    print stdout
-    stderr = p.stderr.read()
-    p.stdout.close()
-    p.stderr.close()
-    exit_code = p.wait()
+    result = self.runner.Result(argv)
+
     temp_json_file.close()  # deletes the file
 
     # Important: keep line breaks
-    lines = stdout.splitlines(True)
-    # Filter out log messages
-    stdout = ''.join(lines)
+    lines = result.stderr.splitlines(True)
 
     exception = None
-    for line in stderr.splitlines(True):
+    for line in lines:
       if line.startswith('EXCEPTION: '):
         exception = line[len('EXCEPTION: '):]
 
-    return records.Record(
-        stderr=stderr, stdout=stdout, exit_code=exit_code,
-        exception=exception)
+    result.exception = exception
+    return result
 
   def Expansion(
       self, template_def, dictionary, expected, ignore_whitespace=False,
@@ -108,9 +101,13 @@ class JavaVerifier(testy.StandardVerifier):
 
   def EvaluationError(self, exception, template_def, data_dict):
     result = self._RunScript(template_def, data_dict)
-    self.In('EXCEPTION: ' + exception.__name__, 'stderr: %r\nstdout: %s' % (result.stderr, result.stdout))
+    self.In(
+        'EXCEPTION: ' + exception.__name__,
+        'stderr: %r\nstdout: %s' % (result.stderr, result.stdout))
 
   def CompilationError(self, exception, *args, **kwargs):
     template_def = testy.ClassDef(*args, **kwargs)
     result = self._RunScript(template_def, {})
-    self.In('EXCEPTION: ' + exception.__name__, 'stderr: %r\nstdout: %s' % (result.stderr, result.stdout))
+    self.In(
+        'EXCEPTION: ' + exception.__name__,
+        'stderr: %r\nstdout: %s' % (result.stderr, result.stdout))
