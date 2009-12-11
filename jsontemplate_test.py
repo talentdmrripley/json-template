@@ -44,6 +44,7 @@ from javascript import verifier as javascript_verifier
 from javascript import browser_tests
 from java import verifier as java_verifier
 from php import verifier as php_verifier
+from lua import verifier as lua_verifier
 # import *must* be relative to python package to work
 import verifier as python_verifier
 
@@ -1242,7 +1243,6 @@ def main(argv):
       this_dir, 'javascript', 'v8shell', 'linux-i686', 'shell')
   default_java = os.path.join(
       os.getenv('JAVA_HOME', ''), 'bin', 'java')
-  default_php = 'php'
 
   run_params = testy.TEST_RUN_PARAMS + [
       params.OptionalString(
@@ -1252,14 +1252,18 @@ def main(argv):
           'java-launcher', default=default_java,
           help='Location of the Java launcher to run Java tests'),
       params.OptionalString(
-          'php-launcher', default=default_php,
+          'php-launcher', default='php',
           help='Location of the PHP launcher to run PHP tests'),
+      params.OptionalString(
+          'lua-launcher', default='lua.bat',  # I have a batch file that points
+          help='Location of the standlone Lua interpreter'),
 
       # Until we have better test filtering:
       params.OptionalBoolean('python', help='Run Python tests'),
       params.OptionalBoolean('java', help='Run Java tests'),
       params.OptionalBoolean('php', help='Run PHP tests'),
       params.OptionalBoolean('javascript', help='Run JavaScript tests'),
+      params.OptionalBoolean('lua', help='Run Lua tests'),
 
       params.OptionalString(
           'browser-test-out-dir', shortcut='b',
@@ -1297,8 +1301,10 @@ def main(argv):
       options.java_launcher, java_impl, java_test_classes)
 
   php_impl = os.path.join(this_dir, 'php', 'jsontemplate_cmd.php')
-  ph_verifier = php_verifier.PhpVerifier(
-      options.php_launcher, php_impl)
+  ph_verifier = php_verifier.PhpVerifier(options.php_launcher, php_impl)
+
+  lua_dir = os.path.join(this_dir, 'lua')
+  lu_verifier = lua_verifier.LuaVerifier(options.lua_launcher, lua_dir)
 
   filt = testy.MakeTestClassFilter(
       label='multilanguage', regex=options.test_regex)
@@ -1313,6 +1319,7 @@ def main(argv):
     tests.extend(m(js_verifier) for m in multi_tests)
     tests.extend(m(jv_verifier) for m in multi_tests)
     tests.extend(m(ph_verifier) for m in multi_tests)
+    tests.extend(m(lu_verifier) for m in multi_tests)
 
   elif options.python:
     tests = [m(py_verifier) for m in multi_tests]
@@ -1325,6 +1332,9 @@ def main(argv):
 
   elif options.php:
     tests = [m(ph_verifier) for m in multi_tests]
+
+  elif options.lua:
+    tests = [m(lu_verifier) for m in multi_tests]
 
   elif options.doc_output_dir:
     # Generates the HTML fragments.
