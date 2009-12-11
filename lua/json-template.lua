@@ -2,8 +2,9 @@
 
 module("json-template")
 
-function Template(template_str)
+function Template(template_str, options)
   self = {}
+  options = options or {}
 
   return {
     expand = function(data)
