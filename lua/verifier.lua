@@ -3,10 +3,16 @@
 json = require "Json"
 jsontemplate = require "json-template"
 
-o = json.Decode('{"a": 3}')
-print(o)
-print(o.a)
 
-local o = jsontemplate.Template('{foo}')
-print(o)
-print(o.expand('data'))
+template_str = arg[1]
+data_json = arg[2]
+options_json = arg[3]
+-- print (template_str)
+-- print (data_json)
+-- print (options_json)
+
+-- data = json:Decode(data_json)
+-- options = json:Decode(options_json)
+
+local t = jsontemplate.Template(template_str)
+print(t.expand(data_json))
