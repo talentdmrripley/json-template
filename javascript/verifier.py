@@ -19,7 +19,6 @@
 __author__ = 'Andy Chu'
 
 import os
-import subprocess
 import sys
 import tempfile
 
@@ -70,6 +69,8 @@ class JavaScriptVerifier(testy.StandardVerifier):
     self.script_path = script_path
     self.helpers_path = helpers_path
     self.debug_mode = debug_mode
+
+    self.runner = os_process.Runner()
 
   def _MakeTestJs(self, template_def, dictionary):
     template_str = template_def.args[0]
@@ -139,7 +140,6 @@ class V8ShellVerifier(JavaScriptVerifier):
     JavaScriptVerifier.__init__(
         self, script_path, helpers_path, debug_mode=debug_mode)
     self.v8_path = v8_path
-    self.runner = os_process.Runner()
 
     # Flip this when you can't figure out what's going on in v8!
     #self.debug_mode = True
@@ -161,7 +161,7 @@ class V8ShellVerifier(JavaScriptVerifier):
     argv = [
         self.v8_path, self.script_path, self.helpers_path, temp_js_file.name]
 
-    p = self.runner.Pipe(argv)
+    p = self.runner.Pipes(argv)
 
     # Read the lines one at a time.  This makes it possible to see if we have an
     # infinite loop.
@@ -217,7 +217,7 @@ class CScriptVerifier(JavaScriptVerifier):
       print test_js
 
     code = self.script_contents + test_js
-    exit_code, stdout, stderr = RunWithCScript(code)
+    exit_code, stdout, stderr = RunWithCScript(self.runner, code)
 
     if self.debug_mode:
       print 'STDOUT', repr(stdout)
@@ -237,17 +237,14 @@ class CScriptVerifier(JavaScriptVerifier):
         exception=exception)
 
 
-def RunWithCScript(code):
+def RunWithCScript(runner, code):
   """Runs JavaScript code with the Windows cscript interpreter.
 
   Returns:
     A 3 tuple of (exit code, stdout string, stderr string)
   """
-  # TODO: Use test_helpers so I have a log() function here
   argv = ['cscript', '//Nologo', 'javascript/cscript-shell.js']
-  p = subprocess.Popen(argv,
-      stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE,
-      universal_newlines=True)
+  p = runner.Pipes(argv, 'OEI')
   p.stdin.write(code)
   p.stdin.close()
   stdout = p.stdout.read()
