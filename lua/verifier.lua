@@ -7,5 +7,6 @@ o = json.Decode('{"a": 3}')
 print(o)
 print(o.a)
 
-o = jsontemplate.Template('{foo}')
+local o = jsontemplate.Template('{foo}')
 print(o)
+print(o.expand('data'))
