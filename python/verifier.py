@@ -24,10 +24,10 @@ This uses the command line tool python/expand.py to demonstrate one way to test 
 
 __author__ = 'Andy Chu'
 
-import subprocess
 import sys
 
 from pan.core import json
+from pan.core import os_process
 from pan.core import records
 from pan.test import testy
 
@@ -76,24 +76,14 @@ class ExternalVerifier(base_verifier.JsonTemplateVerifier):
   def __init__(self, script_path):
     testy.StandardVerifier.__init__(self)
     self.script_path = script_path
+    self.runner = os_process.Runner(universal_newlines=True)
 
   def _RunScript(self, template_str, dictionary, all_formatters=False):
     data = json.dumps(dictionary)
-    # sys.executable necessary on Windows
-    argv = [sys.executable, self.script_path, template_str, data]
+    argv = [self.script_path, template_str, data]
     if all_formatters:
       argv.append('--more-formatters')
-    print argv
-    p = subprocess.Popen(
-        argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-        universal_newlines=True)  # for Windows too
-    stdout = p.stdout.read()
-    stderr = p.stderr.read()
-    p.stdout.close()
-    p.stderr.close()
-    exit_code = p.wait()
-
-    return records.Record(stderr=stderr, stdout=stdout, exit_code=exit_code)
+    return self.runner.Result(argv)
 
   @staticmethod
   def _MakeTemplateStr(template_def):
