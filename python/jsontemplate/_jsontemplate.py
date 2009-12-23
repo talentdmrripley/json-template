@@ -646,8 +646,16 @@ class _TemplateFormatter(object):
   
   Templates are formatters!  See the "On Design Minimalism" JSON Template
   article.
+
+  A template can recursively call itself by using the special 'SELF' name.
   """
-  def __init__(self):
+  def __init__(self, owner):
+    """
+    Args:
+      owner: The Template instance that owns this formatter.  (There should be
+      exactly one)
+    """
+    self.owner = owner
     self.group = {}
 
   def RegisterGroup(self, group):
@@ -660,6 +668,10 @@ class _TemplateFormatter(object):
   def __call__(self, value, context, args):
     """Called with args[0] as the template name."""
     name = args[0]
+
+    if name == 'SELF':
+      return self.owner.expand(context.Lookup('@'))
+
     t = self.group.get(name)
     if t:
       return t.expand(context.Lookup('@'))
@@ -1065,7 +1077,7 @@ class Template(object):
 
     It also accepts all the compile options that CompileTemplate does.
     """
-    self.template_formatter = _TemplateFormatter()
+    self.template_formatter = _TemplateFormatter(self)
     self._program = CompileTemplate(
         template_str, builder=builder,
         template_formatter=self.template_formatter,

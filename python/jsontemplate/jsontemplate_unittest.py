@@ -417,7 +417,37 @@ class TemplateGroupTest(testy.Test):
         }
         """), ignore_all_whitespace=True)
 
-  # TODO: test SELF recursion
+  def testMutualRecursion(self):
+    data = {
+      'name': '/home',
+      'files': ['a.txt', 'b.txt'],
+      'dirs': [
+        {'name': 'andy', 'files': ['1.txt', '2.txt']},
+        ],
+      }
+
+    t = jsontemplate.Template(
+        B("""
+        {name}
+        {.repeated section dirs}
+          {@|template SELF}
+        {.end}
+        {.repeated section files}
+          {@}
+        {.end}
+        """))
+
+    # TODO: A nicer job with whitespace
+    self.verify.LongStringsEqual(
+        t.expand(data),
+        B("""
+        /home
+        andy
+        1.txt
+        2.txt
+        a.txt
+        b.txt
+        """), ignore_all_whitespace=True)
 
 
 if __name__ == '__main__':
