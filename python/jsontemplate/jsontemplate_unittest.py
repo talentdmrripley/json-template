@@ -272,12 +272,6 @@ class InternalTemplateTest(testy.Test):
     # Only accepts one argument
     self.verify.Raises(TypeError, t.expand, {'name': 'world'}, 'extra')
 
-  def testCompileTemplate(self):
-    program = jsontemplate.CompileTemplate('{}')
-    # If no builder is passed, them CompileTemplate should return a _Section
-    # instance (the root of the program)
-    self.verify.Equal(type(program), jsontemplate._Section)
-
   def testSimpleUnicodeSubstitution(self):
     t = jsontemplate.Template(u'Hello {name}')
 
