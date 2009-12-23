@@ -335,29 +335,19 @@ class FunctionsApiTest(testy.Test):
     self.verify.Equal(t.expand({'name': 'World'}), 'Hello world WORLD')
 
 
-class AdvancedTemplateTest(testy.Test):
+class TemplateGroupTest(testy.Test):
 
-  VERIFIERS = [python_verifier.InternalTemplateVerifier]
-
-  def testRecursiveTemplates(self):
-    # TODO: This doesn't work yet, since I can't pass child_template.expand as a
-    # formatter to child_template.
-    # 
-    # Probably need a TemplateSet abstraction.  And that may need some awareness
-    # of the 'template-file' formatter name.
-    child_template = jsontemplate.Template(
-        B("""
-        - {@}
-        """))
+  def testMakeTemplateGroup(self):
+    child_template = jsontemplate.Template('- {@}')
 
     top = jsontemplate.Template(
         B("""
         Directory listing for {root}
 
         {.repeated section children}
-          {@|child}
+          {@|template child}
         {.end}
-        """), more_formatters={'child': child_template.expand})
+        """))
 
     data = {
       'root': '/home',
@@ -367,8 +357,67 @@ class AdvancedTemplateTest(testy.Test):
         ],
       }
 
-    s = top.expand(data)
-    #print s
+    self.verify.Raises(jsontemplate.EvaluationError, top.expand, data)
+
+    jsontemplate.MakeTemplateGroup({'child': child_template, 'top': top})
+
+    self.verify.LongStringsEqual(
+        top.expand(data),
+        B("""
+        Directory listing for /home
+          - bin
+          - work
+        """))
+
+  def testMutualRecursion(self):
+
+    class NodePredicates(jsontemplate.FunctionRegistry):
+      def Lookup(self, user_str):
+        """The node type is also a predicate."""
+        func = lambda v, context, args: (v['type'] == user_str)
+        return func, None  # No arguments
+
+    expr = jsontemplate.Template(
+        B("""
+        {.if PLUS}
+        {a} + {b}
+        {.or MINUS}
+        {a} - {b}
+        {.or MULT}
+        {a} * {b}
+        {.or DIV}
+        {a} / {b}
+        {.or FUNC}
+        {@|template func}
+        {.end}
+        """), more_predicates=NodePredicates())
+
+    func = jsontemplate.Template(
+        B("""
+        function ({.repeated section params}{@} {.end}) {
+          {.repeated section exprs}
+          {@|template expr}
+          {.end}
+        }
+        """))
+
+    jsontemplate.MakeTemplateGroup({'func': func, 'expr': expr})
+
+    self.verify.LongStringsEqual(
+        expr.expand({'type': 'PLUS', 'a': 1, 'b': 2}),
+        '1 + 2\n')
+
+    self.verify.LongStringsEqual(
+        expr.expand({'type': 'FUNC', 'params': ['x'],
+                     'exprs': [{'type': 'PLUS', 'a': 3, 'b': 4}]}),
+        B("""
+        function (x ) {
+          3 + 4
+
+        }
+        """), ignore_all_whitespace=True)
+
+  # TODO: test SELF recursion
 
 
 if __name__ == '__main__':
