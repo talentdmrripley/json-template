@@ -417,7 +417,7 @@ class TemplateGroupTest(testy.Test):
         }
         """), ignore_all_whitespace=True)
 
-  def testMutualRecursion(self):
+  def testSelfRecursion(self):
     data = {
       'name': '/home',
       'files': ['a.txt', 'b.txt'],
