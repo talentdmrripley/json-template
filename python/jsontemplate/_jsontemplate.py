@@ -33,7 +33,7 @@ __all__ = [
     'BadPredicate', 'MissingFormatter', 'ConfigurationError',
     'TemplateSyntaxError', 'UndefinedVariable',
     # API
-    'CompileTemplate', 'FromString', 'FromFile', 'Template', 'expand',
+    'FromString', 'FromFile', 'Template', 'expand',
     # Function API
     'SIMPLE_FUNC', 'ENHANCED_FUNC']
 
@@ -226,8 +226,8 @@ class _ProgramBuilder(object):
   def __init__(self, formatters, predicates, template_formatter):
     """
     Args:
-      formatters: See docstring for CompileTemplate
-      predicates: See docstring for CompileTemplate
+      formatters: See docstring for _CompileTemplate
+      predicates: See docstring for _CompileTemplate
     """
     self.current_block = _Section()
     self.stack = [self.current_block]
@@ -853,15 +853,9 @@ def _Tokenize(template_str, meta_left, meta_right):
           yield SUBSTITUTION_TOKEN, token
 
 
-def CompileTemplate(
-    template_str, builder=None, template_formatter=None, meta='{}',
-    format_char='|', more_formatters=lambda x: None, more_predicates=lambda x:
-    None, default_formatter='str'):
+def _CompileTemplate(
+    template_str, builder, meta='{}', format_char='|', default_formatter='str'):
   """Compile the template string, calling methods on the 'program builder'.
-
-  This function is exposed in the public API so you can statically check a
-  template (i.e. without a data dictionary).  This will parse templates and
-  resolve formatters/predicates.
 
   Args:
     template_str: The template string.  It should not have any compilation
@@ -870,21 +864,7 @@ def CompileTemplate(
     builder: The interface of _ProgramBuilder isn't fixed.  Use at your own
         risk.
 
-    template_formatter: A callable with the 3-argument signature of formatters
-
     meta: The metacharacters to use, e.g. '{}', '[]'.
-
-    more_formatters:
-        Something that can map format strings to formatter functions.  One of:
-          - A plain dictionary of names -> functions  e.g. {'html': cgi.escape}
-          - A higher-order function which takes format strings and returns
-            formatter functions.  Useful for when formatters have parsed
-            arguments.
-          - A FunctionRegistry instance for the most control.  This allows
-            formatters which takes contexts as well.
-
-    more_predicates:
-        Like more_formatters, but for predicates.
 
     default_formatter: The formatter to use for substitutions that are missing a
         formatter.  The 'str' formatter the "default default" -- it just tries
@@ -901,8 +881,6 @@ def CompileTemplate(
   This function is public so it can be used by other tools, e.g. a syntax
   checking tool run before submitting a template to source control.
   """
-  builder = builder or _ProgramBuilder(more_formatters, more_predicates,
-                                       template_formatter)
   meta_left, meta_right = SplitMeta(meta)
 
   # : is meant to look like Python 3000 formatting {foo:.3f}.  According to
@@ -1057,17 +1035,33 @@ class Template(object):
   you can compile the templates once at server startup, and use the expand()
   method at request handling time.  expand() uses the compiled representation.
 
-  There are various options for controlling parsing -- see CompileTemplate.
+  There are various options for controlling parsing -- see _CompileTemplate.
   Don't go crazy with metacharacters.  {}, [], {{}} or <> should cover nearly
   any circumstance, e.g. generating HTML, CSS XML, JavaScript, C programs, text
   files, etc.
   """
 
-  def __init__(self, template_str, builder=None, undefined_str=None,
+  def __init__(self, template_str,
+               more_formatters=lambda x: None,
+               more_predicates=lambda x: None, 
+               undefined_str=None,
                **compile_options):
     """
     Args:
       template_str: The template string.
+
+      more_formatters:
+          Something that can map format strings to formatter functions.  One of:
+          - A plain dictionary of names -> functions  e.g. {'html': cgi.escape}
+          - A higher-order function which takes format strings and returns
+            formatter functions.  Useful for when formatters have parsed
+            arguments.
+          - A FunctionRegistry instance, giving the most control.  This allows
+            formatters which takes contexts as well.
+
+      more_predicates:
+          Like more_formatters, but for predicates.
+
       undefined_str: A string to appear in the output when a variable to be
           substituted is missing.  If None, UndefinedVariable is raised.
           (Note: This is not really a compilation option, because affects
@@ -1075,13 +1069,12 @@ class Template(object):
           constructor argument rather than an .expand() argument for
           simplicity.)
 
-    It also accepts all the compile options that CompileTemplate does.
+    It also accepts all the compile options that _CompileTemplate does.
     """
     self.template_formatter = _TemplateFormatter(self)
-    self._program = CompileTemplate(
-        template_str, builder=builder,
-        template_formatter=self.template_formatter,
-        **compile_options)
+    builder = _ProgramBuilder(more_formatters, more_predicates,
+                              self.template_formatter)
+    self._program = _CompileTemplate(template_str, builder, **compile_options)
     self.undefined_str = undefined_str
 
   def _RegisterGroup(self, group):
