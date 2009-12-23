@@ -223,7 +223,7 @@ class _ProgramBuilder(object):
   instances.
   """
 
-  def __init__(self, formatters, predicates):
+  def __init__(self, formatters, predicates, template_formatter):
     """
     Args:
       formatters: See docstring for CompileTemplate
@@ -241,7 +241,9 @@ class _ProgramBuilder(object):
 
     # default formatters with arguments
     default_formatters = PrefixRegistry([
-        ('pluralize', _Pluralize), ('cycle', _Cycle)
+        ('template', template_formatter),
+        ('pluralize', _Pluralize),
+        ('cycle', _Cycle),
         ])
 
     # First consult user formatters, then the default formatters
@@ -639,6 +641,34 @@ def _Cycle(value, unused_context, args):
   return args[(value - 1) % len(args)]
 
 
+class _TemplateFormatter(object):
+  """Formatter that uses *templates* to format values.
+  
+  Templates are formatters!  See the "On Design Minimalism" JSON Template
+  article.
+  """
+  def __init__(self):
+    self.group = {}
+
+  def RegisterGroup(self, group):
+    """
+    Args:
+      group: dictionary of template name -> compiled Template instance
+    """
+    self.group = group
+  
+  def __call__(self, value, context, args):
+    """Called with args[0] as the template name."""
+    name = args[0]
+    t = self.group.get(name)
+    if t:
+      return t.expand(context.Lookup('@'))
+    else:
+      raise EvaluationError(
+          "Couldn't find template with name %r (create a template group?)"
+          % name)
+
+
 def _IsDebugMode(unused_value, context, unused_args):
   try:
     return bool(context.Lookup('debug'))
@@ -812,10 +842,14 @@ def _Tokenize(template_str, meta_left, meta_right):
 
 
 def CompileTemplate(
-    template_str, builder=None, meta='{}', format_char='|',
-    more_formatters=lambda x: None, more_predicates=lambda x: None,
-    default_formatter='str'):
+    template_str, builder=None, template_formatter=None, meta='{}',
+    format_char='|', more_formatters=lambda x: None, more_predicates=lambda x:
+    None, default_formatter='str'):
   """Compile the template string, calling methods on the 'program builder'.
+
+  This function is exposed in the public API so you can statically check a
+  template (i.e. without a data dictionary).  This will parse templates and
+  resolve formatters/predicates.
 
   Args:
     template_str: The template string.  It should not have any compilation
@@ -823,6 +857,8 @@ def CompileTemplate(
 
     builder: The interface of _ProgramBuilder isn't fixed.  Use at your own
         risk.
+
+    template_formatter: A callable with the 3-argument signature of formatters
 
     meta: The metacharacters to use, e.g. '{}', '[]'.
 
@@ -853,7 +889,8 @@ def CompileTemplate(
   This function is public so it can be used by other tools, e.g. a syntax
   checking tool run before submitting a template to source control.
   """
-  builder = builder or _ProgramBuilder(more_formatters, more_predicates)
+  builder = builder or _ProgramBuilder(more_formatters, more_predicates,
+                                       template_formatter)
   meta_left, meta_right = SplitMeta(meta)
 
   # : is meant to look like Python 3000 formatting {foo:.3f}.  According to
@@ -1028,9 +1065,20 @@ class Template(object):
 
     It also accepts all the compile options that CompileTemplate does.
     """
+    self.template_formatter = _TemplateFormatter()
     self._program = CompileTemplate(
-        template_str, builder=builder, **compile_options)
+        template_str, builder=builder,
+        template_formatter=self.template_formatter,
+        **compile_options)
     self.undefined_str = undefined_str
+
+  def _RegisterGroup(self, group):
+    """Allow this template to reference templates in the group via formatters.
+
+    Args:
+      group: dictionary of template name -> compiled Template instance
+    """
+    self.template_formatter.RegisterGroup(group) 
 
   #
   # Public API
@@ -1090,6 +1138,25 @@ class Template(object):
     self.render(data_dict, tokens.append)
     for token in tokens:
       yield token
+
+
+def MakeTemplateGroup(group):
+  """Wire templates together so that they can reference each other by name.
+
+  The templates becomes formatters with the 'template' prefix.  For example:
+  {var|template NAME} formats the node 'var' with the template 'NAME'
+
+  Templates may be mutually recursive.
+
+  This function *mutates* all the templates, so you shouldn't call it multiple
+  times on a single Template() instance.  It's possible to put a single template
+  in multiple groups by creating multiple Template() instances from it.
+  
+  Args:
+    group: dictionary of template name -> compiled Template instance
+  """
+  for t in group.itervalues():
+    t._RegisterGroup(group)
 
 
 def _DoRepeatedSection(args, context, callback):
