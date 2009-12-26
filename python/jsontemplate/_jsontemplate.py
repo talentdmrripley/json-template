@@ -1100,7 +1100,7 @@ class Template(object):
     handle.
     """
     context = _ScopedContext(data_dict, self.undefined_str)
-    _Execute(self._program.Statements(), context, callback)
+    _Execute(self._program.Statements(), context, callback, trace)
 
   render = execute  # Alias for backward compatibility
 
@@ -1186,7 +1186,7 @@ def MakeTemplateGroup(group):
     t._RegisterGroup(group)
 
 
-def _DoRepeatedSection(args, context, callback):
+def _DoRepeatedSection(args, context, callback, trace):
   """{repeated section foo}"""
 
   block = args
@@ -1208,34 +1208,34 @@ def _DoRepeatedSection(args, context, callback):
         # Execute the statements in the block for every item in the list.
         # Execute the alternate block on every iteration except the last.  Each
         # item could be an atom (string, integer, etc.) or a dictionary.
-        _Execute(statements, context, callback)
+        _Execute(statements, context, callback, trace)
         if i != last_index:
-          _Execute(alt_statements, context, callback)
+          _Execute(alt_statements, context, callback, trace)
         i += 1
     except StopIteration:
       pass
 
   else:
-    _Execute(block.Statements('or'), context, callback)
+    _Execute(block.Statements('or'), context, callback, trace)
 
   context.Pop()
 
 
-def _DoSection(args, context, callback):
+def _DoSection(args, context, callback, trace):
   """{section foo}"""
 
   block = args
   # If a section present and "true", push the dictionary onto the stack as the
   # new context, and show it
   if context.PushSection(block.section_name):
-    _Execute(block.Statements(), context, callback)
+    _Execute(block.Statements(), context, callback, trace)
     context.Pop()
   else:  # missing or "false" -- show the {.or} section
     context.Pop()
-    _Execute(block.Statements('or'), context, callback)
+    _Execute(block.Statements('or'), context, callback, trace)
 
 
-def _DoPredicates(args, context, callback):
+def _DoPredicates(args, context, callback, trace):
   """{.predicate?}
 
   Here we execute the first clause that evaluates to true, and then stop.
@@ -1249,11 +1249,11 @@ def _DoPredicates(args, context, callback):
       do_clause = predicate(value)
 
     if do_clause:
-      _Execute(statements, context, callback)
+      _Execute(statements, context, callback, trace)
       break
 
 
-def _DoSubstitute(args, context, callback):
+def _DoSubstitute(args, context, callback, trace):
   """Variable substitution, e.g. {foo}"""
 
   name, formatters = args
@@ -1288,14 +1288,18 @@ def _DoSubstitute(args, context, callback):
   callback(value)
 
 
-def _Execute(statements, context, callback):
+def _Execute(statements, context, callback, trace):
   """Execute a bunch of template statements in a ScopedContext.
 
   Args:
     callback: Strings are "written" to this callback function.
+    trace: Trace object, or None
 
   This is called in a mutually recursive fashion.
   """
+  # Every time we call _Execute, increase this depth
+  if trace:
+    trace.exec_depth += 1
   for i, statement in enumerate(statements):
     if isinstance(statement, basestring):
       callback(statement)
@@ -1304,7 +1308,7 @@ def _Execute(statements, context, callback):
       # In the case of a section, it's a _Section instance.
       try:
         func, args = statement
-        func(args, context, callback)
+        func(args, context, callback, trace)
       except UndefinedVariable, e:
         # Show context for statements
         start = max(0, i-3)
