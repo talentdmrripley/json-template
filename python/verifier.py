@@ -89,7 +89,7 @@ class ExternalVerifier(base_verifier.JsonTemplateVerifier):
   def _MakeTemplateStr(template_def):
     template_str = template_def.args[0]
     options = template_def.kwargs
-    
+
     if options:
       lines = []
       for k, v in options.iteritems():

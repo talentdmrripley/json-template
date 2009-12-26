@@ -791,14 +791,17 @@ def _MatchDirective(token):
   return None, None  # no match
 
 
-def _Tokenize(template_str, meta_left, meta_right):
+def _Tokenize(template_str, meta_left, meta_right, whitespace):
   """Yields tokens, which are 2-tuples (TOKEN_TYPE, token_string)."""
 
   trimlen = len(meta_left)
-
   token_re = MakeTokenRegex(meta_left, meta_right)
+  do_strip = (whitespace == 'strip-line')  # Do this outside loop
 
   for line in template_str.splitlines(True):  # retain newlines
+    if do_strip:
+      line = line.strip()
+
     tokens = token_re.split(line)
 
     # Check for a special case first.  If a comment or "block" directive is on a
@@ -859,7 +862,8 @@ def _Tokenize(template_str, meta_left, meta_right):
 
 
 def _CompileTemplate(
-    template_str, builder, meta='{}', format_char='|', default_formatter='str'):
+    template_str, builder, meta='{}', format_char='|', default_formatter='str',
+    whitespace='smart'):
   """Compile the template string, calling methods on the 'program builder'.
 
   Args:
@@ -874,6 +878,11 @@ def _CompileTemplate(
     default_formatter: The formatter to use for substitutions that are missing a
         formatter.  The 'str' formatter the "default default" -- it just tries
         to convert the context value to a string in some unspecified manner.
+
+    whitespace: 'smart' or 'strip-line'.  In smart mode, if a directive is alone
+        on a line, with only whitespace on either side, then the whitespace is
+        removed.  In 'strip-line' mode, every line is stripped of its
+        leading and trailing whitespace.
 
   Returns:
     The compiled program (obtained from the builder)
@@ -896,11 +905,15 @@ def _CompileTemplate(
     raise ConfigurationError(
         'Only format characters : and | are accepted (got %r)' % format_char)
 
+  if whitespace not in ('smart', 'strip-line'):
+    raise ConfigurationError('Invalid whitespace mode %r' % whitespace)
+
   # If we go to -1, then we got too many {end}.  If end at 1, then we're missing
   # an {end}.
   balance_counter = 0
 
-  for token_type, token in _Tokenize(template_str, meta_left, meta_right):
+  for token_type, token in _Tokenize(template_str, meta_left, meta_right,
+                                     whitespace):
 
     if token_type == LITERAL_TOKEN:
       if token:
@@ -960,8 +973,8 @@ def _CompileTemplate(
 
 
 _OPTION_RE = re.compile(r'^([a-zA-Z\-]+):\s*(.*)')
-# TODO: whitespace mode, etc.
-_OPTION_NAMES = ['meta', 'format-char', 'default-formatter', 'undefined-str']
+_OPTION_NAMES = ['meta', 'format-char', 'default-formatter', 'undefined-str',
+                 'whitespace']
 
 
 def FromString(s, more_formatters=lambda x: None, _constructor=None):

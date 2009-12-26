@@ -1030,6 +1030,38 @@ class AllFormattersTest(testy.Test):
         t, {'num': 1.0/3}, '<b>0.333</b>')
 
 
+class WhitespaceModesTest(testy.Test):
+  """Tests the whitespace= option."""
+
+  LABELS = ['multilanguage']
+
+  @testy.no_verify('javascript', 'php', 'java')
+  def testSmart(self):
+    # The default mode
+    t = testy.ClassDef('  Hello {name}  ')
+    self.verify.Expansion(t, {'name': 'World'}, '  Hello World  ')
+
+    t = testy.ClassDef(
+        B("""
+          {.section name}
+            Hello {name}
+          {.end}
+        """))
+    # Just 4 leading spaces and a trailing newline
+    self.verify.Expansion(t, {'name': 'World'}, '    Hello World\n')
+
+  @testy.no_verify('javascript', 'php', 'java')
+  def testStripLine(self):
+    t = testy.ClassDef(
+        B("""
+          {.section name}
+            Hello {name}
+          {.end}
+        """), whitespace='strip-line')
+    # Just 4 leading spaces and a trailing newline
+    self.verify.Expansion(t, {'name': 'World'}, 'Hello World')
+
+
 class PredicatesTest(testy.Test):
   """Tests the predicates feature."""
 
