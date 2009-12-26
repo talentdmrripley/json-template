@@ -272,6 +272,25 @@ class InternalTemplateTest(testy.Test):
     # Only accepts one argument
     self.verify.Raises(TypeError, t.expand, {'name': 'world'}, 'extra')
 
+  def testExecute(self):
+    """Test the .execute() method."""
+
+    t = jsontemplate.Template('Hello {name}')
+    tokens = []
+    t.execute({'name': 'World'}, tokens.append)
+    self.verify.In('Hello ', tokens)
+
+    tokens = []
+    # Legacy alias for execute()
+    t.render({'name': 'World'}, tokens.append)
+    self.verify.In('Hello ', tokens)
+
+  def testTemplateTrace(self):
+    trace = jsontemplate.Trace()
+    t = jsontemplate.Template('Hello {name}')
+    t.expand({'name': 'World'}, trace=trace)
+    print trace
+
   def testSimpleUnicodeSubstitution(self):
     t = jsontemplate.Template(u'Hello {name}')
 
