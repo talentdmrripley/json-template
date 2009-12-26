@@ -33,7 +33,7 @@ __all__ = [
     'BadPredicate', 'MissingFormatter', 'ConfigurationError',
     'TemplateSyntaxError', 'UndefinedVariable',
     # API
-    'FromString', 'FromFile', 'Template', 'expand',
+    'FromString', 'FromFile', 'Template', 'expand', 'Trace',
     # Function API
     'SIMPLE_FUNC', 'ENHANCED_FUNC']
 
@@ -1089,7 +1089,7 @@ class Template(object):
   # Public API
   #
 
-  def render(self, data_dict, callback):
+  def execute(self, data_dict, callback, trace=None):
     """Low level method to expands the template piece by piece.
 
     Args:
@@ -1101,6 +1101,8 @@ class Template(object):
     """
     context = _ScopedContext(data_dict, self.undefined_str)
     _Execute(self._program.Statements(), context, callback)
+
+  render = execute  # Alias for backward compatibility
 
   def expand(self, *args, **kwargs):
     """Expands the template with the given data dictionary, returning a string.
@@ -1121,14 +1123,16 @@ class Template(object):
     if args:
       if len(args) == 1:
         data_dict = args[0]
+        trace = kwargs.get('trace')
       else:
         raise TypeError(
             'expand() only takes 1 positional argument (got %s)' % args)
     else:
       data_dict = kwargs
+      trace = None  # Can't use trace= with the kwargs style
 
     tokens = []
-    self.render(data_dict, tokens.append)
+    self.render(data_dict, tokens.append, trace=trace)
     return ''.join(tokens)
 
   def tokenstream(self, data_dict):
@@ -1143,6 +1147,24 @@ class Template(object):
     self.render(data_dict, tokens.append)
     for token in tokens:
       yield token
+
+
+class Trace(object):
+  """Trace of execution for JSON Template.
+  
+  This object should be passed into the render/expand() function.
+
+  Useful for debugging, especially for templates which reference other
+  templates.
+  """
+  def __init__(self):
+    # Public mutable attributes
+    self.exec_depth = 0
+    self.template_depth = 0
+    self.stack = []
+
+  def __str__(self):
+    return 'Trace %s %s' % (self.exec_depth, self.template_depth)
 
 
 def MakeTemplateGroup(group):
@@ -1274,7 +1296,6 @@ def _Execute(statements, context, callback):
 
   This is called in a mutually recursive fashion.
   """
-
   for i, statement in enumerate(statements):
     if isinstance(statement, basestring):
       callback(statement)
