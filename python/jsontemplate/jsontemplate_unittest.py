@@ -289,7 +289,7 @@ class InternalTemplateTest(testy.Test):
     trace = jsontemplate.Trace()
     t = jsontemplate.Template('Hello {name}')
     t.expand({'name': 'World'}, trace=trace)
-    print trace
+    self.verify.Equal(trace.exec_depth, 1)
 
   def testSimpleUnicodeSubstitution(self):
     t = jsontemplate.Template(u'Hello {name}')
