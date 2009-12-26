@@ -33,7 +33,8 @@ __all__ = [
     'BadPredicate', 'MissingFormatter', 'ConfigurationError',
     'TemplateSyntaxError', 'UndefinedVariable',
     # API
-    'FromString', 'FromFile', 'Template', 'expand', 'Trace',
+    'FromString', 'FromFile', 'Template', 'expand', 'Trace', 'FunctionRegistry',
+    'MakeTemplateGroup',
     # Function API
     'SIMPLE_FUNC', 'ENHANCED_FUNC']
 
@@ -113,7 +114,11 @@ SIMPLE_FUNC, ENHANCED_FUNC = 0, 1
 
 
 class FunctionRegistry(object):
-  """Abstract class for looking up formatters or predicates at compile time."""
+  """Abstract class for looking up formatters or predicates at compile time.
+
+  Users should implement either Lookup or LookupWithType, and then the
+  implementation calls LookupWithType.
+  """
 
   def Lookup(self, user_str):
     """Lookup a function.
@@ -665,16 +670,16 @@ class _TemplateFormatter(object):
     """
     self.group = group
   
-  def __call__(self, value, context, args):
+  def __call__(self, value, unused_context, args):
     """Called with args[0] as the template name."""
     name = args[0]
 
     if name == 'SELF':
-      return self.owner.expand(context.Lookup('@'))
+      return self.owner.expand(value)
 
     t = self.group.get(name)
     if t:
-      return t.expand(context.Lookup('@'))
+      return t.expand(value)
     else:
       raise EvaluationError(
           "Couldn't find template with name %r (create a template group?)"
