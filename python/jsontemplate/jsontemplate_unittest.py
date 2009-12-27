@@ -157,7 +157,8 @@ class InternalTemplateTest(testy.Test):
       t.expand({'num': 5})
     except jsontemplate.EvaluationError, e:
       self.verify.IsTrue(e.args[0].startswith('Formatting value 5'), e.args[0])
-      self.verify.Equal(e.original_exception.__class__, AttributeError)
+      exc_type, exc, exc_traceback = e.original_exc_info
+      self.verify.Equal(exc_type, AttributeError)
     else:
       self.fail('Expected EvaluationError')
 

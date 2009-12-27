@@ -41,6 +41,7 @@ __all__ = [
 import StringIO
 import pprint
 import re
+import sys
 
 # For formatters
 import cgi  # cgi.escape
@@ -77,9 +78,9 @@ class EvaluationError(Error):
   This class of errors generally involve the data dictionary or the execution of
   the formatters.
   """
-  def __init__(self, msg, original_exception=None):
+  def __init__(self, msg, original_exc_info=None):
     Error.__init__(self, msg)
-    self.original_exception = original_exception
+    self.original_exc_info = original_exc_info
 
 
 class BadFormatter(CompilationError):
@@ -111,6 +112,9 @@ _SECTION_RE = re.compile(r'(repeated)?\s*section\s+(\S+)')
 # rather than just the current node.  'Node functions' start with a lowercase
 # letter; 'Context functions' start with any other character.
 SIMPLE_FUNC, ENHANCED_FUNC = 0, 1
+
+# Templates are a third kind of function, but only for formatters currently
+TEMPLATE_FORMATTER = 2  
 
 
 class FunctionRegistry(object):
@@ -206,6 +210,67 @@ class PrefixRegistry(FunctionRegistry):
     return None, ()
 
 
+class _TemplateRef(object):
+  """A reference from one template to another.
+  
+  TemplateRef is a simple data object that holds the template group and an
+  optional name.  If there's no name, then it's a self-reference.
+  """
+  def __init__(self, registry, name):
+    self.registry = registry
+    self.name = name
+
+  def Resolve(self):
+    t = self.registry.group.get(self.name)
+    if t:
+      return t
+    else:
+      raise EvaluationError(
+          "Couldn't find template with name %r (create a template group?)"
+          % self.name)
+
+
+class TemplateRegistry(FunctionRegistry):
+  """Each template owns a TemplateRegistry.
+
+  LookupWithType always returns a TemplateRef to the template compiler
+  (_ProgramBuilder).  At runtime, which may be after MakeTemplateGroup is
+  called, the _DoSubstitute can resolve the template name and execute it as
+  a formatter.
+  """
+  def __init__(self, owner):
+    """
+    Args:
+      owner: The Template instance that owns this formatter.  (There should be
+      exactly one)
+    """
+    self.owner = owner
+    self.group = {}  # public attributes
+
+  def RegisterGroup(self, group):
+    """
+    Args:
+      group: dictionary of template name -> compiled Template instance
+    """
+    self.group = group
+
+  def LookupWithType(self, user_str):
+    """
+    Returns:
+      ref: Either a template instance (itself) or _TemplateRef
+    """
+    prefix = 'template '
+    ref = None  # fail the lookup by default
+    if user_str.startswith(prefix):
+      name = user_str[len(prefix):]
+      if name == 'SELF':
+        ref = self.owner
+      else:
+        ref = _TemplateRef(self, name)
+
+    return ref, (), TEMPLATE_FORMATTER
+
+
 class ChainedRegistry(FunctionRegistry):
   """Look up functions in chain of other FunctionRegistry instances."""
 
@@ -228,7 +293,7 @@ class _ProgramBuilder(object):
   instances.
   """
 
-  def __init__(self, formatters, predicates, template_formatter):
+  def __init__(self, formatters, predicates, template_registry):
     """
     Args:
       formatters: See docstring for _CompileTemplate
@@ -246,14 +311,17 @@ class _ProgramBuilder(object):
 
     # default formatters with arguments
     default_formatters = PrefixRegistry([
-        ('template', template_formatter),
         ('pluralize', _Pluralize),
         ('cycle', _Cycle),
         ])
 
-    # First consult user formatters, then the default formatters
-    self.formatters = ChainedRegistry(
-        [formatters, DictRegistry(_DEFAULT_FORMATTERS), default_formatters])
+    # First consult user formatters, then templates enabled by
+    # MakeTemplateGroup, then the default formatters
+    self.formatters = ChainedRegistry([
+        formatters,
+        template_registry,
+        DictRegistry(_DEFAULT_FORMATTERS),
+        default_formatters])
 
     # Same for predicates
     if isinstance(predicates, dict):
@@ -644,46 +712,6 @@ def _Cycle(value, unused_context, args):
   """Cycle between various values on consecutive integers."""
   # @index starts from 1, so used 1-based indexing
   return args[(value - 1) % len(args)]
-
-
-class _TemplateFormatter(object):
-  """Formatter that uses *templates* to format values.
-  
-  Templates are formatters!  See the "On Design Minimalism" JSON Template
-  article.
-
-  A template can recursively call itself by using the special 'SELF' name.
-  """
-  def __init__(self, owner):
-    """
-    Args:
-      owner: The Template instance that owns this formatter.  (There should be
-      exactly one)
-    """
-    self.owner = owner
-    self.group = {}
-
-  def RegisterGroup(self, group):
-    """
-    Args:
-      group: dictionary of template name -> compiled Template instance
-    """
-    self.group = group
-  
-  def __call__(self, value, unused_context, args):
-    """Called with args[0] as the template name."""
-    name = args[0]
-
-    if name == 'SELF':
-      return self.owner.expand(value)
-
-    t = self.group.get(name)
-    if t:
-      return t.expand(value)
-    else:
-      raise EvaluationError(
-          "Couldn't find template with name %r (create a template group?)"
-          % name)
 
 
 def _IsDebugMode(unused_value, context, unused_args):
@@ -1089,9 +1117,9 @@ class Template(object):
 
     It also accepts all the compile options that _CompileTemplate does.
     """
-    self.template_formatter = _TemplateFormatter(self)
+    self.template_registry = TemplateRegistry(self)
     builder = _ProgramBuilder(more_formatters, more_predicates,
-                              self.template_formatter)
+                              self.template_registry)
     self._program = _CompileTemplate(template_str, builder, **compile_options)
     self.undefined_str = undefined_str
 
@@ -1101,7 +1129,14 @@ class Template(object):
     Args:
       group: dictionary of template name -> compiled Template instance
     """
-    self.template_formatter.RegisterGroup(group) 
+    self.template_registry.RegisterGroup(group) 
+
+  def _CheckRefs(self):
+    """Check that the template names referenced in this template exist.
+    
+    _RegisterGroup must have been called.
+    """
+    # TODO: Implement this
 
   #
   # Public API
@@ -1181,6 +1216,12 @@ class Trace(object):
     self.template_depth = 0
     self.stack = []
 
+  def Push(self, obj):
+    self.stack.append(obj)
+
+  def Pop(self):
+    self.stack.pop()
+
   def __str__(self):
     return 'Trace %s %s' % (self.exec_depth, self.template_depth)
 
@@ -1202,6 +1243,7 @@ def MakeTemplateGroup(group):
   """
   for t in group.itervalues():
     t._RegisterGroup(group)
+    t._CheckRefs()
 
 
 def _DoRepeatedSection(args, context, callback, trace):
@@ -1267,14 +1309,16 @@ def _DoPredicates(args, context, callback, trace):
       do_clause = predicate(value)
 
     if do_clause:
+      if trace: trace.Push(predicate)
       _Execute(statements, context, callback, trace)
+      if trace: trace.Pop()
       break
 
 
 def _DoSubstitute(args, context, callback, trace):
   """Variable substitution, e.g. {foo}"""
 
-  name, formatters = args
+  name, formatters = args  # TODO: Could make a _Substitution, like _Section
 
   # So we can have {.section is_new}new since {@}{.end}.  Hopefully this idiom
   # is OK.
@@ -1287,18 +1331,47 @@ def _DoSubstitute(args, context, callback, trace):
       raise EvaluationError(
           'Error evaluating %r in context %r: %r' % (name, context, e))
 
-  for func, args, func_type in formatters:
+  last_index = len(formatters) - 1
+  for i, (f, args, formatter_type) in enumerate(formatters):
     try:
-      if func_type == ENHANCED_FUNC:
-        value = func(value, context, args)
+      if formatter_type == TEMPLATE_FORMATTER:
+        if isinstance(f, Template):
+          template = f
+        elif isinstance(f, _TemplateRef):
+          # TODO: This can be done in _CheckRefs
+          template = f.Resolve()
+        else:
+          assert False, 'Invalid formatter %r' % f
+
+        if i == last_index:
+          # In order to keep less template output in memory, we can just let the
+          # other template write to our callback directly, and then stop.
+          template.execute(value, callback, trace=trace)
+          return  # EARLY RETURN
+        else:
+          # We have more formatters to apply, so explicitly construct 'value'
+          tokens = []
+          template.execute(value, tokens.append, trace=trace)
+          value = ''.join(tokens)
+
+      elif formatter_type == ENHANCED_FUNC:
+        value = f(value, context, args)
+
+      elif formatter_type == SIMPLE_FUNC:
+        value = f(value)
+
       else:
-        value = func(value)
-    except KeyboardInterrupt:
+        assert False, 'Invalid formatter type %r' % formatter_type
+
+    except (KeyboardInterrupt, EvaluationError):
+      # Don't "wrap" recursive EvaluationErrors
       raise
+
     except Exception, e:
       raise EvaluationError(
-          'Formatting value %r with formatter %s raised exception: %r' %
-          (value, formatters, e), original_exception=e)
+          'Formatting value %r with formatter %s raised exception: %r '
+          '-- see e.original_exc_info' % (value, f, e),
+          original_exc_info=sys.exc_info())
 
   # TODO: Require a string/unicode instance here?
   if value is None:
@@ -1332,6 +1405,7 @@ def _Execute(statements, context, callback, trace):
         start = max(0, i-3)
         end = i+3
         e.near = statements[start:end]
+        e.trace = trace  # Attach caller's trace (could be None)
         raise
 
 
