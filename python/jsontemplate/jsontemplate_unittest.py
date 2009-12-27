@@ -463,6 +463,30 @@ class TemplateGroupTest(testy.Test):
         b.txt
         """), ignore_all_whitespace=True)
 
+    # Now CHAIN a regular formatter with a template-formatter
+    t = jsontemplate.Template(
+        B("""
+        {name}
+        {.repeated section dirs}
+          {@|template SELF|upper}
+        {.end}
+        {.repeated section files}
+          {@}
+        {.end}
+        """))
+
+    # TODO: A nicer job with whitespace
+    self.verify.LongStringsEqual(
+        t.expand(data),
+        B("""
+        /home
+        ANDY
+        1.TXT
+        2.TXT
+        a.txt
+        b.txt
+        """), ignore_all_whitespace=True)
+
 
 if __name__ == '__main__':
   testy.RunThisModule()

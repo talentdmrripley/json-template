@@ -669,6 +669,9 @@ _DEFAULT_FORMATTERS = {
     # compatible to Python 2.4.
     'str': _ToString,
 
+    'upper': lambda x: x.upper(),
+    'lower': lambda x: x.lower(),
+
     # Just show a plain URL on an HTML page (without anchor text).
     'plain-url': lambda x: '<a href="%s">%s</a>' % (
         cgi.escape(x, quote=True), cgi.escape(x)),
