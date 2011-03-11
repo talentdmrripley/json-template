@@ -995,7 +995,7 @@ def _CompileTemplate(
       continue
 
     if token_type in (SECTION_TOKEN, REPEATED_SECTION_TOKEN):
-      parts = token.split(format_char)
+      parts = [p.strip() for p in token.split(format_char)]
       if len(parts) == 1:
         name = parts[0]
         formatters = []
@@ -1032,7 +1032,7 @@ def _CompileTemplate(
       continue
 
     if token_type == SUBSTITUTION_TOKEN:
-      parts = token.split(format_char)
+      parts = [p.strip() for p in token.split(format_char)]
       if len(parts) == 1:
         if default_formatter is None:
           raise MissingFormatter('This template requires explicit formatters.')
