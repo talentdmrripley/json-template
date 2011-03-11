@@ -128,7 +128,7 @@ class ScopedContextTest(testy.Test):
     self.verify.Equal(s.Lookup('foo'), data['foo'])
     self.verify.Equal(s.Lookup('@'), data)
 
-    print s.PushSection('foo')
+    print s.PushSection('foo', [])
     self.verify.Equal(s.Lookup('@'), data['foo'])
     s.Next()
     self.verify.Equal(s.Lookup('@'), 1)
