@@ -299,6 +299,33 @@ class InternalTemplateTest(testy.Test):
     # ones for the internal API.  Need to test mixing of unicode() and str()
     # instances (or declare it undefined).
 
+  def testRepeatedSectionFormatter(self):
+    def _Columns(x):
+      n = len(x)
+      i = 0
+      columns = []
+      while True:
+        columns.append(x[i:i+3])
+        i += 3
+        if i >= len(x):
+          break
+      return columns
+
+    t = jsontemplate.Template(B("""
+        {.repeated section dirs|columns}
+          {.repeated section @}{@} {.end}
+        {.end}
+        """), more_formatters={'columns': _Columns})
+
+    d = {'dirs': ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']}
+    self.verify.LongStringsEqual(B("""
+          a b c 
+          d e f 
+          g h i 
+          j 
+        """),
+        t.expand(d))
+
 
 class FunctionsApiTest(testy.Test):
   """Tests that can only be run internally."""
