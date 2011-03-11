@@ -329,8 +329,13 @@ class _ProgramBuilder(object):
     elif callable(predicates):
       predicates = CallableRegistry(predicates)
 
+    # default predicates with arguments
+    default_predicates = PrefixRegistry([
+        ('test', _TestAttribute),
+        ])
+
     self.predicates = ChainedRegistry(
-        [predicates, DictRegistry(_DEFAULT_PREDICATES)])
+        [predicates, DictRegistry(_DEFAULT_PREDICATES), default_predicates])
 
   def Append(self, statement):
     """
@@ -722,6 +727,18 @@ def _Cycle(value, unused_context, args):
 def _IsDebugMode(unused_value, context, unused_args):
   try:
     return bool(context.Lookup('debug'))
+  except UndefinedVariable:
+    return False
+
+
+def _TestAttribute(unused_value, context, args):
+  """Cycle between various values on consecutive integers."""
+  try:
+    name = args[0]  # can used dotted syntax too, e.g. 'foo.bar'
+  except IndexError:
+    raise EvaluationError('The "test" predicate requires an argument.')
+  try:
+    return bool(context.Lookup(name))
   except UndefinedVariable:
     return False
 
