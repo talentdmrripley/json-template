@@ -1197,6 +1197,22 @@ class PredicatesTest(testy.Test):
     self.verify.Expansion(t, {'debug': True}, 'Rendered in 3 seconds')
     self.verify.Expansion(t, {'debug': False}, '')
 
+  @testy.no_verify('java', 'php', 'javascript')
+  def testTestPredicate(self):
+    # Test the predicate that tests for attributes
+    t = testy.ClassDef("{.if test debug}Rendered in 3 seconds{.end}")
+    self.verify.Expansion(t, {'debug': True}, 'Rendered in 3 seconds')
+    self.verify.Expansion(t, {'debug': False}, '')
+
+    # Make a nested test
+    t = testy.ClassDef("{.if test meta.debug}Rendered in 3 seconds{.end}")
+    self.verify.Expansion(t, {'meta': {'debug': True}}, 'Rendered in 3 seconds')
+    self.verify.Expansion(t, {'meta': {'debug': False}}, '')
+
+    # No argument
+    t = testy.ClassDef("{.if test}Rendered in 3 seconds{.end}")
+    self.verify.EvaluationError(jsontemplate.EvaluationError, t, {})
+
 
 class DocumentationTest(testy.Test):
   """Test cases added for the sake of documentation."""

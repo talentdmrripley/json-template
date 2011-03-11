@@ -152,11 +152,12 @@ class InternalTemplateTest(testy.Test):
 
     # For now, integers can't be formatted directly as html.  Just omit the
     # formatter.
-    t = jsontemplate.FromString("""\
-default-formatter: html
-
-There are {num} ways to do it
-""")
+    t = jsontemplate.FromString(
+        B("""
+        default-formatter: html
+        
+        There are {num} ways to do it
+        """))
     self.verify.Equal('There are 5 ways to do it\n', t.expand({'num': 5L}))
 
   def testMultipleFormatters(self):
