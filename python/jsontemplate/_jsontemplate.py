@@ -619,7 +619,7 @@ def _ToString(x):
 
 
 def _HtmlAttrValue(x):
-  return cgi.escape(x, quote=True)
+  return cgi.escape(str(x), quote=True)
 
 
 def _AbsUrl(relative_url, context, unused_args):
@@ -644,7 +644,9 @@ def _AbsUrl(relative_url, context, unused_args):
 # This is a *public* constant, so that callers can use it construct their own
 # formatter lookup dictionaries, and pass them in to Template.
 _DEFAULT_FORMATTERS = {
-    'html': cgi.escape,
+    # Because "html" is often the default formatter, we want to let
+    # numbers/boolean/etc. pass through, so we add 'str' first.
+    'html': lambda x: cgi.escape(str(x)),
 
     # The 'htmltag' name is deprecated.  The html-attr-value name is preferred
     # because it can be read with "as":
