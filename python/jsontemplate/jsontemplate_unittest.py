@@ -176,7 +176,7 @@ class InternalTemplateTest(testy.Test):
 
     # Multiple
     t = testy.ClassDef(
-        'http://example.com?{params|url-params|html}',
+        'http://example.com?{params | url-params | html}',
         format_char='|')
     self.verify.Expansion(
         t,
@@ -312,7 +312,7 @@ class InternalTemplateTest(testy.Test):
       return columns
 
     t = jsontemplate.Template(B("""
-        {.repeated section dirs|columns}
+        {.repeated section dirs | columns}
           {.repeated section @}{@} {.end}
         {.end}
         """), more_formatters={'columns': _Columns})
