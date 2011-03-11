@@ -148,19 +148,16 @@ class InternalTemplateTest(testy.Test):
 
   VERIFIERS = [python_verifier.InternalTemplateVerifier]
 
-  def testFormatterRaisesException(self):
+  def testNumberWithDefaultHtmlFormatter(self):
 
     # For now, integers can't be formatted directly as html.  Just omit the
     # formatter.
-    t = jsontemplate.Template('There are {num|html} ways to do it')
-    try:
-      t.expand({'num': 5})
-    except jsontemplate.EvaluationError, e:
-      self.verify.IsTrue(e.args[0].startswith("Formatting name 'num'"), e.args[0])
-      exc_type, exc, exc_traceback = e.original_exc_info
-      self.verify.Equal(exc_type, AttributeError)
-    else:
-      self.fail('Expected EvaluationError')
+    t = jsontemplate.FromString("""\
+default-formatter: html
+
+There are {num} ways to do it
+""")
+    self.verify.Equal('There are 5 ways to do it\n', t.expand({'num': 5L}))
 
   def testMultipleFormatters(self):
     # TODO: This could have a version in the external test too, just not with
