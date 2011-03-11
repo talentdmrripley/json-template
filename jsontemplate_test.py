@@ -351,6 +351,26 @@ class SectionsTest(testy.PyUnitCompatibleTest):
     t = testy.ClassDef('[.repeated section @][@] [.end]', meta='[]')
     self.verify.Expansion(t, ['Andy', 'Bob'], 'Andy Bob ')
 
+  @testy.no_verify('php', 'java', 'javascript')
+  def testRepeatedSectionPreformatters(self):
+    # Test formatting a list *before" expanding it into a template
+
+    t = testy.ClassDef(B("""
+        {.repeated section dirs|reverse}{@} {.end}
+        """))
+    self.verify.Expansion(t, {'dirs': ['1', '2', '3']}, '3 2 1 \n')
+
+  @testy.no_verify('php', 'java', 'javascript')
+  def testSectionPreformatters(self):
+    # Synonym for the above.  Apply the pre-formatter in a section instead of
+    # the list.
+    t = testy.ClassDef(B("""
+        {.section dirs|reverse}
+        {.repeated section @}{@} {.end}
+        {.end}
+        """))
+    self.verify.Expansion(t, {'dirs': ['1', '2', '3']}, '3 2 1 \n')
+
   def testAlternatesWith(self):
     t = testy.ClassDef(
         B("""

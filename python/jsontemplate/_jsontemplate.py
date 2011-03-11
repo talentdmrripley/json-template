@@ -106,7 +106,8 @@ class UndefinedVariable(EvaluationError):
   """The template contains a variable not defined by the data dictionary."""
 
 
-_SECTION_RE = re.compile(r'(repeated)?\s*section\s+(\S+)')
+# The last group is of the form 'name | f1 | f2 ...'
+_SECTION_RE = re.compile(r'(repeated)?\s*section\s+(.+)')
 
 # Some formatters and predicates need to look up values in the whole context,
 # rather than just the current node.  'Node functions' start with a lowercase
@@ -299,7 +300,7 @@ class _ProgramBuilder(object):
       formatters: See docstring for _CompileTemplate
       predicates: See docstring for _CompileTemplate
     """
-    self.current_block = _Section()
+    self.current_block = _Section(None)
     self.stack = [self.current_block]
 
     # Passing a dictionary or a function is often more convenient than making a
@@ -373,15 +374,16 @@ class _ProgramBuilder(object):
     self.stack.append(new_block)
     self.current_block = new_block
 
-  def NewSection(self, token_type, section_name):
+  def NewSection(self, token_type, section_name, pre_formatters):
     """For sections or repeated sections."""
+    pre_formatters = [self._GetFormatter(f) for f in pre_formatters]
 
     # TODO: Consider getting rid of this dispatching, and turn _Do* into methods
     if token_type == REPEATED_SECTION_TOKEN:
-      new_block = _RepeatedSection(section_name)
+      new_block = _RepeatedSection(section_name, pre_formatters)
       func = _DoRepeatedSection
     elif token_type == SECTION_TOKEN:
-      new_block = _Section(section_name)
+      new_block = _Section(section_name, pre_formatters)
       func = _DoSection
     else:
       raise AssertionError('Invalid token type %s' % token_type)
@@ -440,15 +442,17 @@ class _AbstractSection(object):
 class _Section(_AbstractSection):
   """Represents a (repeated) section."""
 
-  def __init__(self, section_name=None):
+  def __init__(self, section_name, pre_formatters=[]):
     """
     Args:
-      section_name: name given as an argument to the section
-      token_type: The token type that created this section (e.g.
-          PREDICATE_TOKEN)
+      section_name: name given as an argument to the section, None for the root
+        section
+      pre_formatters: List of formatters to be applied to the data dictinoary
+        before the expansion
     """
     _AbstractSection.__init__(self)
     self.section_name = section_name
+    self.pre_formatters = pre_formatters
 
     # Clauses is just a string and a list of statements.
     self.statements = {'default': self.current_clause}
@@ -517,18 +521,28 @@ class _ScopedContext(object):
     self.stack = [_Frame(context)]
     self.undefined_str = undefined_str
 
-  def PushSection(self, name):
+  def PushSection(self, name, pre_formatters):
     """Given a section name, push it on the top of the stack.
 
     Returns:
       The new section, or None if there is no such section.
     """
     if name == '@':
-      new_context = self.stack[-1].context
+      value = self.stack[-1].context
     else:
-      new_context = self.stack[-1].context.get(name)
-    self.stack.append(_Frame(new_context))
-    return new_context
+      value = self.stack[-1].context.get(name)
+
+    # Apply pre-formatters
+    for i, (f, args, formatter_type) in enumerate(pre_formatters):
+      if formatter_type == ENHANCED_FUNC:
+        value = f(value, context, args)
+      elif formatter_type == SIMPLE_FUNC:
+        value = f(value)
+      else:
+        assert False, 'Invalid formatter type %r' % formatter_type
+
+    self.stack.append(_Frame(value))
+    return value
 
   def Pop(self):
     self.stack.pop()
@@ -641,6 +655,14 @@ def _AbsUrl(relative_url, context, unused_args):
   return urlparse.urljoin(context.Lookup('base-url'), relative_url)
 
 
+def _Reverse(x):
+  """
+  We use this on lists as section pre-formatters; it probably works for
+  strings too.
+  """
+  return list(reversed(x))
+
+
 # See http://google-ctemplate.googlecode.com/svn/trunk/doc/howto.html for more
 # escape types.
 #
@@ -696,6 +718,8 @@ _DEFAULT_FORMATTERS = {
     # argument only, which is a common case.
     'json': None,
     'js-string': None,
+
+    'reverse': _Reverse,
     }
 
 
@@ -971,7 +995,14 @@ def _CompileTemplate(
       continue
 
     if token_type in (SECTION_TOKEN, REPEATED_SECTION_TOKEN):
-      builder.NewSection(token_type, token)
+      parts = token.split(format_char)
+      if len(parts) == 1:
+        name = parts[0]
+        formatters = []
+      else:
+        name = parts[0]
+        formatters = parts[1:]
+      builder.NewSection(token_type, name, formatters)
       balance_counter += 1
       continue
 
@@ -1273,7 +1304,7 @@ def _DoRepeatedSection(args, context, callback, trace):
 
   block = args
 
-  items = context.PushSection(block.section_name)
+  items = context.PushSection(block.section_name, block.pre_formatters)
   # TODO: if 'items' is a dictionary, allow @name and @value.
 
   if items:
@@ -1309,7 +1340,7 @@ def _DoSection(args, context, callback, trace):
   block = args
   # If a section present and "true", push the dictionary onto the stack as the
   # new context, and show it
-  if context.PushSection(block.section_name):
+  if context.PushSection(block.section_name, block.pre_formatters):
     _Execute(block.Statements(), context, callback, trace)
     context.Pop()
   else:  # missing or "false" -- show the {.or} section

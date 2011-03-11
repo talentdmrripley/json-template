@@ -54,9 +54,8 @@ class InternalTemplateVerifier(base_verifier.JsonTemplateVerifier):
 
     template = jsontemplate.Template(*template_def.args, **template_def.kwargs)
 
-    # TODO: Consider reversing left and right here and throughout
-    left = template.expand(dictionary)
-    right = expected
+    left = expected
+    right = template.expand(dictionary)
 
     self.LongStringsEqual(left, right, ignore_whitespace=ignore_whitespace)
 
