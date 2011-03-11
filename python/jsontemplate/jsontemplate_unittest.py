@@ -156,7 +156,7 @@ class InternalTemplateTest(testy.Test):
     try:
       t.expand({'num': 5})
     except jsontemplate.EvaluationError, e:
-      self.verify.IsTrue(e.args[0].startswith('Formatting value 5'), e.args[0])
+      self.verify.IsTrue(e.args[0].startswith("Formatting name 'num'"), e.args[0])
       exc_type, exc, exc_traceback = e.original_exc_info
       self.verify.Equal(exc_type, AttributeError)
     else:

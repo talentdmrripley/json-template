@@ -659,7 +659,7 @@ _DEFAULT_FORMATTERS = {
     'size': lambda value: str(len(value)),
 
     # The argument is a dictionary, and we get a a=1&b=2 string back.
-    'url-params': urllib.urlencode,
+    'url-params': lambda x: urllib.urlencode(x, doseq=True),
 
     # The argument is an atom, and it takes 'Search query?' -> 'Search+query%3F'
     'url-param-value': urllib.quote_plus,  # param is an atom
@@ -1372,8 +1372,8 @@ def _DoSubstitute(args, context, callback, trace):
 
     except Exception, e:
       raise EvaluationError(
-          'Formatting value %r with formatter %s raised exception: %r '
-          '-- see e.original_exc_info' % (value, f, e),
+          'Formatting name %r, value %r with formatter %s raised exception: %r '
+          '-- see e.original_exc_info' % (name, value, f, e),
           original_exc_info=sys.exc_info())
 
   # TODO: Require a string/unicode instance here?
