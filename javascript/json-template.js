@@ -113,9 +113,15 @@ var DEFAULT_FORMATTERS = {
   }
 };
 
+var singular = function(x) { return  x == 1; };
+var plural = function(x) { return x > 1; };
 var DEFAULT_PREDICATES = {
-  'singular?': function(x) { return  x == 1; },
-  'plural?': function(x) { return x > 1; },
+  'singular': singular,
+  'plural': plural,
+
+   // OLD: do not use
+  'singular?': singular,
+  'plural?': plural,
   'Debug?': function(unused, context) {
     try {
       return context.get('debug');
