@@ -355,15 +355,24 @@ class _ProgramBuilder(object):
     else:
       raise BadFormatter('%r is not a valid formatter' % format_str)
 
-  def _GetPredicate(self, pred_str):
+  def _GetPredicate(self, pred_str, test_attr=False):
     """
     The user's predicates are consulted first, then the default predicates.
     """
     predicate, args, func_type = self.predicates.LookupWithType(pred_str)
     if predicate:
-      return predicate, args, func_type
+      pred = predicate, args, func_type
     else:
-      return None
+      # Nicer syntax, {.debug?} is shorthand for {.if test debug}.
+      # Currently there is not if/elif chain; just use
+      # {.if test debug} {.or test release} {.or} {.end}
+      if test_attr:
+        assert pred_str.endswith('?')
+        # func, args, func_type
+        pred = (_TestAttribute, (pred_str[:-1],), ENHANCED_FUNC)
+      else:
+        raise BadPredicate('%r is not a valid predicate' % pred_str)
+    return pred
 
   def AppendSubstitution(self, name, formatters):
     formatters = [self._GetFormatter(f) for f in formatters]
@@ -396,9 +405,7 @@ class _ProgramBuilder(object):
     slightly different meaning.
     """
     if pred_str:
-      pred = self._GetPredicate(pred_str)
-      if not pred:
-        raise BadPredicate('%r is not a valid predicate' % pred_str)
+      pred = self._GetPredicate(pred_str, test_attr=False)
     else:
       pred = None
     self.current_block.NewOrClause(pred)
@@ -408,17 +415,7 @@ class _ProgramBuilder(object):
 
   def NewPredicateSection(self, pred_str, test_attr=False):
     """For chains of predicate clauses."""
-    pred = self._GetPredicate(pred_str)
-    if not pred:
-      # Nicer syntax, {.debug?} is shorthand for {.if test debug}.
-      # Currently there is not if/elif chain; just use
-      # {.if test debug} {.or test release} {.or} {.end}
-      if test_attr:
-        assert pred_str.endswith('?')
-        # func, args, func_type
-        pred = (_TestAttribute, (pred_str[:-1],), ENHANCED_FUNC)
-      else:
-        raise BadPredicate('%r is not a valid predicate' % pred_str)
+    pred = self._GetPredicate(pred_str, test_attr=test_attr)
     block = _PredicateSection()
     block.NewOrClause(pred)
 
