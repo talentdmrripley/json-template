@@ -128,7 +128,7 @@ var _TestAttribute = function(unused, context, args) {
       throw err;
     }
   }
-}
+};
 
 var singular = function(x) { return  x == 1; };
 var plural = function(x) { return x > 1; };
@@ -540,7 +540,7 @@ function _Compile(template_str, options) {
 
   // default predicates with arguments
   var default_predicates = PrefixRegistry([
-      {name: 'test', func: _TestAttribute},
+      {name: 'test', func: _TestAttribute}
       ]);
   var all_predicates = new ChainedRegistry([
       more_predicates, SimpleRegistry(DEFAULT_PREDICATES), default_predicates
@@ -611,10 +611,11 @@ function _Compile(template_str, options) {
 
   while (true) {
     token_match = token_re.exec(template_str);
+    var token;
     if (token_match === null) {
       break;
     } else {
-      var token = token_match[0];
+      token = token_match[0];
     }
 
     // Add the previous literal to the program
