@@ -1224,7 +1224,7 @@ class PredicatesTest(testy.Test):
     self.verify.Expansion(t, {'debug': True}, 'Rendered in 3 seconds')
     self.verify.Expansion(t, {'debug': False}, '')
 
-  @testy.no_verify('java', 'php', 'javascript')
+  @testy.no_verify('java', 'php')
   def testTestPredicate(self):
     # Test the predicate that tests for attributes
     t = testy.ClassDef("{.if test debug}Rendered in 3 seconds{.end}")
@@ -1240,6 +1240,7 @@ class PredicatesTest(testy.Test):
     t = testy.ClassDef("{.if test}Rendered in 3 seconds{.end}")
     self.verify.EvaluationError(jsontemplate.EvaluationError, t, {})
 
+  @testy.no_verify('java', 'php')
   def testTestPredicateChained(self):
     # If you have more than one attribute to test, just use the "longhand"
     # format.
