@@ -1075,14 +1075,15 @@ _OPTION_NAMES = ['meta', 'format-char', 'default-formatter', 'undefined-str',
                  'whitespace']
 
 
-def FromString(s, more_formatters=lambda x: None, _constructor=None):
+def FromString(s, **kwargs):
   """Like FromFile, but takes a string."""
 
   f = StringIO.StringIO(s)
-  return FromFile(f, more_formatters=more_formatters, _constructor=_constructor)
+  return FromFile(f, **kwargs)
 
 
-def FromFile(f, more_formatters=lambda x: None, _constructor=None):
+def FromFile(f, more_formatters=lambda x: None, more_predicates=lambda x: None,
+             _constructor=None):
   """Parse a template from a file, using a simple file format.
 
   This is useful when you want to include template options in a data file,
@@ -1140,7 +1141,10 @@ def FromFile(f, more_formatters=lambda x: None, _constructor=None):
     # There were no options, so no blank line is necessary.
     body = line + f.read()
 
-  return _constructor(body, more_formatters=more_formatters, **options)
+  return _constructor(body,
+                      more_formatters=more_formatters,
+                      more_predicates=more_predicates,
+                      **options)
 
 
 class Template(object):
