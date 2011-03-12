@@ -544,7 +544,7 @@ class _ScopedContext(object):
     # Apply pre-formatters
     for i, (f, args, formatter_type) in enumerate(pre_formatters):
       if formatter_type == ENHANCED_FUNC:
-        value = f(value, context, args)
+        value = f(value, self, args)
       elif formatter_type == SIMPLE_FUNC:
         value = f(value)
       else:
