@@ -363,7 +363,7 @@ class _ProgramBuilder(object):
     if predicate:
       return predicate, args, func_type
     else:
-      raise BadPredicate('%r is not a valid predicate' % pred_str)
+      return None
 
   def AppendSubstitution(self, name, formatters):
     formatters = [self._GetFormatter(f) for f in formatters]
@@ -397,6 +397,8 @@ class _ProgramBuilder(object):
     """
     if pred_str:
       pred = self._GetPredicate(pred_str)
+      if not pred:
+        raise BadPredicate('%r is not a valid predicate' % pred_str)
     else:
       pred = None
     self.current_block.NewOrClause(pred)
@@ -404,9 +406,19 @@ class _ProgramBuilder(object):
   def AlternatesWith(self):
     self.current_block.AlternatesWith()
 
-  def NewPredicateSection(self, pred_str):
+  def NewPredicateSection(self, pred_str, test_attr=False):
     """For chains of predicate clauses."""
     pred = self._GetPredicate(pred_str)
+    if not pred:
+      # Nicer syntax, {.debug?} is shorthand for {.if test debug}.
+      # Currently there is not if/elif chain; just use
+      # {.if test debug} {.or test release} {.or} {.end}
+      if test_attr:
+        assert pred_str.endswith('?')
+        # func, args, func_type
+        pred = (_TestAttribute, (pred_str[:-1],), ENHANCED_FUNC)
+      else:
+        raise BadPredicate('%r is not a valid predicate' % pred_str)
     block = _PredicateSection()
     block.NewOrClause(pred)
 
@@ -767,10 +779,17 @@ def _TestAttribute(unused_value, context, args):
     return False
 
 
+_SINGULAR = lambda x: x == 1
+_PLURAL = lambda x: x > 1
+
 _DEFAULT_PREDICATES = {
-    'singular?': lambda x: x == 1,
-    'plural?': lambda x: x > 1,
-    'Debug?': _IsDebugMode,
+    # OLD, for backward compatibility: these are discouraged
+    'singular?': _SINGULAR,
+    'plural?': _PLURAL,
+    'Debug?': _IsDebugMode,  # Also OLD
+
+    'singular': _SINGULAR,
+    'plural': _PLURAL,
     }
 
 
@@ -820,10 +839,11 @@ def MakeTokenRegex(meta_left, meta_right):
   SECTION_TOKEN,  # {.section name}
   REPEATED_SECTION_TOKEN,  # {.repeated section name}
   PREDICATE_TOKEN,  # {.predicate?}
+  IF_TOKEN,  # {.if predicate}
   ALTERNATES_TOKEN,  # {.or}
   OR_TOKEN,  # {.or}
   END_TOKEN,  # {.end}
-  ) = range(8)
+  ) = range(9)
 
 
 def _MatchDirective(token):
@@ -855,10 +875,8 @@ def _MatchDirective(token):
     else:
       return SECTION_TOKEN, section_name
 
-  # {.if plural?} and {.plural?} are synonyms.  The ".if" will read better for
-  # expressions, for people who like that kind of dirty thing...
   if token.startswith('if '):
-    return PREDICATE_TOKEN, token[3:].strip()
+    return IF_TOKEN, token[3:].strip()
   if token.endswith('?'):
     return PREDICATE_TOKEN, token
 
@@ -1007,8 +1025,13 @@ def _CompileTemplate(
       continue
 
     if token_type == PREDICATE_TOKEN:
-      # Everything of the form {.predicate?} starts a new predicate section
-      block_made = builder.NewPredicateSection(token)
+      # {.attr?} lookups
+      block_made = builder.NewPredicateSection(token, test_attr=True)
+      balance_counter += 1
+      continue
+
+    if token_type == IF_TOKEN:
+      block_made = builder.NewPredicateSection(token, test_attr=False)
       balance_counter += 1
       continue
 

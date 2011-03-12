@@ -606,7 +606,7 @@ class SectionsTest(testy.PyUnitCompatibleTest):
         ---------
         [.section people]
           Name: [name] Age: [age]
-        [.or singular?]
+        [.or singular]
           *****
         [.end]
         """), meta='[]')
@@ -1091,6 +1091,7 @@ class PredicatesTest(testy.Test):
   # TODO: Fix JS whitesspace in this test
   @testy.no_verify('java', 'php')
   def testValuePredicate(self):
+    # OLD STYLE -- DISCOURAGED -- SEE BELOW
     t = testy.ClassDef(
     B("""
     {.repeated section num}
@@ -1114,13 +1115,13 @@ class PredicatesTest(testy.Test):
     """)
     self.verify.Expansion(t, data, expected, ignore_all_whitespace=True)
 
-    # This is the same template, but uses the optional ".if"
+    # This is the same template in the NEW IDIOM
     t = testy.ClassDef(
     B("""
     {.repeated section num}
-      {.if plural?}
+      {.if plural}
         There are {@} people here.
-      {.or singular?}
+      {.or singular}
         There is one person here.
       {.or}
         There is nobody here.
@@ -1135,9 +1136,9 @@ class PredicatesTest(testy.Test):
     B("""
     {.repeated section groups}
       {.section num}
-        {.plural?}
+        {.if plural}
           {@} people in {name}.
-        {.or singular?}
+        {.or singular}
           One person in {name}.
         {.end}
       {.or}
@@ -1166,8 +1167,9 @@ class PredicatesTest(testy.Test):
   @testy.no_verify('java', 'php')
   def testContextPredicate(self):
 
-    # The Debug? predicate looks up the stack for a "Debug" predicate
-    t = testy.ClassDef(
+    # OLD -- DISCOURAGED
+    # The Debug? predicate looks up the stack for a "debug" attribute
+    old_t = testy.ClassDef(
     B("""
     {.repeated section posts}
       Title: {title}
@@ -1191,7 +1193,7 @@ class PredicatesTest(testy.Test):
       Title: Eggs
       Body: These are eggs
     """)
-    self.verify.Expansion(t, data, expected, ignore_all_whitespace=True)
+    self.verify.Expansion(old_t, data, expected, ignore_all_whitespace=True)
 
     data = {
         'debug': True,
@@ -1209,11 +1211,16 @@ class PredicatesTest(testy.Test):
       Body: These are eggs
         Rendered in 3 seconds
     """)
-    self.verify.Expansion(t, data, expected, ignore_all_whitespace=True)
+    self.verify.Expansion(old_t, data, expected, ignore_all_whitespace=True)
 
     # Test it at the top level too
-
     t = testy.ClassDef("{.Debug?}Rendered in 3 seconds{.end}")
+    self.verify.Expansion(t, {'debug': True}, 'Rendered in 3 seconds')
+    self.verify.Expansion(t, {'debug': False}, '')
+
+  def testTestPredicateShorthand(self):
+    # Test the NEW STYLE
+    t = testy.ClassDef("{.debug?}Rendered in 3 seconds{.end}")
     self.verify.Expansion(t, {'debug': True}, 'Rendered in 3 seconds')
     self.verify.Expansion(t, {'debug': False}, '')
 
@@ -1232,6 +1239,22 @@ class PredicatesTest(testy.Test):
     # No argument
     t = testy.ClassDef("{.if test}Rendered in 3 seconds{.end}")
     self.verify.EvaluationError(jsontemplate.EvaluationError, t, {})
+
+  def testTestPredicateChained(self):
+    # If you have more than one attribute to test, just use the "longhand"
+    # format.
+    t = testy.ClassDef(B("""
+        {.if test debug}
+          DEBUG
+        {.or test release}
+          RELEASE
+        {.or}
+          NONE
+        {.end}
+        """))
+    self.verify.Expansion(t, {'debug': True}, '  DEBUG\n')
+    self.verify.Expansion(t, {'release': True}, '  RELEASE\n')
+    self.verify.Expansion(t, {}, '  NONE\n')
 
 
 class DocumentationTest(testy.Test):
