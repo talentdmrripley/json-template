@@ -761,10 +761,7 @@ def _Cycle(value, unused_context, args):
 
 
 def _IsDebugMode(unused_value, context, unused_args):
-  try:
-    return bool(context.Lookup('debug'))
-  except UndefinedVariable:
-    return False
+  return _TestAttribute(unused_value, context, ('debug',))
 
 
 def _TestAttribute(unused_value, context, args):

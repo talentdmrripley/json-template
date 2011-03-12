@@ -113,6 +113,23 @@ var DEFAULT_FORMATTERS = {
   }
 };
 
+var _TestAttribute = function(unused, context, args) {
+  var name = args[0];
+  if (name === undefined) {
+    throw { name: 'EvaluationError',
+            message: 'The "test" predicate requires an argument.' };
+  }
+  try {
+    return context.get(name);
+  } catch(err) {
+    if (err.name == 'UndefinedVariable') {
+      return false;
+    } else {
+      throw err;
+    }
+  }
+}
+
 var singular = function(x) { return  x == 1; };
 var plural = function(x) { return x > 1; };
 var DEFAULT_PREDICATES = {
@@ -123,15 +140,7 @@ var DEFAULT_PREDICATES = {
   'singular?': singular,
   'plural?': plural,
   'Debug?': function(unused, context) {
-    try {
-      return context.get('debug');
-    } catch(err) {
-      if (err.name == 'UndefinedVariable') {
-        return false;
-      } else {
-        throw err;
-      }
-    }
+    return _TestAttribute(unused, context, ['debug']);
   }
 };
 
@@ -470,7 +479,7 @@ function _DoRepeatedSection(args, context, callback) {
     // Execute the statements in the block for every item in the list.
     // Execute the alternate block on every iteration except the last.  Each
     // item could be an atom (string, integer, etc.) or a dictionary.
-    
+
     var last_index = items.length - 1;
     var statements = block.Statements();
     var alt_statements = block.Statements('alternate');
