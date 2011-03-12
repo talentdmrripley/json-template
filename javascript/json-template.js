@@ -566,13 +566,17 @@ function _Compile(template_str, options) {
     return pair;
   }
 
-  function GetPredicate(pred_str) {
+  function GetPredicate(pred_str, test_attr) {
     var pair = all_predicates.lookup(pred_str);
     if (!pair[0]) {
-      throw {
-        name: 'BadPredicate',
-        message: pred_str + ' is not a valid predicate'
-      };
+      if (test_attr) {
+        pair = [_TestAttribute, [pred_str.slice(null, -1)]];
+      } else {
+        throw {
+          name: 'BadPredicate',
+          message: pred_str + ' is not a valid predicate'
+        };
+      }
     }
     return pair;
   }
@@ -674,24 +678,25 @@ function _Compile(template_str, options) {
       var or_match = token.match(_OR_RE);
       if (or_match) {
         pred_str = or_match[1];
-        pred = pred_str ? GetPredicate(pred_str) : null;
+        pred = pred_str ? GetPredicate(pred_str, false) : null;
         current_block.NewOrClause(pred);
         continue;
       }
 
-      // Match either {.pred?} or {.if pred?}
-      var matched = false;
+      // {.if predicate} or {.attr?}
+      var if_token = false, pred_token = false;
 
       var if_match = token.match(_IF_RE);
       if (if_match) {
         pred_str = if_match[1];
-        matched = true;
+        if_token = true;
       } else if (token.charAt(token.length-1) == '?') {
         pred_str = token;
-        matched = true;
+        pred_token = true;
       }
-      if (matched) {
-        pred = pred_str ? GetPredicate(pred_str) : null;
+      if (if_token || pred_token) {
+        // test_attr=true if we got the {.attr?} style (pred_token)
+        pred = pred_str ? GetPredicate(pred_str, pred_token) : null;
         new_block = _PredicateSection();
         new_block.NewOrClause(pred);
         current_block.Append([_DoPredicates, new_block]);
