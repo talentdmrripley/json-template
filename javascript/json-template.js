@@ -538,9 +538,12 @@ function _Compile(template_str, options) {
 
   var more_predicates = MakeRegistry(options.more_predicates);
 
-  // TODO: Add defaults
+  // default predicates with arguments
+  var default_predicates = PrefixRegistry([
+      {name: 'test', func: _TestAttribute},
+      ]);
   var all_predicates = new ChainedRegistry([
-      more_predicates, SimpleRegistry(DEFAULT_PREDICATES)
+      more_predicates, SimpleRegistry(DEFAULT_PREDICATES), default_predicates
       ]);
 
   // We want to allow an explicit null value for default_formatter, which means
