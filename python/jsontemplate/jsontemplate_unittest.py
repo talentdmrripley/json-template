@@ -326,6 +326,28 @@ class InternalTemplateTest(testy.Test):
         """),
         t.expand(d))
 
+  def testDoubleExpansion(self):
+    data = {
+        'title': 'Greetings!',
+        'body': {'names': ['andy', 'bob']},
+        }
+    body_template = jsontemplate.Template(B("""
+        {.repeated section names}
+          Hello {@}
+        {.end}
+        """))
+    style = jsontemplate.Template(B("""
+        {title}
+        {.section body}{@|raw}{.end}
+        """))
+    result = jsontemplate.expand_with_style(body_template, style, data)
+    self.verify.LongStringsEqual(B("""
+        Greetings!
+          Hello andy
+          Hello bob
+        
+        """), result)
+
 
 class FunctionsApiTest(testy.Test):
   """Tests that can only be run internally."""

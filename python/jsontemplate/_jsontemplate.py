@@ -1217,7 +1217,7 @@ class Template(object):
   #
 
   def execute(self, data_dict, callback, trace=None):
-    """Low level method to expands the template piece by piece.
+    """Low level method to expand the template piece by piece.
 
     Args:
       data_dict: The JSON data dictionary.
@@ -1234,7 +1234,7 @@ class Template(object):
   def expand(self, *args, **kwargs):
     """Expands the template with the given data dictionary, returning a string.
 
-    This is a small wrapper around render(), and is the most convenient
+    This is a small wrapper around execute(), and is the most convenient
     interface.
 
     Args:
@@ -1259,7 +1259,7 @@ class Template(object):
       trace = None  # Can't use trace= with the kwargs style
 
     tokens = []
-    self.render(data_dict, tokens.append, trace=trace)
+    self.execute(data_dict, tokens.append, trace=trace)
     return ''.join(tokens)
 
   def tokenstream(self, data_dict):
@@ -1271,7 +1271,7 @@ class Template(object):
     NOTE: This is a generator, but JavaScript doesn't have generators.
     """
     tokens = []
-    self.render(data_dict, tokens.append)
+    self.execute(data_dict, tokens.append)
     for token in tokens:
       yield token
 
@@ -1279,7 +1279,7 @@ class Template(object):
 class Trace(object):
   """Trace of execution for JSON Template.
   
-  This object should be passed into the render/expand() function.
+  This object should be passed into the execute/expand() function.
 
   Useful for debugging, especially for templates which reference other
   templates.
@@ -1491,3 +1491,40 @@ def expand(template_str, dictionary, **kwargs):
   """
   t = Template(template_str, **kwargs)
   return t.expand(dictionary)
+
+
+def _FlattenToCallback(tokens, callback):
+  for t in tokens:
+    if isinstance(t, basestring):
+      callback(t)
+    else:
+      _FlattenToCallback(t, callback)
+
+
+def execute_with_style(template, style, data, callback, body_subtree='body'):
+  """Low level version of expand_with_style that takes a callback."""
+  tokens_body = []
+  template.execute(data[body_subtree], tokens_body.append)
+  data[body_subtree] = tokens_body
+  tokens = []
+  style.execute(data, tokens.append)
+  _FlattenToCallback(tokens, callback)
+
+
+def expand_with_style(template, style, data, body_subtree='body'):
+  """Expand a data dictionary with a template AND a style.
+
+  A style is a Template instance that factors out the common strings in several
+  "body" templates.
+
+  Args:
+    template: Template instance for the inner "page content"
+    style: Template instance for the outer "page style"  
+    data: Data dictionary, with a 'body' key (or body_subtree
+    body_subtree: key that specifies the subtree of 'data' to expand 'template'
+                  into
+  """
+  tokens = []
+  execute_with_style(template, style, data, tokens.append,
+                     body_subtree=body_subtree)
+  return ''.join(tokens)
