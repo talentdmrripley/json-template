@@ -1494,6 +1494,10 @@ def expand(template_str, dictionary, **kwargs):
 
 
 def _FlattenToCallback(tokens, callback):
+  """Takes a nested list structure and flattens it.
+
+  ['a', ['b', 'c']] -> callback('a'); callback('b'); callback('c');
+  """
   for t in tokens:
     if isinstance(t, basestring):
       callback(t)
@@ -1503,8 +1507,12 @@ def _FlattenToCallback(tokens, callback):
 
 def execute_with_style(template, style, data, callback, body_subtree='body'):
   """Low level version of expand_with_style that takes a callback."""
+  try:
+    body_data = data[body_subtree]
+  except KeyError:
+    raise EvaluationError('Data dictionary has no subtree %r' % body_subtree)
   tokens_body = []
-  template.execute(data[body_subtree], tokens_body.append)
+  template.execute(body_data, tokens_body.append)
   data[body_subtree] = tokens_body
   tokens = []
   style.execute(data, tokens.append)
