@@ -326,7 +326,7 @@ class InternalTemplateTest(testy.Test):
         """),
         t.expand(d))
 
-  def testDoubleExpansion(self):
+  def testExpandWithStyle(self):
     data = {
         'title': 'Greetings!',
         'body': {'names': ['andy', 'bob']},
@@ -347,6 +347,9 @@ class InternalTemplateTest(testy.Test):
           Hello bob
         
         """), result)
+    self.verify.Raises(
+        jsontemplate.EvaluationError,
+        jsontemplate.expand_with_style, body_template, style, data, 'foo')
 
 
 class FunctionsApiTest(testy.Test):
