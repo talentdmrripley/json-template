@@ -1119,6 +1119,8 @@ def FromFile(f, more_formatters=lambda x: None, more_predicates=lambda x: None,
       # Accept something like 'Default-Formatter: raw'.  This syntax is like
       # HTTP/E-mail headers.
       name = name.lower()
+      # In Python 2.4, kwargs must be plain strings
+      name = name.encode('utf-8')
 
       if name in _OPTION_NAMES:
         name = name.replace('-', '_')
