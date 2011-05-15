@@ -670,6 +670,12 @@ def _Reverse(x):
   strings too.
   """
   return list(reversed(x))
+  
+
+def _Pairs(data):
+  """dictionary -> list of pairs"""
+  keys = sorted(data)
+  return [{'@key': k, '@value': data[k]} for k in keys]
 
 
 # See http://google-ctemplate.googlecode.com/svn/trunk/doc/howto.html for more
@@ -729,6 +735,13 @@ _DEFAULT_FORMATTERS = {
     'js-string': None,
 
     'reverse': _Reverse,
+    
+    # Given a dictinonary, returns a *list* of key-value pairs.  Used for
+    # section formatters.  See jsontemplate_test.py for usage.
+    #
+    # The name "pairs" is meant to be language-independent, so it makes sense
+    # in JavaScript, etc.
+    'pairs': _Pairs,
     }
 
 

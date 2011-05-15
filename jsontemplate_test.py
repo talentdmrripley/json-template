@@ -1037,9 +1037,25 @@ class StandardFormattersTest(testy.Test):
           x x Dirk
         """))
 
+  @testy.only_verify('python')
+  def testPairsFormatter(self):
+    t = testy.ClassDef(
+				B("""
+        {.repeated section @ | pairs}
+        {@key}:{@value}
+        {.end}
+        """))
+    data = {'a123': 'b', 'c': 'd', 'e': 'f'}
+    self.verify.Expansion(t, data,
+        B("""
+        a123:b
+        c:d
+        e:f
+        """))
+
 
 class AllFormattersTest(testy.Test):
-  """Test that each implementation implements the standard formatters."""
+  """TODO: This uses ExpansionWithAllFormatters, is it necessary?"""
 
   LABELS = ['multilanguage']
 
@@ -1048,6 +1064,7 @@ class AllFormattersTest(testy.Test):
     t = testy.ClassDef('<b>{num|printf %.3f}</b>')
     self.verify.ExpansionWithAllFormatters(
         t, {'num': 1.0/3}, '<b>0.333</b>')
+
 
 
 class WhitespaceModesTest(testy.Test):
