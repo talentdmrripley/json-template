@@ -19,8 +19,11 @@
 __author__ = 'Miguel Ibero'
 
 import os
+try:
+  import json
+except ImportError:
+  import simplejson as json
 
-from pan.core import json
 from pan.core import os_process
 from pan.test import testy
 

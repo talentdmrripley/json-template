@@ -20,8 +20,11 @@ __author__ = 'Andy Chu, William Shallum'
 
 import os
 import tempfile
+try:
+  import json
+except ImportError:
+  import simplejson as json
 
-from pan.core import json
 from pan.core import os_process
 from pan.core import records
 from pan.test import testy

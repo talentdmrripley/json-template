@@ -25,6 +25,10 @@ __author__ = 'Andy Chu'
 import os
 from pprint import pprint
 import sys
+try:
+  import json
+except ImportError:
+  import simplejson as json
 
 if __name__ == '__main__':
   # for jsontemplate package
@@ -32,7 +36,6 @@ if __name__ == '__main__':
 
 from pan.core import cmdapp
 from pan.core import params
-from pan.core import json
 from pan.core import util
 from pan.test import testy
 
