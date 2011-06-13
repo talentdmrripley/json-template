@@ -5,7 +5,7 @@
 action=$1
 shift
 
-PAN_DIR=~/hg/taste
+TASTE_DIR=~/hg/taste
 
 case $action in
 
@@ -15,7 +15,7 @@ case $action in
 
   py-tests)
     # Run Python unit tests
-    export PYTHONPATH=$PAN_DIR
+    export PYTHONPATH=$TASTE_DIR
     set -o errexit
     ./jsontemplate_test.py
     python/jsontemplate/jsontemplate_unittest.py
@@ -25,13 +25,13 @@ case $action in
   js-tests)
     set -o errexit
     ./js_tests.sh
-    export PYTHONPATH=$PAN_DIR
+    export PYTHONPATH=$TASTE_DIR
     ./jsontemplate_test.py --javascript
     ;;
 
   all-tests)
     # Run all unit tests
-    export PYTHONPATH=$PAN_DIR
+    export PYTHONPATH=$TASTE_DIR
     set -o errexit
     ./jsontemplate_test.py --all
     ;;
