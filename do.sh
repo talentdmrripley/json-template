@@ -19,6 +19,7 @@ case $action in
     set -o errexit
     ./jsontemplate_test.py
     python/jsontemplate/jsontemplate_unittest.py
+    python/jsontemplate/formatters_test.py
     ;;
 
   js-tests)
