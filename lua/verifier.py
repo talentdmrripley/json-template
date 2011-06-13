@@ -24,7 +24,6 @@ try:
 except ImportError:
   import simplejson as json
 
-from pan.core import records
 from pan.core import os_process
 from pan.test import testy
 
