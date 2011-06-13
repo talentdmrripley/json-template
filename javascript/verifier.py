@@ -30,7 +30,6 @@ if __name__ == '__main__':
   sys.path.insert(0, os.path.join(os.path.dirname(sys.argv[0]), '..'))
 
 from pan.core import os_process
-from pan.core import records
 from pan.test import testy
 
 
@@ -57,6 +56,14 @@ var t = jsontemplate.Template(%(template)s, %(options)s);
 var s = t.expand(%(dictionary)s);
 print(s);
 """
+
+class _Record(object):
+  """Convenience object with attributes"""
+
+  def __init__(self, **kwargs):
+    for k, v in kwargs.iteritems():
+      setattr(self, k, v)
+
 
 class JavaScriptVerifier(testy.StandardVerifier):
   """Abstract base class."""
@@ -193,7 +200,7 @@ class V8ShellVerifier(JavaScriptVerifier):
     self.Equal(exit_code, 0)
     self.Equal(stderr, '')
 
-    return records.Record(
+    return _Record(
         stderr=stderr, stdout=stdout, exit_code=exit_code,
         exception=exception)
 
@@ -235,7 +242,7 @@ class CScriptVerifier(JavaScriptVerifier):
       else:
         stdout_lines.append(line)
 
-    return records.Record(
+    return _Record(
         stdout=''.join(stdout_lines), stderr=stderr, exit_code=exit_code,
         exception=exception)
 
