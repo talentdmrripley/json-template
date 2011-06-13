@@ -28,7 +28,6 @@ try:
 except ImportError:
   import simplejson as json
 
-from pan.core import records
 from pan.test import testy
 
 from jsontemplate import highlight
