@@ -34,8 +34,8 @@ except ImportError:
 if __name__ == '__main__':
   sys.path.insert(0, os.path.join(os.path.dirname(sys.argv[0]), '..'))
 
-from pan.core import cmdapp
-from pan.core import params
+from taste import cmdapp
+from taste import params
 
 import jsontemplate
 from jsontemplate import formatters

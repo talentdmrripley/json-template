@@ -30,8 +30,8 @@ try:
 except ImportError:
   import simplejson as json
 
-from pan.core import os_process
-from pan.test import testy
+from taste import os_process
+import taste
 
 import base_verifier  # TODO: Move this into a package
 
@@ -49,7 +49,7 @@ class InternalTemplateVerifier(base_verifier.JsonTemplateVerifier):
       ignore_all_whitespace=False, all_formatters=False):
     """
     Args:
-      template_def: testy.ClassDef instance.
+      template_def: taste.ClassDef instance.
     """
     if all_formatters:
       template_def.kwargs['more_formatters'] = formatters.PythonPercentFormat
@@ -75,7 +75,7 @@ class ExternalVerifier(base_verifier.JsonTemplateVerifier):
   LABELS = ['python']
 
   def __init__(self, script_path):
-    testy.StandardVerifier.__init__(self)
+    taste.StandardVerifier.__init__(self)
     self.script_path = script_path
     self.runner = os_process.Runner(universal_newlines=True)
 
@@ -126,7 +126,7 @@ class ExternalVerifier(base_verifier.JsonTemplateVerifier):
     self.In(exception.__name__, result.stderr)
 
   def CompilationError(self, exception, *args, **kwargs):
-    template_def = testy.ClassDef(*args, **kwargs)
+    template_def = taste.ClassDef(*args, **kwargs)
     template_str = self._MakeTemplateStr(template_def)
     result = self._RunScript(template_str, {})
     self.Equal(result.exit_code, 1)

@@ -24,8 +24,8 @@ try:
 except ImportError:
   import simplejson as json
 
-from pan.core import os_process
-from pan.test import testy
+from taste import os_process
+import taste
 
 import base_verifier  # TODO: Move this into a package
 
@@ -78,7 +78,7 @@ class LuaVerifier(base_verifier.JsonTemplateVerifier):
     self.In(exception.__name__, result.stderr)
 
   def CompilationError(self, exception, *args, **kwargs):
-    template_def = testy.ClassDef(*args, **kwargs)
+    template_def = taste.ClassDef(*args, **kwargs)
     result = self._RunScript(template_def, {})
     self.Equal(result.exit_code, 1)
     print exception.__name__

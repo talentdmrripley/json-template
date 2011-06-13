@@ -25,11 +25,11 @@ try:
 except ImportError:
   import simplejson as json
 
-from pan.core import os_process
-from pan.test import testy
+from taste import os_process
+import taste
 
 
-class JavaVerifier(testy.StandardVerifier):
+class JavaVerifier(taste.StandardVerifier):
   """
   Verifies template behavior by running the java test class.
   """
@@ -37,7 +37,7 @@ class JavaVerifier(testy.StandardVerifier):
   LABELS = ['java']
 
   def __init__(self, java_interpreter_path, impl_path, test_classes_path):
-    testy.StandardVerifier.__init__(self)
+    taste.StandardVerifier.__init__(self)
     self.java_interpreter_path = java_interpreter_path
     self.impl_path = impl_path
     self.test_classes_path = test_classes_path
@@ -45,7 +45,7 @@ class JavaVerifier(testy.StandardVerifier):
 
   def CheckIfRunnable(self):
     if not os.path.exists(self.java_interpreter_path):
-      raise testy.TestPrequisiteMissing(
+      raise taste.TestPrequisiteMissing(
           '%r is missing' % self.java_interpreter_path)
 
   def _RunScript(self, template_def, dictionary):
@@ -108,7 +108,7 @@ class JavaVerifier(testy.StandardVerifier):
         'stderr: %r\nstdout: %s' % (result.stderr, result.stdout))
 
   def CompilationError(self, exception, *args, **kwargs):
-    template_def = testy.ClassDef(*args, **kwargs)
+    template_def = taste.ClassDef(*args, **kwargs)
     result = self._RunScript(template_def, {})
     self.In(
         'EXCEPTION: ' + exception.__name__,

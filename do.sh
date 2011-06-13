@@ -5,7 +5,7 @@
 action=$1
 shift
 
-PAN_DIR=~/svn/pan/trunk
+PAN_DIR=~/hg/taste
 
 case $action in
 

@@ -16,10 +16,10 @@ if __name__ == '__main__':
 
 from jsontemplate import datadict  # module under test
 from jsontemplate import _jsontemplate as jsontemplate
-from pan.test import testy
+import taste
 
 
-class DataDictTest(testy.Test):
+class DataDictTest(taste.Test):
 
   def testAddIndex(self):
     d = [ {'foo': 1},
@@ -82,4 +82,4 @@ class DataDictTest(testy.Test):
 
 
 if __name__ == '__main__':
-  testy.RunThisModule()
+  taste.RunThisModule()

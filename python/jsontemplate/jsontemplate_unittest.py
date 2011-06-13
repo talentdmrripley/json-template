@@ -18,8 +18,8 @@ if __name__ == '__main__':
   sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
   sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 
-from pan.test import testy
-from pan.core import util
+import taste
+from taste import util
 
 # We need access to the internals here
 from jsontemplate import _jsontemplate as jsontemplate
@@ -28,7 +28,7 @@ import verifier as python_verifier
 B = util.BlockStr
 
 
-class TokenizeTest(testy.Test):
+class TokenizeTest(taste.Test):
 
   def testMakeTokenRegex(self):
     token_re = jsontemplate.MakeTokenRegex('[', ']')
@@ -67,20 +67,20 @@ text
         ('repeated', '@'))
 
 
-class FromStringTest(testy.Test):
+class FromStringTest(taste.Test):
 
   def testEmpty(self):
     s = """\
 Format-Char: |
 Meta: <>
 """
-    t = jsontemplate.FromString(s, _constructor=testy.ClassDef)
+    t = jsontemplate.FromString(s, _constructor=taste.ClassDef)
     self.verify.Equal(t.args[0], '')
     self.verify.Equal(t.kwargs['meta'], '<>')
     self.verify.Equal(t.kwargs['format_char'], '|')
 
     # Empty template
-    t = jsontemplate.FromString('', _constructor=testy.ClassDef)
+    t = jsontemplate.FromString('', _constructor=taste.ClassDef)
     self.verify.Equal(t.args[0], '')
     self.verify.Equal(t.kwargs.get('meta'), None)
     self.verify.Equal(t.kwargs.get('format_char'), None)
@@ -101,7 +101,7 @@ meta: <>
 
 Hello <there>
 """
-    t = jsontemplate.FromString(f, _constructor=testy.ClassDef)
+    t = jsontemplate.FromString(f, _constructor=taste.ClassDef)
     self.verify.Equal(t.args[0], 'Hello <there>\n')
     self.verify.Equal(t.kwargs['meta'], '<>')
     self.verify.Equal(t.kwargs['format_char'], ':')
@@ -122,7 +122,7 @@ Hello <there>
     self.verify.Equal(t.expand({}), u'\uFF00')
 
 
-class ScopedContextTest(testy.Test):
+class ScopedContextTest(taste.Test):
 
   def testScopedContext(self):
     data = {'foo': [1,2,3]}
@@ -146,7 +146,7 @@ class ScopedContextTest(testy.Test):
     self.verify.Raises(StopIteration, s.Next)
 
 
-class InternalTemplateTest(testy.Test):
+class InternalTemplateTest(taste.Test):
   """Tests that can only be run internally."""
 
   VERIFIERS = [python_verifier.InternalTemplateVerifier]
@@ -169,7 +169,7 @@ class InternalTemplateTest(testy.Test):
     # iteration order
 
     # Single formatter
-    t = testy.ClassDef(
+    t = taste.ClassDef(
         'http://example.com?{params:url-params}',
         format_char=':')
     self.verify.Expansion(
@@ -178,7 +178,7 @@ class InternalTemplateTest(testy.Test):
         'http://example.com?baz=%21%40%23%24%25%5E%26%2A%28&foo=1&bar=String+with+spaces')
 
     # Multiple
-    t = testy.ClassDef(
+    t = taste.ClassDef(
         'http://example.com?{params | url-params | html}',
         format_char='|')
     self.verify.Expansion(
@@ -197,7 +197,7 @@ class InternalTemplateTest(testy.Test):
       else:
         return None
 
-    t = testy.ClassDef('{@}', more_formatters=_More)
+    t = taste.ClassDef('{@}', more_formatters=_More)
     d = {
         u'url': u'http://example.com',
         u'person': {
@@ -355,7 +355,7 @@ class InternalTemplateTest(testy.Test):
         jsontemplate.expand_with_style, body_template, style, data, 'foo')
 
 
-class FunctionsApiTest(testy.Test):
+class FunctionsApiTest(taste.Test):
   """Tests that can only be run internally."""
 
   def testMoreFormattersAsDict(self):
@@ -402,7 +402,7 @@ class FunctionsApiTest(testy.Test):
     self.verify.Equal(t.expand({'name': 'World'}), 'Hello world WORLD')
 
 
-class TemplateGroupTest(testy.Test):
+class TemplateGroupTest(taste.Test):
 
   def testMakeTemplateGroup(self):
     child_template = jsontemplate.Template('- {@}')
@@ -542,4 +542,4 @@ class TemplateGroupTest(testy.Test):
 
 
 if __name__ == '__main__':
-  testy.RunThisModule()
+  taste.RunThisModule()
