@@ -25,8 +25,11 @@ This uses the command line tool python/expand.py to demonstrate one way to test 
 __author__ = 'Andy Chu'
 
 import sys
+try:
+  import json
+except ImportError:
+  import simplejson as json
 
-from pan.core import json
 from pan.core import os_process
 from pan.core import records
 from pan.test import testy

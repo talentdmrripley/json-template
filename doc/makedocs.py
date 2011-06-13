@@ -12,12 +12,15 @@ import re
 import shutil
 import sys
 import subprocess
+try:
+  import json
+except ImportError:
+  import simplejson as json
 
 if __name__ == '__main__':
   sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'python'))
 
 import jsontemplate
-from pan.core import json
 
 
 

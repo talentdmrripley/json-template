@@ -8,13 +8,16 @@ __author__ = 'Andy Chu'
 
 import os
 import sys
+try:
+  import json
+except ImportError:
+  import simplejson as json
 
 if __name__ == '__main__':
   # for jsontemplate and pan, respectively
   sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
   sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 
-from pan.core import json
 from pan.test import testy
 from pan.core import util
 

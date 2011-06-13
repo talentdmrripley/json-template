@@ -24,8 +24,11 @@ __author__ = 'Andy Chu'
 import datetime
 import os
 import sys
+try:
+  import json
+except ImportError:
+  import simplejson as json
 
-from pan.core import json
 from pan.test import testy
 
 from jsontemplate import formatters

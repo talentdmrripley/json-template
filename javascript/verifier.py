@@ -21,11 +21,14 @@ __author__ = 'Andy Chu'
 import os
 import sys
 import tempfile
+try:
+  import json
+except ImportError:
+  import simplejson as json
 
 if __name__ == '__main__':
   sys.path.insert(0, os.path.join(os.path.dirname(sys.argv[0]), '..'))
 
-from pan.core import json
 from pan.core import os_process
 from pan.core import records
 from pan.test import testy

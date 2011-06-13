@@ -26,13 +26,16 @@ __author__ = 'Andy Chu'
 
 import os
 import sys
+try:
+  import json
+except ImportError:
+  import simplejson as json
 
 if __name__ == '__main__':
   sys.path.insert(0, os.path.join(os.path.dirname(sys.argv[0]), '..'))
 
 from pan.core import cmdapp
 from pan.core import params
-from pan.core import json
 
 import jsontemplate
 from jsontemplate import formatters
