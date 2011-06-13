@@ -18,7 +18,6 @@ if __name__ == '__main__':
 from jsontemplate import formatters  # module under test
 import jsontemplate
 
-from pan.core import util
 from pan.test import testy
 
 
