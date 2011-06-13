@@ -16,7 +16,7 @@
 
 """Language-independent tests for json-template.
 
-Uses the testy test framework.
+Uses the taste test framework.
 """
 
 __author__ = 'Andy Chu'
@@ -34,10 +34,10 @@ if __name__ == '__main__':
   # for jsontemplate package
   sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'python'))
 
-from pan.core import cmdapp
-from pan.core import params
-from pan.core import util
-from pan.test import testy
+from taste import cmdapp
+from taste import params
+from taste import util
+import taste
 
 import jsontemplate  # module under *direct* test
 
@@ -56,17 +56,17 @@ import verifier as python_verifier
 B = util.BlockStr
 
 
-class TrivialTests(testy.Test):
+class TrivialTests(taste.Test):
   """For getting the skeleton of code in place!"""
 
   LABELS = ['multilanguage']
 
   def testTrivial(self):
-    t = testy.ClassDef('Hello')
+    t = taste.ClassDef('Hello')
     self.verify.Expansion(t, {}, 'Hello')
 
 
-class SimpleTests(testy.Test):
+class SimpleTests(taste.Test):
   """Basic syntax."""
 
   LABELS = ['multilanguage']
@@ -81,26 +81,26 @@ class SimpleTests(testy.Test):
     # containing {}, [], <> or () is liberal.
 
   def testComment(self):
-    t = testy.ClassDef('Hello {# Comment} There')
+    t = taste.ClassDef('Hello {# Comment} There')
     self.verify.Expansion(t, {}, 'Hello  There')
 
   def testSpace(self):
-    t = testy.ClassDef('{.space}{.space}')
+    t = taste.ClassDef('{.space}{.space}')
     self.verify.Expansion(t, {}, '  ')
 
   def testWhitespace(self):
-    t = testy.ClassDef('{.tab}{.tab}')
+    t = taste.ClassDef('{.tab}{.tab}')
     self.verify.Expansion(t, {}, '\t\t')
 
-    t = testy.ClassDef('Line{.newline}')
+    t = taste.ClassDef('Line{.newline}')
     self.verify.Expansion(t, {}, 'Line\n')
 
   def testOnlyDeclaration(self):
-    t = testy.ClassDef('{# Comment}')
+    t = taste.ClassDef('{# Comment}')
     self.verify.Expansion(t, {}, '')
 
 
-class SubstitutionsTest(testy.Test):
+class SubstitutionsTest(taste.Test):
   """Language-independent tests for JSON Template."""
 
   LABELS = ['multilanguage']
@@ -111,44 +111,44 @@ class SubstitutionsTest(testy.Test):
       python_verifier.ExternalVerifier]
 
   def testSimpleData(self):
-    t = testy.ClassDef('Hello {name}, how are you')
+    t = taste.ClassDef('Hello {name}, how are you')
     self.verify.Expansion(t, {'name': 'Andy'}, 'Hello Andy, how are you')
 
     self.verify.EvaluationError(jsontemplate.UndefinedVariable, t, {})
 
   def testExpandingInteger(self):
-    t = testy.ClassDef('There are {num} ways to do it')
+    t = taste.ClassDef('There are {num} ways to do it')
     self.verify.Expansion(t, {'num': 5}, 'There are 5 ways to do it')
 
   # TODO: Implement in Java
-  @testy.no_verify('java')
+  @taste.no_verify('java')
   def testExpandingNull(self):
-    t = testy.ClassDef('There are {num|str} ways to do it')
+    t = taste.ClassDef('There are {num|str} ways to do it')
     self.verify.Expansion(t, {'num': None}, 'There are null ways to do it')
 
   def testVariableFormat(self):
-    t = testy.ClassDef('Where is your {name|html}')
+    t = taste.ClassDef('Where is your {name|html}')
     self.verify.Expansion(t, {'name': '<head>'}, 'Where is your &lt;head&gt;')
 
   def testDefaultFormatter(self):
-    t = testy.ClassDef('{name} {val|raw}', default_formatter='html')
+    t = taste.ClassDef('{name} {val|raw}', default_formatter='html')
     self.verify.Expansion(t, {'name': '<head>', 'val': '<>'}, '&lt;head&gt; <>')
 
   def testUndefinedVariable(self):
-    t = testy.ClassDef('Where is your {name|html}')
+    t = taste.ClassDef('Where is your {name|html}')
     self.verify.EvaluationError(jsontemplate.UndefinedVariable, t, {})
 
   # TODO: Implement in Java
-  @testy.no_verify('java')
+  @taste.no_verify('java')
   def testUndefinedVariableUsesUndefinedStr(self):
-    t = testy.ClassDef('Where is your {name|html}', undefined_str='')
+    t = taste.ClassDef('Where is your {name|html}', undefined_str='')
     self.verify.Expansion(t, {}, 'Where is your ')
 
-    t = testy.ClassDef('Where is your {name|html}', undefined_str='???')
+    t = taste.ClassDef('Where is your {name|html}', undefined_str='???')
     self.verify.Expansion(t, {}, 'Where is your ???')
 
   def testChangingFormattingCharacter(self):
-    t = testy.ClassDef('Where is your {name:html}', format_char=':')
+    t = taste.ClassDef('Where is your {name:html}', format_char=':')
     self.verify.Expansion(t, {'name': '<head>'}, 'Where is your &lt;head&gt;')
 
   def testBadFormatters(self):
@@ -164,39 +164,39 @@ class SubstitutionsTest(testy.Test):
         default_formatter=None)
 
   def testEscapeMetacharacter1(self):
-    t = testy.ClassDef('[.meta-left]Hello[.meta-right]', meta='[]')
+    t = taste.ClassDef('[.meta-left]Hello[.meta-right]', meta='[]')
     self.verify.Expansion(t, {}, '[Hello]')
 
-    t = testy.ClassDef('<%.meta-left%>Hello<%.meta-right%>', meta='<%%>')
+    t = taste.ClassDef('<%.meta-left%>Hello<%.meta-right%>', meta='<%%>')
     self.verify.Expansion(t, {}, '<%Hello%>')
 
-    t = testy.ClassDef('(-.meta-left-)Hello(-.meta-right-)', meta='(--)')
+    t = taste.ClassDef('(-.meta-left-)Hello(-.meta-right-)', meta='(--)')
     self.verify.Expansion(t, {}, '(-Hello-)')
 
-    t = testy.ClassDef('^|.meta-left|^Hello^|.meta-right|^', meta='^||^')
+    t = taste.ClassDef('^|.meta-left|^Hello^|.meta-right|^', meta='^||^')
     self.verify.Expansion(t, {}, '^|Hello|^')
 
-    t = testy.ClassDef('$(.meta-left)$Hello$(.meta-right)$', meta='$()$')
+    t = taste.ClassDef('$(.meta-left)$Hello$(.meta-right)$', meta='$()$')
     self.verify.Expansion(t, {}, '$(Hello)$')
 
   def testMeta(self):
-    t = testy.ClassDef('Hello {{# Comment}} There', meta='{{}}')
+    t = taste.ClassDef('Hello {{# Comment}} There', meta='{{}}')
     self.verify.Expansion(t, {}, 'Hello  There')
 
   def testSubstituteCursor(self):
-    t = testy.ClassDef('{.section is-new}New since {@} ! {.end}')
+    t = taste.ClassDef('{.section is-new}New since {@} ! {.end}')
     self.verify.Expansion(t, {}, '')
     self.verify.Expansion(t, {'is-new': 123}, 'New since 123 ! ')
 
 
-class SectionsTest(testy.PyUnitCompatibleTest):
+class SectionsTest(taste.PyUnitCompatibleTest):
   """Test sections adn repeated sections."""
 
   LABELS = ['multilanguage']
 
   def testSimpleSection(self):
     # Has some newlines too
-    t = testy.ClassDef(
+    t = taste.ClassDef(
         B("""
         {.section is-new}
           Hello there
@@ -217,7 +217,7 @@ class SectionsTest(testy.PyUnitCompatibleTest):
         """))
 
   def testRepeatedSection(self):
-    t = testy.ClassDef(
+    t = taste.ClassDef(
         B("""
         [header]
         ---------
@@ -254,7 +254,7 @@ class SectionsTest(testy.PyUnitCompatibleTest):
         """))
 
   def testRepeatedSectionWithDot(self):
-    t = testy.ClassDef(
+    t = taste.ClassDef(
         B("""
         [header]
         ---------
@@ -280,7 +280,7 @@ class SectionsTest(testy.PyUnitCompatibleTest):
         """))
 
   def testNestedRepeatedSections(self):
-    t = testy.ClassDef(
+    t = taste.ClassDef(
         B("""
         [header]
         ---------
@@ -304,9 +304,9 @@ class SectionsTest(testy.PyUnitCompatibleTest):
           Bob: nice mean fun 
         """), ignore_all_whitespace=True)
 
-  @testy.no_verify('php', 'java')
+  @taste.no_verify('php', 'java')
   def testNestedAnonymousRepeatedSections(self):
-    t = testy.ClassDef(
+    t = taste.ClassDef(
         B("""
         {.repeated section cells}
           {.repeated section @}{@} {.end}
@@ -327,9 +327,9 @@ class SectionsTest(testy.PyUnitCompatibleTest):
           7 8 9 
         """), ignore_all_whitespace=True)
 
-  @testy.no_verify('php', 'java')
+  @taste.no_verify('php', 'java')
   def testNestedAnonymousRepeatedSectionsWithIndex(self):
-    t = testy.ClassDef(
+    t = taste.ClassDef(
         B("""
         {.repeated section cells}
           {@index} : {.repeated section @}{@index}{@}-{.end}
@@ -351,23 +351,23 @@ class SectionsTest(testy.PyUnitCompatibleTest):
   def testRepeatedSectionAtRoot(self):
     # This tests expansion of a JSON *list* -- no dictionary in sight
 
-    t = testy.ClassDef('[.repeated section @][@] [.end]', meta='[]')
+    t = taste.ClassDef('[.repeated section @][@] [.end]', meta='[]')
     self.verify.Expansion(t, ['Andy', 'Bob'], 'Andy Bob ')
 
-  @testy.no_verify('php', 'java', 'javascript')
+  @taste.no_verify('php', 'java', 'javascript')
   def testRepeatedSectionPreformatters(self):
     # Test formatting a list *before" expanding it into a template
 
-    t = testy.ClassDef(B("""
+    t = taste.ClassDef(B("""
         {.repeated section dirs|reverse}{@} {.end}
         """))
     self.verify.Expansion(t, {'dirs': ['1', '2', '3']}, '3 2 1 \n')
 
-  @testy.no_verify('php', 'java', 'javascript')
+  @taste.no_verify('php', 'java', 'javascript')
   def testSectionPreformatters(self):
     # Synonym for the above.  Apply the pre-formatter in a section instead of
     # the list.
-    t = testy.ClassDef(B("""
+    t = taste.ClassDef(B("""
         {.section dirs|reverse}
         {.repeated section @}{@} {.end}
         {.end}
@@ -375,7 +375,7 @@ class SectionsTest(testy.PyUnitCompatibleTest):
     self.verify.Expansion(t, {'dirs': ['1', '2', '3']}, '3 2 1 \n')
 
   def testAlternatesWith(self):
-    t = testy.ClassDef(
+    t = taste.ClassDef(
         B("""
         [header]
         ---------
@@ -405,7 +405,7 @@ class SectionsTest(testy.PyUnitCompatibleTest):
           Name: Carol Age: 30
         """))
 
-  @testy.no_verify('java', 'php')
+  @taste.no_verify('java', 'php')
   def testAlternatesWithInvalid(self):
     self.verify.CompilationError(jsontemplate.TemplateSyntaxError,
         B("""
@@ -420,7 +420,7 @@ class SectionsTest(testy.PyUnitCompatibleTest):
 
   def testSection(self):
 
-    t = testy.ClassDef(
+    t = taste.ClassDef(
         B("""
         [header]
         ---------
@@ -468,7 +468,7 @@ class SectionsTest(testy.PyUnitCompatibleTest):
         """))
 
   def testExpansionInInnerScope(self):
-    t = testy.ClassDef(
+    t = taste.ClassDef(
         B("""
         [url]
         [.section person]
@@ -513,7 +513,7 @@ class SectionsTest(testy.PyUnitCompatibleTest):
 
   def testSectionAndRepeatedSection(self):
     """A repeated section within a section."""
-    t = testy.ClassDef(
+    t = taste.ClassDef(
         B("""
         [header]
         ---------
@@ -562,11 +562,11 @@ class SectionsTest(testy.PyUnitCompatibleTest):
   def testBadContext(self):
     # Note: A list isn't really a valid top level context, but this case should
     # be some kind of error.
-    t = testy.ClassDef("{foo}")
+    t = taste.ClassDef("{foo}")
     self.verify.EvaluationError(jsontemplate.UndefinedVariable, t, [])
 
   def testSectionOr(self):
-    t = testy.ClassDef(
+    t = taste.ClassDef(
         B("""
         Hello there.
         {.section person}
@@ -601,7 +601,7 @@ class SectionsTest(testy.PyUnitCompatibleTest):
         """)
     self.verify.Expansion(t, d, expected)
 
-  @testy.no_verify('java', 'php')
+  @taste.no_verify('java', 'php')
   def testSectionOrWithBadPredicate(self):
     self.verify.CompilationError(jsontemplate.TemplateSyntaxError,
         B("""
@@ -614,9 +614,9 @@ class SectionsTest(testy.PyUnitCompatibleTest):
         [.end]
         """), meta='[]')
 
-  @testy.labels('documentation')
+  @taste.labels('documentation')
   def testRepeatedSectionOr(self):
-    t = testy.ClassDef(
+    t = taste.ClassDef(
         B("""
         {header}
         ---------
@@ -667,7 +667,7 @@ class SectionsTest(testy.PyUnitCompatibleTest):
         """))
 
     # Now there are 3 clauses
-    t = testy.ClassDef(
+    t = taste.ClassDef(
         B("""
         {header}
         ---------
@@ -703,7 +703,7 @@ class SectionsTest(testy.PyUnitCompatibleTest):
   def testEmptyListWithSection(self):
     # From the wiki
 
-    t = testy.ClassDef(
+    t = taste.ClassDef(
         B("""
         {.section title-results}
           Results.
@@ -730,26 +730,26 @@ class SectionsTest(testy.PyUnitCompatibleTest):
     self.verify.Expansion(t, d, '')
 
 
-class DottedLookupTest(testy.Test):
+class DottedLookupTest(taste.Test):
   """Test substitutions like {foo.bar.baz}."""
 
   LABELS = ['multilanguage']
 
-  @testy.no_verify('java')
+  @taste.no_verify('java')
   def testDottedLookup(self):
-    t = testy.ClassDef('{foo.bar}')
+    t = taste.ClassDef('{foo.bar}')
 
     self.verify.Expansion(
         t,
         {'foo': {'bar': 'Hello'}},
         'Hello')
 
-  @testy.no_verify('java')
+  @taste.no_verify('java')
   def testDottedLookupErrors(self):
 
     # TODO: Also test everything with setting undefined_str
 
-    t = testy.ClassDef('{foo.bar}')
+    t = taste.ClassDef('{foo.bar}')
 
     # The second lookup doesn't look up the stack to find 'bar'
     self.verify.EvaluationError(
@@ -779,10 +779,10 @@ class DottedLookupTest(testy.Test):
         t,
         {})
 
-  @testy.no_verify('java')
+  @taste.no_verify('java')
   def testDottedLookupErrorsWithUndefinedStr(self):
 
-    t = testy.ClassDef('{foo.bar}', undefined_str='UNDEFINED')
+    t = taste.ClassDef('{foo.bar}', undefined_str='UNDEFINED')
 
     # The second lookup doesn't look up the stack to find 'bar'
     self.verify.Expansion(
@@ -790,9 +790,9 @@ class DottedLookupTest(testy.Test):
         {'foo': {}, 'bar': 100},
         'UNDEFINED')
 
-  @testy.no_verify('java')
+  @taste.no_verify('java')
   def testThreeLookups(self):
-    t = testy.ClassDef('{foo.bar.baz}')
+    t = taste.ClassDef('{foo.bar.baz}')
 
     self.verify.Expansion(
         t,
@@ -804,9 +804,9 @@ class DottedLookupTest(testy.Test):
         t,
         {'foo': 100})
 
-  @testy.no_verify('java')
+  @taste.no_verify('java')
   def testScopedLookup(self):
-    t = testy.ClassDef(
+    t = taste.ClassDef(
         B("""
         {.section foo}
           {bar.baz}
@@ -832,14 +832,14 @@ class DottedLookupTest(testy.Test):
         {'foo': 100})
 
 
-class SpecialVariableTest(testy.Test):
+class SpecialVariableTest(taste.Test):
   """Tests the special @index variable."""
 
   LABELS = ['multilanguage']
 
-  @testy.no_verify('java')
+  @taste.no_verify('java')
   def testIndex(self):
-    t = testy.ClassDef(
+    t = taste.ClassDef(
         B("""
         {.repeated section @}
           {@index} {name}
@@ -857,9 +857,9 @@ class SpecialVariableTest(testy.Test):
     """)
     self.verify.Expansion(t, data, expected)
 
-  @testy.no_verify('java')
+  @taste.no_verify('java')
   def testTwoIndices(self):
-    t = testy.ClassDef(
+    t = taste.ClassDef(
         B("""
         {.repeated section albums}
           {@index} {name}
@@ -888,9 +888,9 @@ class SpecialVariableTest(testy.Test):
     # Whitespace still differs between Python/JS
     self.verify.Expansion(t, data, expected, ignore_all_whitespace=True)
 
-  @testy.no_verify('java')
+  @taste.no_verify('java')
   def testUndefinedIndex(self):
-    t = testy.ClassDef(
+    t = taste.ClassDef(
         B("""
         {.section foo}
           {@index} {name}
@@ -900,24 +900,24 @@ class SpecialVariableTest(testy.Test):
     self.verify.EvaluationError(jsontemplate.UndefinedVariable, t, data)
 
 
-class StandardFormattersTest(testy.Test):
+class StandardFormattersTest(taste.Test):
   """Test that each implementation implements the standard formatters."""
 
   LABELS = ['multilanguage']
 
   def testHtmlFormatter(self):
-    t = testy.ClassDef('<b>{name|html}</b>')
+    t = taste.ClassDef('<b>{name|html}</b>')
     self.verify.Expansion(
         t, {'name': '"<tag>"'}, '<b>"&lt;tag&gt;"</b>')
 
   def testHtmlAttrValueFormatter(self):
-    t = testy.ClassDef('<a href="{url|html-attr-value}">')
+    t = taste.ClassDef('<a href="{url|html-attr-value}">')
     self.verify.Expansion(
         t, {'url': '"<>&'}, '<a href="&quot;&lt;&gt;&amp;">')
 
-  @testy.only_verify('python', 'javascript')
+  @taste.only_verify('python', 'javascript')
   def testPlainUrlFormatter(self):
-    t = testy.ClassDef('{url|plain-url}')
+    t = taste.ClassDef('{url|plain-url}')
     self.verify.Expansion(
         t, {'url': 'http://foo/bar?foo=1&bar=2'},
         '<a href="http://foo/bar?foo=1&amp;bar=2">'
@@ -925,7 +925,7 @@ class StandardFormattersTest(testy.Test):
         '</a>')
 
   # TODO: Do this in 2 other languages
-  @testy.no_verify('php', 'java')
+  @taste.no_verify('php', 'java')
   def testAbsUrlFormatter(self):
     """AbsUrl is mainly an example of 'context formatters'.
 
@@ -934,7 +934,7 @@ class StandardFormattersTest(testy.Test):
     item in 'users'.
     """
 
-    t = testy.ClassDef(
+    t = taste.ClassDef(
         B("""
         {.repeated section users}
           {url|AbsUrl}
@@ -956,34 +956,34 @@ class StandardFormattersTest(testy.Test):
     self.verify.Expansion(t, data, expected)
 
   # TODO: Do this in 2 other languages
-  @testy.no_verify('php', 'java')
+  @taste.no_verify('php', 'java')
   def testPluralizeFormatter(self):
     """
     'pluralize' is an example of formatters which take arguments (and a
     variable number of them).  Based on Django's pluralize.
     """
     # 0 arguments
-    t = testy.ClassDef('You have {num} message{num|pluralize}.')
+    t = taste.ClassDef('You have {num} message{num|pluralize}.')
     self.verify.Expansion(t, {'num': 1}, 'You have 1 message.')
     self.verify.Expansion(t, {'num': 3}, 'You have 3 messages.')
 
     # 1 argument
-    t = testy.ClassDef('They suffered {num} loss{num|pluralize es}.')
+    t = taste.ClassDef('They suffered {num} loss{num|pluralize es}.')
     self.verify.Expansion(t, {'num': 1}, 'They suffered 1 loss.')
     self.verify.Expansion(t, {'num': 3}, 'They suffered 3 losses.')
 
     # 2 arguments
-    t = testy.ClassDef(
+    t = taste.ClassDef(
         'There {num|pluralize is are} {num} song{num|pluralize}.')
     self.verify.Expansion(t, {'num': 1}, 'There is 1 song.')
     self.verify.Expansion(t, {'num': 3}, 'There are 3 songs.')
 
   # TODO: Do this in 2 other languages
-  @testy.no_verify('php', 'java')
+  @taste.no_verify('php', 'java')
   def testPluralizeWithCustomDelimiters(self):
 
     # Arguments with spaces in them
-    t = testy.ClassDef(
+    t = taste.ClassDef(
         '{num-people|pluralize/It depends/They depend} on {num-things} '
         'thing{num-things|pluralize}.')
     self.verify.Expansion(
@@ -1000,10 +1000,10 @@ class StandardFormattersTest(testy.Test):
         'They depend on 3 things.')
 
   # TODO: Do this in 3 other languages
-  @testy.no_verify('php', 'java')
+  @taste.no_verify('php', 'java')
   def testCycleFormatter(self):
 
-    t = testy.ClassDef(
+    t = taste.ClassDef(
         B("""
         {.repeated section @}
           {@index|cycle red blue} {name}
@@ -1025,7 +1025,7 @@ class StandardFormattersTest(testy.Test):
           blue Dirk
         """))
 
-    t = testy.ClassDef(
+    t = taste.ClassDef(
         B("""
         {.repeated section @}
           {@index|cycle/x x/y y/z z} {name}
@@ -1040,9 +1040,9 @@ class StandardFormattersTest(testy.Test):
           x x Dirk
         """))
 
-  @testy.only_verify('python')
+  @taste.only_verify('python')
   def testPairsFormatter(self):
-    t = testy.ClassDef(
+    t = taste.ClassDef(
 				B("""
         {.repeated section @ | pairs}
         {@key}:{@value}
@@ -1057,31 +1057,31 @@ class StandardFormattersTest(testy.Test):
         """))
 
 
-class AllFormattersTest(testy.Test):
+class AllFormattersTest(taste.Test):
   """TODO: This uses ExpansionWithAllFormatters, is it necessary?"""
 
   LABELS = ['multilanguage']
 
-  @testy.only_verify('python')
+  @taste.only_verify('python')
   def testPrintfFormatter(self):
-    t = testy.ClassDef('<b>{num|printf %.3f}</b>')
+    t = taste.ClassDef('<b>{num|printf %.3f}</b>')
     self.verify.ExpansionWithAllFormatters(
         t, {'num': 1.0/3}, '<b>0.333</b>')
 
 
 
-class WhitespaceModesTest(testy.Test):
+class WhitespaceModesTest(taste.Test):
   """Tests the whitespace= option."""
 
   LABELS = ['multilanguage']
 
-  @testy.no_verify('javascript', 'php', 'java')
+  @taste.no_verify('javascript', 'php', 'java')
   def testSmart(self):
     # The default mode
-    t = testy.ClassDef('  Hello {name}  ')
+    t = taste.ClassDef('  Hello {name}  ')
     self.verify.Expansion(t, {'name': 'World'}, '  Hello World  ')
 
-    t = testy.ClassDef(
+    t = taste.ClassDef(
         B("""
           {.section name}
             Hello {name}
@@ -1090,9 +1090,9 @@ class WhitespaceModesTest(testy.Test):
     # Just 4 leading spaces and a trailing newline
     self.verify.Expansion(t, {'name': 'World'}, '    Hello World\n')
 
-  @testy.no_verify('javascript', 'php', 'java')
+  @taste.no_verify('javascript', 'php', 'java')
   def testStripLine(self):
-    t = testy.ClassDef(
+    t = taste.ClassDef(
         B("""
           {.section name}
             Hello {name}
@@ -1102,17 +1102,17 @@ class WhitespaceModesTest(testy.Test):
     self.verify.Expansion(t, {'name': 'World'}, 'Hello World')
 
 
-class PredicatesTest(testy.Test):
+class PredicatesTest(taste.Test):
   """Tests the predicates feature."""
 
   LABELS = ['multilanguage']
-  # TODO: Add class-level NO_VERIFY = [] to testy
+  # TODO: Add class-level NO_VERIFY = [] to taste
 
   # TODO: Fix JS whitesspace in this test
-  @testy.no_verify('java', 'php')
+  @taste.no_verify('java', 'php')
   def testValuePredicate(self):
     # OLD STYLE -- DISCOURAGED -- SEE BELOW
-    t = testy.ClassDef(
+    t = taste.ClassDef(
     B("""
     {.repeated section num}
       {.plural?}
@@ -1136,7 +1136,7 @@ class PredicatesTest(testy.Test):
     self.verify.Expansion(t, data, expected, ignore_all_whitespace=True)
 
     # This is the same template in the NEW IDIOM
-    t = testy.ClassDef(
+    t = taste.ClassDef(
     B("""
     {.repeated section num}
       {.if plural}
@@ -1150,9 +1150,9 @@ class PredicatesTest(testy.Test):
     """))
     self.verify.Expansion(t, data, expected, ignore_all_whitespace=True)
 
-  @testy.no_verify('java', 'php')
+  @taste.no_verify('java', 'php')
   def testValuePredicateWithRecord(self):
-    t = testy.ClassDef(
+    t = taste.ClassDef(
     B("""
     {.repeated section groups}
       {.section num}
@@ -1184,12 +1184,12 @@ class PredicatesTest(testy.Test):
     """)
     self.verify.Expansion(t, data, expected, ignore_all_whitespace=True)
 
-  @testy.no_verify('java', 'php')
+  @taste.no_verify('java', 'php')
   def testContextPredicate(self):
 
     # OLD -- DISCOURAGED
     # The Debug? predicate looks up the stack for a "debug" attribute
-    old_t = testy.ClassDef(
+    old_t = taste.ClassDef(
     B("""
     {.repeated section posts}
       Title: {title}
@@ -1234,37 +1234,37 @@ class PredicatesTest(testy.Test):
     self.verify.Expansion(old_t, data, expected, ignore_all_whitespace=True)
 
     # Test it at the top level too
-    t = testy.ClassDef("{.Debug?}Rendered in 3 seconds{.end}")
+    t = taste.ClassDef("{.Debug?}Rendered in 3 seconds{.end}")
     self.verify.Expansion(t, {'debug': True}, 'Rendered in 3 seconds')
     self.verify.Expansion(t, {'debug': False}, '')
 
   def testTestPredicateShorthand(self):
     # Test the NEW STYLE
-    t = testy.ClassDef("{.debug?}Rendered in 3 seconds{.end}")
+    t = taste.ClassDef("{.debug?}Rendered in 3 seconds{.end}")
     self.verify.Expansion(t, {'debug': True}, 'Rendered in 3 seconds')
     self.verify.Expansion(t, {'debug': False}, '')
 
-  @testy.no_verify('java', 'php')
+  @taste.no_verify('java', 'php')
   def testTestPredicate(self):
     # Test the predicate that tests for attributes
-    t = testy.ClassDef("{.if test debug}Rendered in 3 seconds{.end}")
+    t = taste.ClassDef("{.if test debug}Rendered in 3 seconds{.end}")
     self.verify.Expansion(t, {'debug': True}, 'Rendered in 3 seconds')
     self.verify.Expansion(t, {'debug': False}, '')
 
     # Make a nested test
-    t = testy.ClassDef("{.if test meta.debug}Rendered in 3 seconds{.end}")
+    t = taste.ClassDef("{.if test meta.debug}Rendered in 3 seconds{.end}")
     self.verify.Expansion(t, {'meta': {'debug': True}}, 'Rendered in 3 seconds')
     self.verify.Expansion(t, {'meta': {'debug': False}}, '')
 
     # No argument
-    t = testy.ClassDef("{.if test}Rendered in 3 seconds{.end}")
+    t = taste.ClassDef("{.if test}Rendered in 3 seconds{.end}")
     self.verify.EvaluationError(jsontemplate.EvaluationError, t, {})
 
-  @testy.no_verify('java', 'php')
+  @taste.no_verify('java', 'php')
   def testTestPredicateChained(self):
     # If you have more than one attribute to test, just use the "longhand"
     # format.
-    t = testy.ClassDef(B("""
+    t = taste.ClassDef(B("""
         {.if test debug}
           DEBUG
         {.or test release}
@@ -1278,20 +1278,20 @@ class PredicatesTest(testy.Test):
     self.verify.Expansion(t, {}, '  NONE\n')
 
 
-class DocumentationTest(testy.Test):
+class DocumentationTest(taste.Test):
   """Test cases added for the sake of documentation."""
 
   # TODO: The default labels for this test should be 'documentation'
   LABELS = ['multilanguage']
 
-  @testy.labels('documentation')
+  @taste.labels('documentation')
   def testSearchResultsExample(self):
     # TODO: Come up with a better search results example
     return
 
-  @testy.labels('documentation', 'live-js', 'blog-format')
+  @taste.labels('documentation', 'live-js', 'blog-format')
   def testTableExample(self):
-    t = testy.ClassDef("""\
+    t = taste.ClassDef("""\
 {# This is a comment and will be removed from the output.}
 
 {.section songs}
@@ -1356,7 +1356,7 @@ def main(argv):
   default_java = os.path.join(
       os.getenv('JAVA_HOME', ''), 'bin', 'java')
 
-  run_params = testy.TEST_RUN_PARAMS + [
+  run_params = taste.TEST_RUN_PARAMS + [
       params.OptionalString(
           'v8-shell', default=default_v8_shell,
           help='Location of the v8 shell to run JavaScript tests'),
@@ -1418,9 +1418,9 @@ def main(argv):
   lua_dir = os.path.join(this_dir, 'lua')
   lu_verifier = lua_verifier.LuaVerifier(options.lua_launcher, lua_dir)
 
-  filt = testy.MakeTestClassFilter(
+  filt = taste.MakeTestClassFilter(
       label='multilanguage', regex=options.test_regex)
-  multi_tests = testy.GetTestClasses(__import__(__name__), filt)
+  multi_tests = taste.GetTestClasses(__import__(__name__), filt)
 
   internal_tests = [m(int_py_verifier) for m in multi_tests]
 
@@ -1473,7 +1473,7 @@ def main(argv):
   else:
     tests = internal_tests
 
-  testy.RunTests(tests, options)
+  taste.RunTests(tests, options)
 
   # Write HTML *after* running all tests
   if options.browser_test_out_dir:

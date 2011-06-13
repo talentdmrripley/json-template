@@ -24,11 +24,11 @@ try:
 except ImportError:
   import simplejson as json
 
-from pan.core import os_process
-from pan.test import testy
+from taste import os_process
+import taste
 
 
-class PhpVerifier(testy.StandardVerifier):
+class PhpVerifier(taste.StandardVerifier):
   """
   Verifies template behavior by executing the PHP file from command line
   """
@@ -36,14 +36,14 @@ class PhpVerifier(testy.StandardVerifier):
   LABELS = ['php']
 
   def __init__(self, php_interpreter_path, script_path):
-    testy.StandardVerifier.__init__(self)
+    taste.StandardVerifier.__init__(self)
     self.php_interpreter_path = php_interpreter_path
     self.script_path = script_path
     self.runner = os_process.Runner()
 
   def CheckIfRunnable(self):
     if not os.path.exists(self.php_interpreter_path):
-      raise testy.TestPrequisiteMissing(
+      raise taste.TestPrequisiteMissing(
           '%r is missing' % self.php_interpreter_path)
 
   def _RunScript(self, template_def, dictionary):
@@ -91,6 +91,6 @@ class PhpVerifier(testy.StandardVerifier):
     self.In('EXCEPTION: ' + exception.__name__, result.stdout)
 
   def CompilationError(self, exception, *args, **kwargs):
-    template_def = testy.ClassDef(*args, **kwargs)
+    template_def = taste.ClassDef(*args, **kwargs)
     result = self._RunScript(template_def, {})
     self.In('EXCEPTION: ' + exception.__name__, result.stdout)

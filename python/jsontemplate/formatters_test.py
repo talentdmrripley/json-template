@@ -18,7 +18,7 @@ if __name__ == '__main__':
 from jsontemplate import formatters  # module under test
 import jsontemplate
 
-from pan.test import testy
+import taste
 
 
 class _CountedOpen(object):
@@ -33,7 +33,7 @@ class _CountedOpen(object):
     return open(*args)
 
 
-class FormattersTest(testy.Test):
+class FormattersTest(taste.Test):
 
   def setUpOnce(self):
 
@@ -153,4 +153,4 @@ class FormattersTest(testy.Test):
 
 
 if __name__ == '__main__':
-  testy.RunThisModule()
+  taste.RunThisModule()

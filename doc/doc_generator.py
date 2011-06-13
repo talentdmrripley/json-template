@@ -28,7 +28,7 @@ try:
 except ImportError:
   import simplejson as json
 
-from pan.test import testy
+import taste
 
 from jsontemplate import highlight
 import jsontemplate
@@ -120,10 +120,10 @@ _JS_EXAMPLE = """\
 """
 
 
-class DocGenerator(testy.StandardVerifier):
+class DocGenerator(taste.StandardVerifier):
 
   def __init__(self, output_dir):
-    testy.StandardVerifier.__init__(self)
+    taste.StandardVerifier.__init__(self)
     self.output_dir = output_dir
 
     # Counter for unique filenames
@@ -140,7 +140,7 @@ class DocGenerator(testy.StandardVerifier):
         _JS_EXAMPLE, default_formatter='raw')
 
   def BeforeMethod(self, method):
-    testy.StandardVerifier.BeforeMethod(self, method)
+    taste.StandardVerifier.BeforeMethod(self, method)
     # Reset the counter every time we get a method
     self.counter = 1
 
@@ -161,7 +161,7 @@ class DocGenerator(testy.StandardVerifier):
 
     # Mark test methods with the live-js label to generate the Live JavaScript
     # example.
-    if testy.HasLabel(self.current_method, 'live-js'):
+    if taste.HasLabel(self.current_method, 'live-js'):
       self.WriteLiveJavaScriptExample(template_def, json_str, expanded)
 
     self.counter += 1
@@ -195,7 +195,7 @@ class DocGenerator(testy.StandardVerifier):
 
     highlighted_template = highlight.AsHtml(template_def.args[0], **kwargs)
 
-    if testy.HasLabel(self.current_method, 'blog-format'):
+    if taste.HasLabel(self.current_method, 'blog-format'):
       template = self.blog_template
     else:
       template = self.html_template

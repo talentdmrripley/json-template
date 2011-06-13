@@ -29,8 +29,8 @@ except ImportError:
 if __name__ == '__main__':
   sys.path.insert(0, os.path.join(os.path.dirname(sys.argv[0]), '..'))
 
-from pan.core import os_process
-from pan.test import testy
+from taste import os_process
+import taste
 
 
 _TEST_JS = """
@@ -65,7 +65,7 @@ class _Record(object):
       setattr(self, k, v)
 
 
-class JavaScriptVerifier(testy.StandardVerifier):
+class JavaScriptVerifier(taste.StandardVerifier):
   """Abstract base class."""
 
   LABELS = ['javascript']
@@ -133,7 +133,7 @@ class JavaScriptVerifier(testy.StandardVerifier):
     self.In(exception.__name__, result.exception)
 
   def CompilationError(self, exception, *args, **kwargs):
-    template_def = testy.ClassDef(*args, **kwargs)
+    template_def = taste.ClassDef(*args, **kwargs)
     result = self._RunScript(template_def, {})
     if result.exception is None:
       self.fail('No exception found in output')
@@ -156,7 +156,7 @@ class V8ShellVerifier(JavaScriptVerifier):
 
   def CheckIfRunnable(self):
     if not os.path.exists(self.v8_path):
-      raise testy.TestPrequisiteMissing('%r is missing' % self.v8_path)
+      raise taste.TestPrequisiteMissing('%r is missing' % self.v8_path)
 
   def _RunScript(self, template_def, dictionary):
     test_js = self._MakeTestJs(template_def, dictionary)

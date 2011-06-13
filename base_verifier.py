@@ -6,10 +6,10 @@ base_verifier.py
 __author__ = 'Andy Chu'
 
 
-from pan.test import testy
+import taste
 
 
-class JsonTemplateVerifier(testy.StandardVerifier):
+class JsonTemplateVerifier(taste.StandardVerifier):
   """Abstract base class for all language-specific verifiers."""
 
   def Expansion(

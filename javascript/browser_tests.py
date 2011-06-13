@@ -29,7 +29,7 @@ try:
 except ImportError:
   import simplejson as json
 
-from pan.test import testy
+import taste
 
 from jsontemplate import formatters
 import jsontemplate
@@ -162,12 +162,12 @@ testUsingNewToConstruct: function () {
 """,
     ]
 
-class TestGenerator(testy.StandardVerifier):
+class TestGenerator(taste.StandardVerifier):
 
   LABELS = ['javascript']
 
   def __init__(self):
-    testy.StandardVerifier.__init__(self)
+    taste.StandardVerifier.__init__(self)
 
     # Counter for unique method names
     self.counter = 1
@@ -198,7 +198,7 @@ class TestGenerator(testy.StandardVerifier):
     html_file.close()
 
   def BeforeMethod(self, method):
-    testy.StandardVerifier.BeforeMethod(self, method)
+    taste.StandardVerifier.BeforeMethod(self, method)
     # Reset the counter every time we get a method
     self.counter = 1
 
