@@ -646,8 +646,21 @@ def _ToString(x):
   return pprint.pformat(x)
 
 
+# NOTE: We could consider making formatters act on strings only avoid this
+# repetitiveness.  But I wanted to leave open the possibility of doing stuff
+# like {number|increment-by 1}, where formatters take and return integers.
+def _Html(x):
+  # If it's not string or unicode, make it a string
+  if not isinstance(x, basestring):
+    x = str(x)
+  return cgi.escape(x)
+
+
 def _HtmlAttrValue(x):
-  return cgi.escape(str(x), quote=True)
+  # If it's not string or unicode, make it a string
+  if not isinstance(x, basestring):
+    x = str(x)
+  return cgi.escape(x, quote=True)
 
 
 def _AbsUrl(relative_url, context, unused_args):
@@ -688,7 +701,7 @@ def _Pairs(data):
 _DEFAULT_FORMATTERS = {
     # Because "html" is often the default formatter, we want to let
     # numbers/boolean/etc. pass through, so we add 'str' first.
-    'html': lambda x: cgi.escape(str(x)),
+    'html': _Html,
 
     # The 'htmltag' name is deprecated.  The html-attr-value name is preferred
     # because it can be read with "as":
