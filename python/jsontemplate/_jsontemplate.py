@@ -45,6 +45,7 @@ import sys
 
 # For formatters
 import cgi  # cgi.escape
+import time  # for strftime
 import urllib  # for urllib.encode
 import urlparse  # for urljoin
 
@@ -314,6 +315,9 @@ class _ProgramBuilder(object):
     default_formatters = PrefixRegistry([
         ('pluralize', _Pluralize),
         ('cycle', _Cycle),
+        ('strftime', _StrftimeLocal),  # local by default
+        ('strftime-local', _StrftimeLocal),  # local
+        ('strftime-gm', _StrftimeGm),  # world
         ])
 
     # First consult user formatters, then templates enabled by
@@ -781,6 +785,34 @@ def _Cycle(value, unused_context, args):
   """Cycle between various values on consecutive integers."""
   # @index starts from 1, so used 1-based indexing
   return args[(value - 1) % len(args)]
+
+
+def _StrftimeHelper(args, time_tuple):
+  try:
+    format_str = args[0]
+  except IndexError:
+    # If no format string, use some reasonable text format
+    return time.asctime(time_tuple)
+  else:
+    return time.strftime(format_str, time_tuple)
+
+
+def _StrftimeGm(value, unused_context, args):
+  """Convert a timestamp in seconds to a string based on the format string.
+
+  Returns GM time.
+  """
+  time_tuple = time.gmtime(value)
+  return _StrftimeHelper(args, value)
+
+
+def _StrftimeLocal(value, unused_context, args):
+  """Convert a timestamp in seconds to a string based on the format string.
+
+  Returns local time.
+  """
+  time_tuple = time.localtime(value)
+  return _StrftimeHelper(args, time_tuple)
 
 
 def _IsDebugMode(unused_value, context, unused_args):

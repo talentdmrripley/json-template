@@ -1043,7 +1043,7 @@ class StandardFormattersTest(taste.Test):
   @taste.only_verify('python')
   def testPairsFormatter(self):
     t = taste.ClassDef(
-				B("""
+        B("""
         {.repeated section @ | pairs}
         {@key}:{@value}
         {.end}
@@ -1055,6 +1055,18 @@ class StandardFormattersTest(taste.Test):
         c:d
         e:f
         """))
+
+  @taste.only_verify('python')
+  def testStrftimeFormatter(self):
+    data = {'update-time': 1316546771.124635}
+    t = taste.ClassDef('{update-time|strftime}')
+    self.verify.Expansion(t, data, 'Tue Sep 20 12:26:11 2011')
+
+    # NOTE: The first (and only) argument to strftime can have spaces.  Because
+    # we're using the PrefixRegistry, you have to use a non-space character
+    # after the formatter name!
+    t = taste.ClassDef('{update-time|strftime.%m-%d-%Y %H:%M:%S}')
+    self.verify.Expansion(t, data, '09-20-2011 12:26:11')
 
 
 class AllFormattersTest(taste.Test):
@@ -1348,6 +1360,7 @@ class DocumentationTest(taste.Test):
 
 
 def main(argv):
+  """Returns an exit code."""
   this_dir = os.path.dirname(__file__)
 
   # e.g. this works on my Ubuntu system
@@ -1470,12 +1483,16 @@ def main(argv):
   else:
     tests = internal_tests
 
-  taste.RunTests(tests, options)
+  success = taste.RunTests(tests, options)
+  if not success:
+    return 1
 
   # Write HTML *after* running all tests
   if options.browser_test_out_dir:
     testgen.WriteHtml(options.browser_test_out_dir)
 
+  return 0
+
 
 if __name__ == '__main__':
-  main(sys.argv[1:])
+  sys.exit(main(sys.argv[1:]))
