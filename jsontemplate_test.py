@@ -100,6 +100,59 @@ class SimpleTests(taste.Test):
     self.verify.Expansion(t, {}, '')
 
 
+class CommentsTest(taste.Test):
+  """
+  These are currently only implemented in Python, but would likely be useful in
+  JS too.
+
+  The syntax ##BEGIN and ##END can be thought of as "preprocessor-like" (hence
+  the caps).  We want it to visually stand out.
+
+  As a future extension, if someone is doing translation, they might do:
+  
+  {##STR} Some english string {{##ENDSTR}}
+
+  A preprocessor could pick these out pretty easily for translation.
+  """
+
+  LABELS = ['multilanguage']
+
+  @taste.only_verify('python')
+  def testMultiLineComment(self):
+    t = taste.ClassDef(B("""
+        Hello {##BEGIN} there
+        line
+        {##END} World
+        """))
+    self.verify.Expansion(t, {}, 'Hello  World\n')
+
+  @taste.only_verify('python')
+  def testNestedMultiLineComment(self):
+    t = taste.ClassDef(B("""
+        Hello {##BEGIN} there
+        {##BEGIN} line2
+        {##END} line2
+        {##END} World
+        """))
+    self.verify.Expansion(t, {}, 'Hello  World\n')
+
+  @taste.only_verify('python')
+  def testBadMultiLineComment(self):
+    self.verify.CompilationError(
+        jsontemplate.CompilationError,
+        "Hello {##END} there")
+
+  @taste.only_verify('python')
+  def testBadMultiLineComment2(self):
+    self.verify.CompilationError(
+        jsontemplate.CompilationError,
+        B("""
+        Hello {##BEGIN} there
+        {##BEGIN} line
+        {##END} World
+        """))
+
+
 class SubstitutionsTest(taste.Test):
   """Language-independent tests for JSON Template."""
 

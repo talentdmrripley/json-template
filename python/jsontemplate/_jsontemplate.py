@@ -942,6 +942,8 @@ def _Tokenize(template_str, meta_left, meta_right, whitespace):
   token_re = MakeTokenRegex(meta_left, meta_right)
   do_strip = (whitespace == 'strip-line')  # Do this outside loop
 
+  comment_count = 0  # number of {##BEGIN}s on the stack
+
   for line in template_str.splitlines(True):  # retain newlines
     if do_strip:
       line = line.strip()
@@ -971,15 +973,31 @@ def _Tokenize(template_str, meta_left, meta_right, whitespace):
 
     for i, token in enumerate(tokens):
       if i % 2 == 0:
+        # Don't pass anything to the parser
+        if comment_count > 0:
+          continue
         yield LITERAL_TOKEN, token
 
       else:  # It's a "directive" in metachracters
-
         assert token.startswith(meta_left), repr(token)
         assert token.endswith(meta_right), repr(token)
         token = token[trimlen : -trimlen]
 
-        # It's a comment
+        if token == '##BEGIN':
+          comment_count += 1
+          continue
+        if token == '##END':
+          comment_count -= 1
+          if comment_count < 0:
+            e = CompilationError('Got too many ##END markers')
+            e.near = tokens[i-3:i+3]
+            raise e
+          continue
+        # Don't pass anything to the parser
+        if comment_count > 0:
+          continue
+
+        # A single-line comment
         if token.startswith('#'):
           continue
 
@@ -1003,6 +1021,9 @@ def _Tokenize(template_str, meta_left, meta_right, whitespace):
 
         else:  # Now we know the directive is a substitution.
           yield SUBSTITUTION_TOKEN, token
+
+  if comment_count != 0:
+    raise CompilationError('Got %d more {##BEGIN}s than {##END}s' % comment_count)
 
 
 def _CompileTemplate(
@@ -1223,7 +1244,7 @@ class Template(object):
 
   def __init__(self, template_str,
                more_formatters=lambda x: None,
-               more_predicates=lambda x: None, 
+               more_predicates=lambda x: None,
                undefined_str=None,
                **compile_options):
     """
