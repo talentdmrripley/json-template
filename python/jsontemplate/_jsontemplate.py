@@ -315,9 +315,11 @@ class _ProgramBuilder(object):
     default_formatters = PrefixRegistry([
         ('pluralize', _Pluralize),
         ('cycle', _Cycle),
-        ('strftime', _StrftimeLocal),  # local by default
+        # These have to go first because 'strftime' is a prefix of
+        # strftime-local/gm!
         ('strftime-local', _StrftimeLocal),  # local
         ('strftime-gm', _StrftimeGm),  # world
+        ('strftime', _StrftimeLocal),  # local by default
         ])
 
     # First consult user formatters, then templates enabled by
@@ -803,7 +805,7 @@ def _StrftimeGm(value, unused_context, args):
   Returns GM time.
   """
   time_tuple = time.gmtime(value)
-  return _StrftimeHelper(args, value)
+  return _StrftimeHelper(args, time_tuple)
 
 
 def _StrftimeLocal(value, unused_context, args):
