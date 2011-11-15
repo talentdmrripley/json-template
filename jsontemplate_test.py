@@ -1121,6 +1121,16 @@ class StandardFormattersTest(taste.Test):
     t = taste.ClassDef('{update-time|strftime.%m-%d-%Y %H:%M:%S}')
     self.verify.Expansion(t, data, '09-20-2011 12:26:11')
 
+    # The exact values depend on machine-specific time zone settings so I just
+    # sanity check the length of the string
+    t = jsontemplate.Template('{update-time|strftime-gm.%m-%d-%Y %H:%M:%S}')
+    s = t.expand(data)
+    self.verify.IsTrue(len(s) > 15, len(s))
+
+    t = jsontemplate.Template('{update-time|strftime-local.%m-%d-%Y %H:%M:%S}')
+    s = t.expand(data)
+    self.verify.IsTrue(len(s) > 15, len(s))
+
 
 class AllFormattersTest(taste.Test):
   """TODO: This uses ExpansionWithAllFormatters, is it necessary?"""
