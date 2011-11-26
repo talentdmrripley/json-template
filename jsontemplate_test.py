@@ -126,6 +126,13 @@ class CommentsTest(taste.Test):
         """))
     self.verify.Expansion(t, {}, 'Hello  World\n')
 
+    t = taste.ClassDef(B("""
+        {##BEGIN}
+        line
+        {##END}
+        """))
+    self.verify.Expansion(t, {}, '')
+
   @taste.only_verify('python')
   def testNestedMultiLineComment(self):
     t = taste.ClassDef(B("""
