@@ -17,7 +17,7 @@ case $action in
     # Run Python unit tests
     export PYTHONPATH=$TASTE_DIR
     set -o errexit
-    ./jsontemplate_test.py
+    ./jsontemplate_test.py "$@"
     python/jsontemplate/jsontemplate_unittest.py
     python/jsontemplate/formatters_test.py
     ;;

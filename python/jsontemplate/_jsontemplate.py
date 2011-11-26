@@ -897,16 +897,21 @@ def MakeTokenRegex(meta_left, meta_right):
   ALTERNATES_TOKEN,  # {.or}
   OR_TOKEN,  # {.or}
   END_TOKEN,  # {.end}
-  ) = range(9)
+  COMMENT_BEGIN_TOKEN,  # {##BEGIN}
+  COMMENT_END_TOKEN,  # {##END}
+  ) = range(11)
+
+COMMENT_BEGIN = '##BEGIN'
+COMMENT_END = '##END'
 
 
 def _MatchDirective(token):
   """Helper function for matching certain directives."""
-
+  # Tokens below must start with '.'
   if token.startswith('.'):
     token = token[1:]
   else:
-    return None, None  # Must start with .
+    return None, None
 
   if token == 'alternates with':
     return ALTERNATES_TOKEN, token
@@ -944,8 +949,6 @@ def _Tokenize(template_str, meta_left, meta_right, whitespace):
   token_re = MakeTokenRegex(meta_left, meta_right)
   do_strip = (whitespace == 'strip-line')  # Do this outside loop
 
-  comment_count = 0  # number of {##BEGIN}s on the stack
-
   for line in template_str.splitlines(True):  # retain newlines
     if do_strip:
       line = line.strip()
@@ -956,12 +959,19 @@ def _Tokenize(template_str, meta_left, meta_right, whitespace):
     # line by itself (with only space surrounding it), then the space is
     # omitted.  For simplicity, we don't handle the case where we have 2
     # directives, say '{.end} # {#comment}' on a line.
-
     if len(tokens) == 3:
       # ''.isspace() == False, so work around that
       if (tokens[0].isspace() or not tokens[0]) and \
          (tokens[2].isspace() or not tokens[2]):
         token = tokens[1][trimlen : -trimlen]
+
+        # Check the ones that begin with ## before #
+        if token == COMMENT_BEGIN:
+          yield COMMENT_BEGIN_TOKEN, None
+          continue
+        if token == COMMENT_END:
+          yield COMMENT_END_TOKEN, None
+          continue
 
         if token.startswith('#'):
           continue  # The whole line is omitted
@@ -972,12 +982,8 @@ def _Tokenize(template_str, meta_left, meta_right, whitespace):
           continue
 
     # The line isn't special; process it normally.
-
     for i, token in enumerate(tokens):
       if i % 2 == 0:
-        # Don't pass anything to the parser
-        if comment_count > 0:
-          continue
         yield LITERAL_TOKEN, token
 
       else:  # It's a "directive" in metachracters
@@ -985,25 +991,19 @@ def _Tokenize(template_str, meta_left, meta_right, whitespace):
         assert token.endswith(meta_right), repr(token)
         token = token[trimlen : -trimlen]
 
-        if token == '##BEGIN':
-          comment_count += 1
+        # Check the ones that begin with ## before #
+        if token == COMMENT_BEGIN:
+          yield COMMENT_BEGIN_TOKEN, None
           continue
-        if token == '##END':
-          comment_count -= 1
-          if comment_count < 0:
-            e = CompilationError('Got too many ##END markers')
-            e.near = tokens[i-3:i+3]
-            raise e
-          continue
-        # Don't pass anything to the parser
-        if comment_count > 0:
+        if token == COMMENT_END:
+          yield COMMENT_END_TOKEN, None
           continue
 
         # A single-line comment
         if token.startswith('#'):
           continue
 
-        if token.startswith('.'):
+        if token.startswith('.') or token.startswith('##'):
 
           literal = {
               '.meta-left': meta_left,
@@ -1023,9 +1023,6 @@ def _Tokenize(template_str, meta_left, meta_right, whitespace):
 
         else:  # Now we know the directive is a substitution.
           yield SUBSTITUTION_TOKEN, token
-
-  if comment_count != 0:
-    raise CompilationError('Got %d more {##BEGIN}s than {##END}s' % comment_count)
 
 
 def _CompileTemplate(
@@ -1078,9 +1075,21 @@ def _CompileTemplate(
   # If we go to -1, then we got too many {end}.  If end at 1, then we're missing
   # an {end}.
   balance_counter = 0
+  comment_counter = 0  # ditto for ##BEGIN/##END
 
   for token_type, token in _Tokenize(template_str, meta_left, meta_right,
                                      whitespace):
+    if token_type == COMMENT_BEGIN_TOKEN:
+      comment_counter += 1
+      continue
+    if token_type == COMMENT_END_TOKEN:
+      comment_counter -= 1
+      if comment_counter < 0:
+        raise CompilationError('Got too many ##END markers')
+      continue
+    # Don't process any tokens
+    if comment_counter > 0:
+      continue
 
     if token_type == LITERAL_TOKEN:
       if token:
@@ -1147,6 +1156,8 @@ def _CompileTemplate(
   if balance_counter != 0:
     raise TemplateSyntaxError('Got too few %send%s statements' %
         (meta_left, meta_right))
+  if comment_counter != 0:
+    raise CompilationError('Got %d more {##BEGIN}s than {##END}s' % comment_counter)
 
   return builder.Root()
 
