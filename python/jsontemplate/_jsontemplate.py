@@ -104,7 +104,10 @@ class TemplateSyntaxError(CompilationError):
   """Syntax error in the template text."""
 
 class UndefinedVariable(EvaluationError):
-  """The template contains a variable not defined by the data dictionary."""
+  """The template contains a variable name not defined by the data dictionary."""
+
+class UndefinedBlock(EvaluationError):
+  """The template contains a block name not defined anywhere."""
 
 
 # The last group is of the form 'name | f1 | f2 ...'
@@ -384,6 +387,9 @@ class _ProgramBuilder(object):
     formatters = [self._GetFormatter(f) for f in formatters]
     self.current_block.Append((_DoSubstitute, (name, formatters)))
 
+  def AppendSubstBlock(self, name):
+    self.current_block.Append((_DoSubstBlock, name))
+
   def _NewSection(self, func, new_block):
     self.current_block.Append((func, new_block))
     self.stack.append(new_block)
@@ -400,9 +406,9 @@ class _ProgramBuilder(object):
     elif token_type == SECTION_TOKEN:
       new_block = _Section(section_name, pre_formatters)
       func = _DoSection
-    elif token_type == VALUE_TOKEN:
+    elif token_type == BLOCK_TOKEN:
       new_block = _Section(section_name, [])
-      func = _DoValue
+      func = _DoBlock
     else:
       raise AssertionError('Invalid token type %s' % token_type)
 
@@ -636,12 +642,6 @@ class _ScopedContext(object):
     if name == '@':
       return self.stack[-1].context
 
-    # {.value} lookups take precedence; they shouldn't overlap
-    try:
-      return ''.join(self.values[name])
-    except KeyError:
-      pass
-
     parts = name.split('.')
     value = self._LookUpStack(parts[0])
 
@@ -653,6 +653,13 @@ class _ScopedContext(object):
         return self._Undefined(part)
 
     return value
+
+  def LookupBlock(self, name):
+    """We just return a LIST of tokens in this case for efficiency."""
+    try:
+      return self.values[name]
+    except KeyError:
+      raise UndefinedBlock('Block %r is not defined' % name)
 
   def BeginValue(self, name):
     """Returns a callback to write strings to."""
@@ -912,7 +919,8 @@ def MakeTokenRegex(meta_left, meta_right):
 
 ( LITERAL_TOKEN,  # "Hi"
   META_LITERAL_TOKEN,  # {.space}, etc.
-  SUBSTITUTION_TOKEN,  # {var|html}
+
+  SUBST_TOKEN,  # {var|html}
   SECTION_TOKEN,  # {.section name}
   REPEATED_SECTION_TOKEN,  # {.repeated section name}
   PREDICATE_TOKEN,  # {.predicate?}
@@ -920,11 +928,14 @@ def MakeTokenRegex(meta_left, meta_right):
   ALTERNATES_TOKEN,  # {.or}
   OR_TOKEN,  # {.or}
   END_TOKEN,  # {.end}
+
+  SUBST_BLOCK_TOKEN,  # {:TITLE}
+  BLOCK_TOKEN,  # {.block TITLE}
+
   COMMENT_BEGIN_TOKEN,  # {##BEGIN}
   COMMENT_END_TOKEN,  # {##END}
   NOSPACE_TOKEN,  # {.nospace}
-  VALUE_TOKEN,  # {.value TITLE}
-  ) = range(14)
+  ) = range(15)
 
 COMMENT_BEGIN = '##BEGIN'
 COMMENT_END = '##END'
@@ -959,8 +970,8 @@ def _MatchDirective(token):
     else:
       return SECTION_TOKEN, section_name
 
-  if token.startswith('value '):
-    return VALUE_TOKEN, token[6:].strip()
+  if token.startswith('block '):
+    return BLOCK_TOKEN, token[6:].strip()
   if token.startswith('if '):
     return IF_TOKEN, token[3:].strip()
   if token.endswith('?'):
@@ -1034,6 +1045,10 @@ def _Tokenize(template_str, meta_left, meta_right, whitespace):
           yield NOSPACE_TOKEN, None
           continue
 
+        if token.startswith(':'):
+          yield SUBST_BLOCK_TOKEN, token[1:]
+          continue
+
         if token.startswith('.'):
           literal = {
               '.meta-left': meta_left,
@@ -1052,7 +1067,7 @@ def _Tokenize(template_str, meta_left, meta_right, whitespace):
             yield token_type, token
 
         else:  # Now we know the directive is a substitution.
-          yield SUBSTITUTION_TOKEN, token
+          yield SUBST_TOKEN, token
 
 
 def _CompileTemplate(
@@ -1146,7 +1161,7 @@ def _CompileTemplate(
         builder.Append(token)
       continue
 
-    if token_type in (SECTION_TOKEN, REPEATED_SECTION_TOKEN, VALUE_TOKEN):
+    if token_type in (SECTION_TOKEN, REPEATED_SECTION_TOKEN, BLOCK_TOKEN):
       parts = [p.strip() for p in token.split(format_char)]
       if len(parts) == 1:
         name = parts[0]
@@ -1188,7 +1203,7 @@ def _CompileTemplate(
       builder.EndSection()
       continue
 
-    if token_type == SUBSTITUTION_TOKEN:
+    if token_type == SUBST_TOKEN:
       parts = [p.strip() for p in token.split(format_char)]
       if len(parts) == 1:
         if default_formatter is None:
@@ -1202,6 +1217,11 @@ def _CompileTemplate(
         formatters = parts[1:]
 
       builder.AppendSubstitution(name, formatters)
+      continue
+
+    if token_type == SUBST_BLOCK_TOKEN:
+      builder.AppendSubstBlock(token)
+      continue
 
   if balance_counter != 0:
     raise TemplateSyntaxError('Got too few %send%s statements' %
@@ -1340,6 +1360,10 @@ class Template(object):
                               self.template_registry)
     self._program = _CompileTemplate(template_str, builder, **compile_options)
     self.undefined_str = undefined_str
+
+  def _Statements(self):
+    # for expand_with_style2
+    return self._program.Statements()
 
   def _RegisterGroup(self, group):
     """Allow this template to reference templates in the group via formatters.
@@ -1533,8 +1557,8 @@ def _DoPredicates(args, context, callback, trace):
       break
 
 
-def _DoValue(args, context, callback, trace):
-  """{.value TITLE}"""
+def _DoBlock(args, context, callback, trace):
+  """Definition of {.block TITLE}"""
   # Instead of writing to the "real" output stream passed as 'callback', ask the
   # context for a callback "on the side".  After the value block is done
   # executing, the rest of the template can use the value.
@@ -1606,6 +1630,26 @@ def _DoSubstitute(args, context, callback, trace):
   if value is None:
     raise EvaluationError('Evaluating %r gave None value' % name)
   callback(value)
+
+
+def _DoSubstBlock(args, context, callback, trace):
+  """Block substitution, e.g. {:TITLE}
+
+  Differences between normal substitution and block substitution:
+
+  - We get a list of strings (after execution) rather than a big string
+  - No formatters (it's possible to implement them, but I don't see a use case
+    and it's more complex, although arguably more orthogonal to have them)
+
+  The separate concept of block substitution exists basically for efficiency.
+  If we're generating 200K of HTML in the body, I don't want to materialize that entire
+  string, only to then substitute it into a style to make a 201K string.
+  """
+  name = args  # TODO: Could make a _Substitution, like _Section
+  parts = context.LookupBlock(name)
+  assert isinstance(parts, list)
+  for p in parts:
+    callback(p)
 
 
 def _Execute(statements, context, callback, trace):
@@ -1690,4 +1734,39 @@ def expand_with_style(template, style, data, body_subtree='body'):
   tokens = []
   execute_with_style(template, style, data, tokens.append,
                      body_subtree=body_subtree)
+  return ''.join(tokens)
+
+
+def execute_with_style2(template, style, data, callback, trace=None):
+  """Low level version of expand_with_style that takes a callback."""
+  undefined_str = None
+  context = _ScopedContext(data, undefined_str)
+
+  # Expand into a throwaway.  The context is populated with "side effects".
+  # TODO: warn if there is anything significant here.
+  throwaway = []
+  _Execute(template._Statements(), context, throwaway.append, trace=trace)
+
+  # Now use the same context to expand the style into the callback passed by the
+  # caller.
+  _Execute(style._Statements(), context, callback, trace=trace)
+
+
+def expand_with_style2(template, style, data):
+  """Expand a data dictionary with a template AND a style.
+
+  A style is a Template instance that factors out the common strings in several
+  "body" templates.
+
+  Args:
+    template: Template instance for the inner "page content".  This should have
+      {.value} blocks.
+    style: Template instance for the outer "page style".  A "normal" template
+      without "values.
+    data: Data dictionary, with a 'body' key (or body_subtree
+    body_subtree: key that specifies the subtree of 'data' to expand 'template'
+                  into
+  """
+  tokens = []
+  execute_with_style2(template, style, data, tokens.append)
   return ''.join(tokens)
