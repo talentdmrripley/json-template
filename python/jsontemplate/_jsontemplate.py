@@ -880,7 +880,7 @@ def MakeTokenRegex(meta_left, meta_right):
     _token_re_cache[key] = re.compile(
         r'(' +
         re.escape(meta_left) +
-        r'.+?' +
+        r'.*?' +
         re.escape(meta_right) +
         r')')
   return _token_re_cache[key]
@@ -889,6 +889,7 @@ def MakeTokenRegex(meta_left, meta_right):
 # Examples:
 
 ( LITERAL_TOKEN,  # "Hi"
+  META_LITERAL_TOKEN,  # {.space}, etc.
   SUBSTITUTION_TOKEN,  # {var|html}
   SECTION_TOKEN,  # {.section name}
   REPEATED_SECTION_TOKEN,  # {.repeated section name}
@@ -899,7 +900,8 @@ def MakeTokenRegex(meta_left, meta_right):
   END_TOKEN,  # {.end}
   COMMENT_BEGIN_TOKEN,  # {##BEGIN}
   COMMENT_END_TOKEN,  # {##END}
-  ) = range(11)
+  NOSPACE_TOKEN,  # {.nospace}
+  ) = range(13)
 
 COMMENT_BEGIN = '##BEGIN'
 COMMENT_END = '##END'
@@ -913,6 +915,9 @@ def _MatchDirective(token):
   else:
     return None, None
 
+  if token == 'end':
+    return END_TOKEN, None
+
   if token == 'alternates with':
     return ALTERNATES_TOKEN, token
 
@@ -922,9 +927,6 @@ def _MatchDirective(token):
     else:
       pred_str = token[2:].strip()
       return OR_TOKEN, pred_str
-
-  if token == 'end':
-    return END_TOKEN, None
 
   match = _SECTION_RE.match(token)
   if match:
@@ -1003,8 +1005,11 @@ def _Tokenize(template_str, meta_left, meta_right, whitespace):
         if token.startswith('#'):
           continue
 
-        if token.startswith('.') or token.startswith('##'):
+        if token == '.nospace':
+          yield NOSPACE_TOKEN, None
+          continue
 
+        if token.startswith('.'):
           literal = {
               '.meta-left': meta_left,
               '.meta-right': meta_right,
@@ -1014,7 +1019,7 @@ def _Tokenize(template_str, meta_left, meta_right, whitespace):
               }.get(token)
 
           if literal is not None:
-            yield LITERAL_TOKEN, literal
+            yield META_LITERAL_TOKEN, literal
             continue
 
           token_type, token = _MatchDirective(token)
@@ -1077,8 +1082,28 @@ def _CompileTemplate(
   balance_counter = 0
   comment_counter = 0  # ditto for ##BEGIN/##END
 
+  skip_next_whitespace = False
   for token_type, token in _Tokenize(template_str, meta_left, meta_right,
                                      whitespace):
+    # For {.nospace} whitespace elision.  This skips all LITERAL whitespace to
+    # the right of the {.nospace} token, until the next "directive".  Whitespace
+    # specified by {.space}, etc.  is not removed.
+    if skip_next_whitespace:
+      if token_type != LITERAL_TOKEN:
+        skip_next_whitespace = False
+      else:
+        token = token.lstrip()  # Strip only the leftmost whitespace
+        if token:
+          builder.Append(token)
+          skip_next_whitespace = False  # nothing to strip next
+        # if we got a literal token of all whitespace, the next iteration may
+        # also be a literal that needs its leftmost whitespace stripped
+        continue
+
+    if token_type == NOSPACE_TOKEN:
+      skip_next_whitespace = True
+      continue
+
     if token_type == COMMENT_BEGIN_TOKEN:
       comment_counter += 1
       continue
@@ -1091,7 +1116,7 @@ def _CompileTemplate(
     if comment_counter > 0:
       continue
 
-    if token_type == LITERAL_TOKEN:
+    if token_type in (LITERAL_TOKEN, META_LITERAL_TOKEN):
       if token:
         builder.Append(token)
       continue
