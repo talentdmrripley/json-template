@@ -536,6 +536,24 @@ class _ScopedContext(object):
   If the variable isn't in the current context, then we search up the stack.
 
   This also stores the results of {.value NAME} evaluation.
+
+  NEW IMPLEMENTATION SKETCH:
+
+  self.values = {}  ONE LEVEL dictionary of LISTS
+
+  Lookup(":TITLE") -> look up in self.values, return LIST
+  Lookup(":@") -> look up top of frame... could be a LIST
+
+  PushSection(":TITLE") -> push _Frame(self.values[name])  on the stack?
+
+  Predicates?  {.:TITLE?}   not allowed
+
+  normal _DoSubstitute block
+  if we get a LIST value back... and the NAME starts with (':') -- then execute
+  the it and skip the foramtters
+
+  : basically means -- get the value from a separate dictionary, and assume it's
+  a list, and then write each token to the callback
   """
 
   def __init__(self, context, undefined_str):
@@ -1576,16 +1594,11 @@ def _DoSubstitute(args, context, callback, trace):
 
   name, formatters = args
 
-  # So we can have {.section is_new}new since {@}{.end}.  Hopefully this idiom
-  # is OK.
-  if name == '@':
-    value = context.Lookup('@')
-  else:
-    try:
-      value = context.Lookup(name)
-    except TypeError, e:
-      raise EvaluationError(
-          'Error evaluating %r in context %r: %r' % (name, context, e))
+  try:
+    value = context.Lookup(name)
+  except TypeError, e:
+    raise EvaluationError(
+        'Error evaluating %r in context %r: %r' % (name, context, e))
 
   last_index = len(formatters) - 1
   for i, (f, args, formatter_type) in enumerate(formatters):
