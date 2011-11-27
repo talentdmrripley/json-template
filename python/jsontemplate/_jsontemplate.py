@@ -539,12 +539,12 @@ class _ScopedContext(object):
 
   NEW IMPLEMENTATION SKETCH:
 
-  self.values = {}  ONE LEVEL dictionary of LISTS
+  self.block_values = {}  ONE LEVEL dictionary of LISTS
 
-  Lookup(":TITLE") -> look up in self.values, return LIST
+  Lookup(":TITLE") -> look up in self.block_values, return LIST
   Lookup(":@") -> look up top of frame... could be a LIST
 
-  PushSection(":TITLE") -> push _Frame(self.values[name])  on the stack?
+  PushSection(":TITLE") -> push _Frame(self.block_values[name])  on the stack?
 
   Predicates?  {.:TITLE?}   not allowed
 
@@ -564,7 +564,7 @@ class _ScopedContext(object):
     """
     self.stack = [_Frame(context)]
     self.undefined_str = undefined_str
-    self.values = {}  # for {.value NAME}
+    self.block_values = {}  # for {.value NAME}
 
   def PushSection(self, name, pre_formatters):
     """Given a section name, push it on the top of the stack.
@@ -675,18 +675,18 @@ class _ScopedContext(object):
   def LookupBlock(self, name):
     """We just return a LIST of tokens in this case for efficiency."""
     try:
-      return self.values[name]
+      return self.block_values[name]
     except KeyError:
       raise UndefinedBlock('Block %r is not defined' % name)
 
-  def BeginValue(self, name):
+  def BeginBlock(self, name):
     """Returns a callback to write strings to."""
-    assert name not in self.values
+    assert name not in self.block_values
     tokens = []
-    self.values[name] = tokens
+    self.block_values[name] = tokens
     return tokens.append
 
-  def EndValue(self):
+  def EndBlock(self):
     pass
 
 
@@ -1584,9 +1584,9 @@ def _DoBlock(args, context, callback, trace):
   # context for a callback "on the side".  After the value block is done
   # executing, the rest of the template can use the value.
   block = args
-  callback = context.BeginValue(block.section_name)
+  callback = context.BeginBlock(block.section_name)
   _Execute(block.Statements(), context, callback, trace)
-  context.EndValue()
+  context.EndBlock()
 
 
 def _DoSubstitute(args, context, callback, trace):
