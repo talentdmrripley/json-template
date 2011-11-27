@@ -993,8 +993,8 @@ def _MatchDirective(token):
     else:
       return SECTION_TOKEN, section_name
 
-  if token.startswith('block '):
-    name = token[6:].strip()
+  if token.startswith('define '):
+    name = token[7:].strip()
     if not name.startswith(':'):
       raise CompilationError('Definition names must start with a colon (:)')
     return DEF_TOKEN, name
