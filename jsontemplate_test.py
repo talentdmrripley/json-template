@@ -1472,8 +1472,8 @@ class BlockTest(taste.Test):
 
   TODO: Compilation errors:
 
-  - {.block} not at the top level (value in section, value in value, etc.)
-  - same {.block} defined twice
+  - {.define} not at the top level (value in section, value in value, etc.)
+  - same {.define} defined twice
   """
 
   LABELS = ['multilanguage']
@@ -1481,7 +1481,7 @@ class BlockTest(taste.Test):
   @taste.only_verify('python')
   def testBlock(self):
     t = taste.ClassDef(B("""
-        {.block :TITLE}
+        {.define :TITLE}
         Definition of '{word}'
         {.end}
         {# Now we can use the value here}
@@ -1492,7 +1492,7 @@ class BlockTest(taste.Test):
   @taste.only_verify('python')
   def testBlockSection(self):
     t = taste.ClassDef(B("""
-        {.block :TITLE}
+        {.define :TITLE}
         Definition of '{word}'
         {.end}
         {# Now we can use the value here}
@@ -1508,7 +1508,7 @@ class BlockTest(taste.Test):
   def testBadBlock(self):
     t = B("""
         {# No leading colon}
-        {.block TITLE}
+        {.define TITLE}
         {.end}
         """)
     self.verify.CompilationError(jsontemplate.CompilationError, t)

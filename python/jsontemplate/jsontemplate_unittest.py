@@ -362,11 +362,11 @@ class InternalTemplateTest(taste.Test):
         }
     # TITLE is reused
     body_template = jsontemplate.Template(B("""
-        {.block :TITLE}
+        {.define :TITLE}
         Definition of '{word}'
         {.end}
 
-        {.block :BODY}
+        {.define :BODY}
           <h3>{:TITLE}</h3>
           {definition}
         {.end}
@@ -392,12 +392,12 @@ class InternalTemplateTest(taste.Test):
     # Now do it with "strip-line"
     body_template = jsontemplate.Template(B("""
         {.OPTION strip-line}
-          {.block :TITLE}
+          {.define :TITLE}
             Definition of '{word}'
           {.end}
         {.END}
 
-        {.block :BODY}
+        {.define :BODY}
           <h3>{:TITLE}</h3>
           {definition}
         {.end}
