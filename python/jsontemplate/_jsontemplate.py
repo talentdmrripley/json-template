@@ -400,6 +400,9 @@ class _ProgramBuilder(object):
     elif token_type == SECTION_TOKEN:
       new_block = _Section(section_name, pre_formatters)
       func = _DoSection
+    elif token_type == VALUE_TOKEN:
+      new_block = _Section(section_name, [])
+      func = _DoValue
     else:
       raise AssertionError('Invalid token type %s' % token_type)
 
@@ -525,6 +528,8 @@ class _ScopedContext(object):
   """Allows scoped lookup of variables.
 
   If the variable isn't in the current context, then we search up the stack.
+
+  This also stores the results of {.value NAME} evaluation.
   """
 
   def __init__(self, context, undefined_str):
@@ -535,6 +540,7 @@ class _ScopedContext(object):
     """
     self.stack = [_Frame(context)]
     self.undefined_str = undefined_str
+    self.values = {}  # for {.value NAME}
 
   def PushSection(self, name, pre_formatters):
     """Given a section name, push it on the top of the stack.
@@ -630,6 +636,12 @@ class _ScopedContext(object):
     if name == '@':
       return self.stack[-1].context
 
+    # {.value} lookups take precedence; they shouldn't overlap
+    try:
+      return ''.join(self.values[name])
+    except KeyError:
+      pass
+
     parts = name.split('.')
     value = self._LookUpStack(parts[0])
 
@@ -641,6 +653,16 @@ class _ScopedContext(object):
         return self._Undefined(part)
 
     return value
+
+  def BeginValue(self, name):
+    """Returns a callback to write strings to."""
+    assert name not in self.values
+    tokens = []
+    self.values[name] = tokens
+    return tokens.append
+
+  def EndValue(self):
+    pass
 
 
 def _ToString(x):
@@ -901,7 +923,8 @@ def MakeTokenRegex(meta_left, meta_right):
   COMMENT_BEGIN_TOKEN,  # {##BEGIN}
   COMMENT_END_TOKEN,  # {##END}
   NOSPACE_TOKEN,  # {.nospace}
-  ) = range(13)
+  VALUE_TOKEN,  # {.value TITLE}
+  ) = range(14)
 
 COMMENT_BEGIN = '##BEGIN'
 COMMENT_END = '##END'
@@ -936,6 +959,8 @@ def _MatchDirective(token):
     else:
       return SECTION_TOKEN, section_name
 
+  if token.startswith('value '):
+    return VALUE_TOKEN, token[6:].strip()
   if token.startswith('if '):
     return IF_TOKEN, token[3:].strip()
   if token.endswith('?'):
@@ -1121,7 +1146,7 @@ def _CompileTemplate(
         builder.Append(token)
       continue
 
-    if token_type in (SECTION_TOKEN, REPEATED_SECTION_TOKEN):
+    if token_type in (SECTION_TOKEN, REPEATED_SECTION_TOKEN, VALUE_TOKEN):
       parts = [p.strip() for p in token.split(format_char)]
       if len(parts) == 1:
         name = parts[0]
@@ -1440,7 +1465,7 @@ def MakeTemplateGroup(group):
 
 
 def _DoRepeatedSection(args, context, callback, trace):
-  """{repeated section foo}"""
+  """{.repeated section foo}"""
 
   block = args
 
@@ -1475,7 +1500,7 @@ def _DoRepeatedSection(args, context, callback, trace):
 
 
 def _DoSection(args, context, callback, trace):
-  """{section foo}"""
+  """{.section foo}"""
 
   block = args
   # If a section present and "true", push the dictionary onto the stack as the
@@ -1506,6 +1531,17 @@ def _DoPredicates(args, context, callback, trace):
       _Execute(statements, context, callback, trace)
       if trace: trace.Pop()
       break
+
+
+def _DoValue(args, context, callback, trace):
+  """{.value TITLE}"""
+  # Instead of writing to the "real" output stream passed as 'callback', ask the
+  # context for a callback "on the side".  After the value block is done
+  # executing, the rest of the template can use the value.
+  block = args
+  callback = context.BeginValue(block.section_name)
+  _Execute(block.Statements(), context, callback, trace)
+  context.EndValue()
 
 
 def _DoSubstitute(args, context, callback, trace):

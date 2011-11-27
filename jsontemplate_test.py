@@ -1229,7 +1229,6 @@ class AllFormattersTest(taste.Test):
         t, {'num': 1.0/3}, '<b>0.333</b>')
 
 
-
 class WhitespaceModesTest(taste.Test):
   """Tests the whitespace= option."""
 
@@ -1505,6 +1504,40 @@ class DocumentationTest(taste.Test):
 """
 
     self.verify.Expansion(t, d, expected, ignore_all_whitespace=True)
+
+
+class ValuesTest(taste.Test):
+  """Tests the values feature.
+
+  TODO: Compilation errors:
+
+  - {.value} not at the top level (value in section, value in value, etc.)
+  - same {.value} defined twice
+  """
+
+  LABELS = ['multilanguage']
+
+  @taste.only_verify('python')
+  def testValue(self):
+    t = taste.ClassDef(B("""
+        {.value TITLE}
+        Definition of '{word}'{.nospace}
+        {.end}
+        {# Now we can use the value here}
+        <h3>{TITLE}</h3>
+        """))
+    self.verify.Expansion(t, {'word': 'hello'}, "<h3>Definition of 'hello'</h3>\n")
+
+    # The value takes precedence over the variable
+    d = {'word': 'hello', 'TITLE': 'dummy'}
+    t = taste.ClassDef(B("""
+        {.value TITLE}
+        Definition of '{word}'{.nospace}
+        {.end}
+        {# Now we can use the value here}
+        <h3>{TITLE}</h3>
+        """))
+    self.verify.Expansion(t, d, "<h3>Definition of 'hello'</h3>\n")
 
 
 def main(argv):
