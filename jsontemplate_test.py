@@ -1467,8 +1467,8 @@ class DocumentationTest(taste.Test):
     self.verify.Expansion(t, d, expected, ignore_all_whitespace=True)
 
 
-class ValuesTest(taste.Test):
-  """Tests the values feature.
+class BlockTest(taste.Test):
+  """Tests the block feature.
 
   TODO: Compilation errors:
 

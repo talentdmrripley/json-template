@@ -330,6 +330,7 @@ class InternalTemplateTest(taste.Test):
         t.expand(d))
 
   def testExpandWithStyle(self):
+    # TODO: REMOVE with execute_with_style_LEGACY
     data = {
         'title': 'Greetings!',
         'body': {'names': ['andy', 'bob']},
@@ -355,11 +356,11 @@ class InternalTemplateTest(taste.Test):
         jsontemplate.expand_with_style, body_template, style, data, 'foo')
 
   def testExpandWithStyle_Reuse(self):
-    # TITLE is reused
     data = {
         'word': 'hello',
         'definition': 'greeting',
         }
+    # TITLE is reused
     body_template = jsontemplate.Template(B("""
         {.block TITLE}
         Definition of '{word}'
@@ -376,7 +377,7 @@ class InternalTemplateTest(taste.Test):
         {:BODY}
         </body>
         """))
-    result = jsontemplate.expand_with_style2(body_template, style, data)
+    result = jsontemplate.expand_with_style(body_template, style, data)
     self.verify.LongStringsEqual(B("""
         <title>Definition of 'hello'
         </title>
@@ -408,7 +409,7 @@ class InternalTemplateTest(taste.Test):
         {:BODY}
         </body>
         """))
-    result = jsontemplate.expand_with_style2(body_template, style, data)
+    result = jsontemplate.expand_with_style(body_template, style, data)
     self.verify.LongStringsEqual(B("""
         <title>Definition of 'hello'</title>
         <body>

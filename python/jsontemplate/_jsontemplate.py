@@ -1139,9 +1139,9 @@ def _CompileTemplate(
   # an {end}.
   balance_counter = 0
   comment_counter = 0  # ditto for ##BEGIN/##END
-  option_counter = 0  # ditto for {.OPTION} and {.END}
 
-  skip_next_whitespace = False
+  has_block_defs = False  # TODO: REMOVE with execute_with_style_LEGACY
+
   for token_type, token in _Tokenize(template_str, meta_left, meta_right,
                                      whitespace):
     if token_type == COMMENT_BEGIN_TOKEN:
@@ -1171,6 +1171,9 @@ def _CompileTemplate(
         formatters = parts[1:]
       builder.NewSection(token_type, name, formatters)
       balance_counter += 1
+      # TODO: REMOVE with execute_with_style_LEGACY
+      if token_type == BLOCK_TOKEN:
+        has_block_defs = True
       continue
 
     if token_type == PREDICATE_TOKEN:
@@ -1229,7 +1232,7 @@ def _CompileTemplate(
   if comment_counter != 0:
     raise CompilationError('Got %d more {##BEGIN}s than {##END}s' % comment_counter)
 
-  return builder.Root()
+  return builder.Root(), has_block_defs
 
 
 _OPTION_RE = re.compile(r'^([a-zA-Z\-]+):\s*(.*)')
@@ -1358,11 +1361,13 @@ class Template(object):
     self.template_registry = TemplateRegistry(self)
     builder = _ProgramBuilder(more_formatters, more_predicates,
                               self.template_registry)
-    self._program = _CompileTemplate(template_str, builder, **compile_options)
+    # TODO: Remove has_block_defs along with execute_with_style_LEGACY
+    self._program, self.has_block_defs = _CompileTemplate(
+        template_str, builder, **compile_options)
     self.undefined_str = undefined_str
 
   def _Statements(self):
-    # for expand_with_style2
+    # for execute_with_style
     return self._program.Statements()
 
   def _RegisterGroup(self, group):
@@ -1690,6 +1695,9 @@ def expand(template_str, dictionary, **kwargs):
   return t.expand(dictionary)
 
 
+###
+# TODO: DELETE
+###
 def _FlattenToCallback(tokens, callback):
   """Takes a nested list structure and flattens it.
 
@@ -1701,9 +1709,11 @@ def _FlattenToCallback(tokens, callback):
     else:
       _FlattenToCallback(t, callback)
 
-
-def execute_with_style(template, style, data, callback, body_subtree='body'):
-  """Low level version of expand_with_style that takes a callback."""
+###
+# TODO: DELETE execute_with_style_LEGACY after old apps cleaned up
+####
+def execute_with_style_LEGACY(template, style, data, callback, body_subtree='body'):
+  """OBSOLETE old API."""
   try:
     body_data = data[body_subtree]
   except KeyError:
@@ -1716,27 +1726,8 @@ def execute_with_style(template, style, data, callback, body_subtree='body'):
   _FlattenToCallback(tokens, callback)
 
 
-def expand_with_style(template, style, data, body_subtree='body'):
-  """Expand a data dictionary with a template AND a style.
-
-  A style is a Template instance that factors out the common strings in several
-  "body" templates.
-
-  Args:
-    template: Template instance for the inner "page content"
-    style: Template instance for the outer "page style"  
-    data: Data dictionary, with a 'body' key (or body_subtree
-    body_subtree: key that specifies the subtree of 'data' to expand 'template'
-                  into
-  """
-  tokens = []
-  execute_with_style(template, style, data, tokens.append,
-                     body_subtree=body_subtree)
-  return ''.join(tokens)
-
-
-def execute_with_style2(template, style, data, callback, trace=None):
-  """Low level version of expand_with_style that takes a callback."""
+def execute_with_style(template, style, data, callback, trace=None):
+  """Execute both a "body" template and a style with the same data dict."""
   undefined_str = None
   context = _ScopedContext(data, undefined_str)
 
@@ -1750,21 +1741,28 @@ def execute_with_style2(template, style, data, callback, trace=None):
   _Execute(style._Statements(), context, callback, trace=trace)
 
 
-def expand_with_style2(template, style, data):
+def expand_with_style(template, style, data, body_subtree='body'):
   """Expand a data dictionary with a template AND a style.
 
   A style is a Template instance that factors out the common strings in several
   "body" templates.
 
   Args:
-    template: Template instance for the inner "page content".  This should have
-      {.value} blocks.
-    style: Template instance for the outer "page style".  A "normal" template
-      without "values.
+    template: Template instance for the inner "page content"
+    style: Template instance for the outer "page style"  
     data: Data dictionary, with a 'body' key (or body_subtree
+
+    TODO: DELETE body_subtree along with execute_with_style_LEGACY
     body_subtree: key that specifies the subtree of 'data' to expand 'template'
                   into
   """
-  tokens = []
-  execute_with_style2(template, style, data, tokens.append)
-  return ''.join(tokens)
+  # Use the new algorithm for a template with {.block}
+  if template.has_block_defs:
+    tokens = []
+    execute_with_style(template, style, data, tokens.append)
+    return ''.join(tokens)
+  else:
+    tokens = []
+    execute_with_style_LEGACY(template, style, data, tokens.append,
+                              body_subtree=body_subtree)
+    return ''.join(tokens)
