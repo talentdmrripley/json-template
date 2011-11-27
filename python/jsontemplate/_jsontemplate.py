@@ -1056,6 +1056,13 @@ def _Tokenize(template_str, meta_left, meta_right, whitespace):
         if token.startswith('#'):
           continue
 
+        # : is a "block substitution as opposed to a normal one.
+        #
+        # Other characters considered:
+        # > conflicts with HTML:          <title>{>TITLE}</title> parses badly
+        # / seems to imply "end" in HTML: <title>{/TITLE}</title>
+        # ! is reasonable but we could use that for other things, like user
+        # defined functions with side effects
         if token.startswith(':'):
           yield SUBST_BLOCK_TOKEN, token[1:]
           continue
@@ -1487,8 +1494,6 @@ def _DoRepeatedSection(args, context, callback, trace):
   block = args
 
   items = context.PushSection(block.section_name, block.pre_formatters)
-  # TODO: if 'items' is a dictionary, allow @name and @value.
-
   if items:
     if not isinstance(items, list):
       raise EvaluationError('Expected a list; got %s' % type(items))
@@ -1564,7 +1569,7 @@ def _DoBlock(args, context, callback, trace):
 def _DoSubstitute(args, context, callback, trace):
   """Variable substitution, e.g. {foo}"""
 
-  name, formatters = args  # TODO: Could make a _Substitution, like _Section
+  name, formatters = args
 
   # So we can have {.section is_new}new since {@}{.end}.  Hopefully this idiom
   # is OK.
@@ -1638,7 +1643,7 @@ def _DoSubstBlock(args, context, callback, trace):
   If we're generating 200K of HTML in the body, I don't want to materialize that entire
   string, only to then substitute it into a style to make a 201K string.
   """
-  name = args  # TODO: Could make a _Substitution, like _Section
+  name = args
   parts = context.LookupBlock(name)
   assert isinstance(parts, list)
   for p in parts:
