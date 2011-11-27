@@ -934,11 +934,13 @@ def MakeTokenRegex(meta_left, meta_right):
 
   COMMENT_BEGIN_TOKEN,  # {##BEGIN}
   COMMENT_END_TOKEN,  # {##END}
-  NOSPACE_TOKEN,  # {.nospace}
-  ) = range(15)
+  ) = range(14)
 
 COMMENT_BEGIN = '##BEGIN'
 COMMENT_END = '##END'
+
+OPTION_STRIP_LINE = '.OPTION strip-line'
+OPTION_END = '.END'
 
 
 def _MatchDirective(token):
@@ -986,9 +988,10 @@ def _Tokenize(template_str, meta_left, meta_right, whitespace):
   trimlen = len(meta_left)
   token_re = MakeTokenRegex(meta_left, meta_right)
   do_strip = (whitespace == 'strip-line')  # Do this outside loop
+  do_strip_part = False
 
   for line in template_str.splitlines(True):  # retain newlines
-    if do_strip:
+    if do_strip or do_strip_part:
       line = line.strip()
 
     tokens = token_re.split(line)
@@ -1009,6 +1012,12 @@ def _Tokenize(template_str, meta_left, meta_right, whitespace):
           continue
         if token == COMMENT_END:
           yield COMMENT_END_TOKEN, None
+          continue
+        if token == OPTION_STRIP_LINE:
+          do_strip_part = True
+          continue
+        if token == OPTION_END:
+          do_strip_part = False
           continue
 
         if token.startswith('#'):
@@ -1036,13 +1045,15 @@ def _Tokenize(template_str, meta_left, meta_right, whitespace):
         if token == COMMENT_END:
           yield COMMENT_END_TOKEN, None
           continue
+        if token == OPTION_STRIP_LINE:
+          do_strip_part = True
+          continue
+        if token == OPTION_END:
+          do_strip_part = False
+          continue
 
         # A single-line comment
         if token.startswith('#'):
-          continue
-
-        if token == '.nospace':
-          yield NOSPACE_TOKEN, None
           continue
 
         if token.startswith(':'):
@@ -1121,29 +1132,11 @@ def _CompileTemplate(
   # an {end}.
   balance_counter = 0
   comment_counter = 0  # ditto for ##BEGIN/##END
+  option_counter = 0  # ditto for {.OPTION} and {.END}
 
   skip_next_whitespace = False
   for token_type, token in _Tokenize(template_str, meta_left, meta_right,
                                      whitespace):
-    # For {.nospace} whitespace elision.  This skips all LITERAL whitespace to
-    # the right of the {.nospace} token, until the next "directive".  Whitespace
-    # specified by {.space}, etc.  is not removed.
-    if skip_next_whitespace:
-      if token_type != LITERAL_TOKEN:
-        skip_next_whitespace = False
-      else:
-        token = token.lstrip()  # Strip only the leftmost whitespace
-        if token:
-          builder.Append(token)
-          skip_next_whitespace = False  # nothing to strip next
-        # if we got a literal token of all whitespace, the next iteration may
-        # also be a literal that needs its leftmost whitespace stripped
-        continue
-
-    if token_type == NOSPACE_TOKEN:
-      skip_next_whitespace = True
-      continue
-
     if token_type == COMMENT_BEGIN_TOKEN:
       comment_counter += 1
       continue

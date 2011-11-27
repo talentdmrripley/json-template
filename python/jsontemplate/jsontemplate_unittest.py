@@ -362,7 +362,7 @@ class InternalTemplateTest(taste.Test):
         }
     body_template = jsontemplate.Template(B("""
         {.block TITLE}
-        Definition of '{word}'{.nospace}
+        Definition of '{word}'
         {.end}
 
         {.block BODY}
@@ -370,6 +370,38 @@ class InternalTemplateTest(taste.Test):
           {definition}
         {.end}
         """))
+    style = jsontemplate.Template(B("""
+        <title>{:TITLE}</title>
+        <body>
+        {:BODY}
+        </body>
+        """))
+    result = jsontemplate.expand_with_style2(body_template, style, data)
+    self.verify.LongStringsEqual(B("""
+        <title>Definition of 'hello'
+        </title>
+        <body>
+          <h3>Definition of 'hello'
+        </h3>
+          greeting
+        
+        </body>
+        """), result)
+
+    # Now do it with "strip-line"
+    body_template = jsontemplate.Template(B("""
+        {.OPTION strip-line}
+          {.block TITLE}
+            Definition of '{word}'
+          {.end}
+        {.END}
+
+        {.block BODY}
+          <h3>{:TITLE}</h3>
+          {definition}
+        {.end}
+        """))
+
     style = jsontemplate.Template(B("""
         <title>{:TITLE}</title>
         <body>
