@@ -532,8 +532,8 @@ class _ScopedContext(object):
 
   If the variable isn't in the current context, then we search up the stack.
 
-  The context also stores the results of evaluating {.define :NAME}, and lets the
-  values be looked up later with a "def" substitution: {:NAME}.
+  This object also stores the results of evaluating {.define :NAME}, and allows
+  these values be looked up later with a "def" substitution: {:NAME}.
 
   {.section :NAME} {:@} {.end} is also supported here by PushSection.
   """
@@ -1606,7 +1606,7 @@ def _DoDef(args, context, callback, trace):
 
 
 def _DoSubstitute(args, context, callback, trace):
-  """Variable or substitution, e.g. {foo} or {:FOO}
+  """Variable or "def" value substitution, i.e. {foo} or {:FOO}
 
   Differences between normal substitution and "def" substitution:
 
