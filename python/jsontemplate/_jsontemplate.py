@@ -304,8 +304,8 @@ class _ProgramBuilder(object):
       formatters: See docstring for _CompileTemplate
       predicates: See docstring for _CompileTemplate
     """
-    self.current_block = _Section(None)
-    self.stack = [self.current_block]
+    self.current_section = _Section(None)
+    self.stack = [self.current_section]
 
     # Passing a dictionary or a function is often more convenient than making a
     # FunctionRegistry
@@ -352,7 +352,7 @@ class _ProgramBuilder(object):
     Args:
       statement: Append a literal
     """
-    self.current_block.Append(statement)
+    self.current_section.Append(statement)
 
   def _GetFormatter(self, format_str):
     """
@@ -385,15 +385,12 @@ class _ProgramBuilder(object):
 
   def AppendSubstitution(self, name, formatters):
     formatters = [self._GetFormatter(f) for f in formatters]
-    self.current_block.Append((_DoSubstitute, (name, formatters)))
-
-  def AppendSubstBlock(self, name):
-    self.current_block.Append((_DoSubstBlock, name))
+    self.current_section.Append((_DoSubstitute, (name, formatters)))
 
   def _NewSection(self, func, new_block):
-    self.current_block.Append((func, new_block))
+    self.current_section.Append((func, new_block))
     self.stack.append(new_block)
-    self.current_block = new_block
+    self.current_section = new_block
 
   def NewSection(self, token_type, section_name, pre_formatters):
     """For sections or repeated sections."""
@@ -406,7 +403,7 @@ class _ProgramBuilder(object):
     elif token_type == SECTION_TOKEN:
       new_block = _Section(section_name, pre_formatters)
       func = _DoSection
-    elif token_type == BLOCK_TOKEN:
+    elif token_type == BLOCK_DEF_TOKEN:
       new_block = _Section(section_name, [])
       func = _DoBlock
     else:
@@ -423,10 +420,10 @@ class _ProgramBuilder(object):
       pred = self._GetPredicate(pred_str, test_attr=False)
     else:
       pred = None
-    self.current_block.NewOrClause(pred)
+    self.current_section.NewOrClause(pred)
 
   def AlternatesWith(self):
-    self.current_block.AlternatesWith()
+    self.current_section.AlternatesWith()
 
   def NewPredicateSection(self, pred_str, test_attr=False):
     """For chains of predicate clauses."""
@@ -438,11 +435,11 @@ class _ProgramBuilder(object):
 
   def EndSection(self):
     self.stack.pop()
-    self.current_block = self.stack[-1]
+    self.current_section = self.stack[-1]
 
   def Root(self):
     # It's assumed that we call this at the end of the program
-    return self.current_block
+    return self.current_section
 
 
 class _AbstractSection(object):
@@ -565,6 +562,25 @@ class _ScopedContext(object):
     self.stack = [_Frame(context)]
     self.undefined_str = undefined_str
     self.block_values = {}  # for {.value NAME}
+    # block_cursor is either a list of tokens or None.
+    # It is like self.stack for block :NAME.
+    #
+    # Usually this is None, and we will look up :NAME in self.block_values.
+    # When we do PushSection(':NAME'), then the value will be pushed here.
+    # it is
+    self.block_cursor = None
+
+  def PushBlock(self, name):
+    # Separate
+    assert name.startswith(':')
+    if self.block_cursor is not None:
+      # This could be caught at compile time
+      assert 0, "Can't push block while already inside a block section"
+    self.block_cursor = self.block_values.get(name)
+    return self.block_cursor
+
+  def PopBlock(self):
+    self.block_cursor = None
 
   def PushSection(self, name, pre_formatters):
     """Given a section name, push it on the top of the stack.
@@ -657,6 +673,18 @@ class _ScopedContext(object):
     Raises:
       UndefinedVariable if self.undefined_str is not set
     """
+    if name.startswith(':'):
+      if name == ':@':
+        if self.block_cursor is not None:
+          return self.block_cursor
+        else:
+          raise UndefinedBlock('Not inside a block')
+      try:
+        value = self.block_values[name]
+      except KeyError:
+        raise UndefinedBlock('Block %r is not defined' % name)
+      return value  # EARLY return
+
     if name == '@':
       return self.stack[-1].context
 
@@ -672,13 +700,6 @@ class _ScopedContext(object):
 
     return value
 
-  def LookupBlock(self, name):
-    """We just return a LIST of tokens in this case for efficiency."""
-    try:
-      return self.block_values[name]
-    except KeyError:
-      raise UndefinedBlock('Block %r is not defined' % name)
-
   def BeginBlock(self, name):
     """Returns a callback to write strings to."""
     assert name not in self.block_values
@@ -687,6 +708,7 @@ class _ScopedContext(object):
     return tokens.append
 
   def EndBlock(self):
+    # Nothing needs to be done when a block definition is ended.
     pass
 
 
@@ -948,7 +970,7 @@ def MakeTokenRegex(meta_left, meta_right):
   END_TOKEN,  # {.end}
 
   SUBST_BLOCK_TOKEN,  # {:TITLE}
-  BLOCK_TOKEN,  # {.block TITLE}
+  BLOCK_DEF_TOKEN,  # {.block TITLE}
 
   COMMENT_BEGIN_TOKEN,  # {##BEGIN}
   COMMENT_END_TOKEN,  # {##END}
@@ -991,7 +1013,10 @@ def _MatchDirective(token):
       return SECTION_TOKEN, section_name
 
   if token.startswith('block '):
-    return BLOCK_TOKEN, token[6:].strip()
+    name = token[6:].strip()
+    if not name.startswith(':'):
+      raise CompilationError('Block names must start with a colon (:)')
+    return BLOCK_DEF_TOKEN, name
   if token.startswith('if '):
     return IF_TOKEN, token[3:].strip()
   if token.endswith('?'):
@@ -1082,7 +1107,7 @@ def _Tokenize(template_str, meta_left, meta_right, whitespace):
         # ! is reasonable but we could use that for other things, like user
         # defined functions with side effects
         if token.startswith(':'):
-          yield SUBST_BLOCK_TOKEN, token[1:]
+          yield SUBST_BLOCK_TOKEN, token
           continue
 
         if token.startswith('.'):
@@ -1179,7 +1204,7 @@ def _CompileTemplate(
         builder.Append(token)
       continue
 
-    if token_type in (SECTION_TOKEN, REPEATED_SECTION_TOKEN, BLOCK_TOKEN):
+    if token_type in (SECTION_TOKEN, REPEATED_SECTION_TOKEN, BLOCK_DEF_TOKEN):
       parts = [p.strip() for p in token.split(format_char)]
       if len(parts) == 1:
         name = parts[0]
@@ -1190,7 +1215,7 @@ def _CompileTemplate(
       builder.NewSection(token_type, name, formatters)
       balance_counter += 1
       # TODO: REMOVE with execute_with_style_LEGACY
-      if token_type == BLOCK_TOKEN:
+      if token_type == BLOCK_DEF_TOKEN:
         has_block_defs = True
       continue
 
@@ -1241,7 +1266,8 @@ def _CompileTemplate(
       continue
 
     if token_type == SUBST_BLOCK_TOKEN:
-      builder.AppendSubstBlock(token)
+      # no formatters
+      builder.AppendSubstitution(token, [])
       continue
 
   if balance_counter != 0:
@@ -1546,8 +1572,17 @@ def _DoRepeatedSection(args, context, callback, trace):
 
 def _DoSection(args, context, callback, trace):
   """{.section foo}"""
-
   block = args
+
+  if block.section_name.startswith(':'):
+    if context.PushBlock(block.section_name):
+      _Execute(block.Statements(), context, callback, trace)
+      context.PopBlock()
+    else:  # missing or "false" -- show the {.or} section
+      context.PopBlock()
+      _Execute(block.Statements('or'), context, callback, trace)
+    return  # EARLY return
+
   # If a section present and "true", push the dictionary onto the stack as the
   # new context, and show it
   if context.PushSection(block.section_name, block.pre_formatters):
@@ -1590,15 +1625,33 @@ def _DoBlock(args, context, callback, trace):
 
 
 def _DoSubstitute(args, context, callback, trace):
-  """Variable substitution, e.g. {foo}"""
+  """Variable or substitution, e.g. {foo} or {:FOO}
 
+  Differences between normal substitution and block substitution:
+
+  - We get a list of strings (after execution) rather than a big string
+  - No formatters (it's possible to implement them, but I don't see a use case
+    and it's more complex, although arguably more orthogonal to have them)
+
+  The separate concept of block substitution exists basically for efficiency.
+  If we're generating 200K of HTML in the body, I don't want to materialize that entire
+  string, only to then substitute it into a style to make a 201K string.
+  """
   name, formatters = args
-
   try:
     value = context.Lookup(name)
   except TypeError, e:
     raise EvaluationError(
         'Error evaluating %r in context %r: %r' % (name, context, e))
+
+  # It's possible and arguably more consistent to move this test to compile
+  # time.  But it's such a small piece of code that I won't bother for now.
+  if name.startswith(':'):
+    parts = context.Lookup(name)
+    assert isinstance(parts, list)
+    for p in parts:
+      callback(p)
+    return  # EARLY return
 
   last_index = len(formatters) - 1
   for i, (f, args, formatter_type) in enumerate(formatters):
@@ -1646,26 +1699,6 @@ def _DoSubstitute(args, context, callback, trace):
   if value is None:
     raise EvaluationError('Evaluating %r gave None value' % name)
   callback(value)
-
-
-def _DoSubstBlock(args, context, callback, trace):
-  """Block substitution, e.g. {:TITLE}
-
-  Differences between normal substitution and block substitution:
-
-  - We get a list of strings (after execution) rather than a big string
-  - No formatters (it's possible to implement them, but I don't see a use case
-    and it's more complex, although arguably more orthogonal to have them)
-
-  The separate concept of block substitution exists basically for efficiency.
-  If we're generating 200K of HTML in the body, I don't want to materialize that entire
-  string, only to then substitute it into a style to make a 201K string.
-  """
-  name = args
-  parts = context.LookupBlock(name)
-  assert isinstance(parts, list)
-  for p in parts:
-    callback(p)
 
 
 def _Execute(statements, context, callback, trace):

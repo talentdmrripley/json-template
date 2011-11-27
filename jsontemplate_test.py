@@ -1479,15 +1479,39 @@ class BlockTest(taste.Test):
   LABELS = ['multilanguage']
 
   @taste.only_verify('python')
-  def testValue(self):
+  def testBlock(self):
     t = taste.ClassDef(B("""
-        {.block TITLE}
+        {.block :TITLE}
         Definition of '{word}'
         {.end}
         {# Now we can use the value here}
         <h3>{:TITLE}</h3>
         """))
     self.verify.Expansion(t, {'word': 'hello'}, "<h3>Definition of 'hello'\n</h3>\n")
+
+  @taste.only_verify('python')
+  def testBlockSection(self):
+    t = taste.ClassDef(B("""
+        {.block :TITLE}
+        Definition of '{word}'
+        {.end}
+        {# Now we can use the value here}
+        {.section :TITLE}<h3>{:@}</h3>{.end}
+        {.section :NONEXISTENT}<h3>{:@}</h3>{.end}
+        {.section :ALTERNATE}<h3>{:@}</h3>{.or}NONE{.end}
+        """))
+    self.verify.Expansion(
+        t, {'word': 'hello'},
+        "<h3>Definition of 'hello'\n</h3>\n\nNONE\n")
+
+  @taste.only_verify('python')
+  def testBadBlock(self):
+    t = B("""
+        {# No leading colon}
+        {.block TITLE}
+        {.end}
+        """)
+    self.verify.CompilationError(jsontemplate.CompilationError, t)
 
 
 def main(argv):
