@@ -456,7 +456,7 @@ class _AbstractSection(object):
     raise TemplateSyntaxError(
         '{.alternates with} can only appear with in {.repeated section ...}')
 
-  def NewOrClause(self):
+  def NewOrClause(self, pred_str):
     raise NotImplementedError
 
 
@@ -1202,12 +1202,12 @@ def _CompileTemplate(
 
     if token_type == PREDICATE_TOKEN:
       # {.attr?} lookups
-      block_made = builder.NewPredicateSection(token, test_attr=True)
+      builder.NewPredicateSection(token, test_attr=True)
       balance_counter += 1
       continue
 
     if token_type == IF_TOKEN:
-      block_made = builder.NewPredicateSection(token, test_attr=False)
+      builder.NewPredicateSection(token, test_attr=False)
       balance_counter += 1
       continue
 
