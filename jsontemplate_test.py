@@ -160,6 +160,84 @@ class CommentsTest(taste.Test):
         """))
 
 
+class WhitespaceTest(taste.Test):
+  LABELS = ['multilanguage']
+
+  @taste.only_verify('python')
+  def testLineContinuation(self):
+    t = taste.ClassDef(B("""
+        {.repeated section foo}
+        {@}{.nospace}
+        {.end}
+        """))
+    self.verify.Expansion(t, {'foo': ['a', 'b', 'c']}, 'abc')
+
+    t = taste.ClassDef(B("""
+        {.repeated section foo}
+        {@}{.nospace}
+        {.alternates with}
+        ,{.nospace}
+        {.end}
+        """))
+    self.verify.Expansion(t, {'foo': ['a', 'b', 'c']}, 'a,b,c')
+
+    # End of line style enables indentation
+    t = taste.ClassDef(B("""
+        {.repeated section foo}{.nospace}
+          {@}{.nospace}
+        {.alternates with}{.nospace}
+          ,{.nospace}
+        {.end}
+        """))
+    self.verify.Expansion(t, {'foo': ['a', 'b', 'c']}, 'a,b,c')
+
+    # Beginning of line style
+    t = taste.ClassDef(B("""
+        {.repeated section foo}
+        {.nospace}  {@}{.nospace}
+        {.alternates with}
+        {.nospace}  ,{.nospace}
+        {.end}
+        """))
+    self.verify.Expansion(t, {'foo': ['a', 'b', 'c']}, 'a,b,c')
+
+    # Beginning of line style
+    t = taste.ClassDef(B("""
+        {.repeated section foo}
+        {.nospace}  ({@}){.nospace}
+        {.end}
+        """))
+    self.verify.Expansion(t, {'foo': ['a', 'b', 'c']}, '(a)(b)(c)')
+
+    t = taste.ClassDef('{.nospace}')
+    self.verify.Expansion(t, {}, '')
+
+    t = taste.ClassDef('{.nospace}  ')
+    self.verify.Expansion(t, {}, '')
+
+    t = taste.ClassDef('{.nospace}{.nospace}')
+    self.verify.Expansion(t, {}, '')
+    t = taste.ClassDef('{.nospace} {.nospace} ')
+    self.verify.Expansion(t, {}, '')
+
+    t = taste.ClassDef('{.nospace} {.nospace} {.tab}')
+    self.verify.Expansion(t, {}, '\t')
+
+    # letters before and after
+    t = taste.ClassDef('a {.nospace}')
+    self.verify.Expansion(t, {}, 'a ')
+
+    t = taste.ClassDef('{.nospace} b') 
+    self.verify.Expansion(t, {}, 'b')
+
+    # Here I want a space
+    t = taste.ClassDef('{.nospace}   {.space}b') 
+    self.verify.Expansion(t, {}, ' b')
+
+    t = taste.ClassDef('{.nospace} b\n') 
+    self.verify.Expansion(t, {}, 'b\n')
+
+
 class SubstitutionsTest(taste.Test):
   """Language-independent tests for JSON Template."""
 
