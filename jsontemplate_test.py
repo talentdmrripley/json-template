@@ -166,76 +166,37 @@ class WhitespaceTest(taste.Test):
   @taste.only_verify('python')
   def testLineContinuation(self):
     t = taste.ClassDef(B("""
-        {.repeated section foo}
-        {@}{.nospace}
-        {.end}
+        {.OPTION strip-line}
+          {.repeated section foo}
+            {@}
+          {.end}
+        {.END}
         """))
     self.verify.Expansion(t, {'foo': ['a', 'b', 'c']}, 'abc')
 
     t = taste.ClassDef(B("""
-        {.repeated section foo}
-        {@}{.nospace}
-        {.alternates with}
-        ,{.nospace}
-        {.end}
+        {.OPTION strip-line}
+          {.repeated section foo}
+            {@}
+          {.alternates with}
+            ,
+          {.end}
+        {.END}
         """))
     self.verify.Expansion(t, {'foo': ['a', 'b', 'c']}, 'a,b,c')
 
-    # End of line style enables indentation
+    # Leading and trailing spaces are stripped per LINE.  To get trailing space,
+    # use {.space}, {.tab}, etc.
     t = taste.ClassDef(B("""
-        {.repeated section foo}{.nospace}
-          {@}{.nospace}
-        {.alternates with}{.nospace}
-          ,{.nospace}
-        {.end}
+        {.OPTION strip-line}
+          {.repeated section foo}
+            {@} {.tab}
+          {.alternates with}
+            ,
+          {.end}
+        {.END}
         """))
-    self.verify.Expansion(t, {'foo': ['a', 'b', 'c']}, 'a,b,c')
-
-    # Beginning of line style
-    t = taste.ClassDef(B("""
-        {.repeated section foo}
-        {.nospace}  {@}{.nospace}
-        {.alternates with}
-        {.nospace}  ,{.nospace}
-        {.end}
-        """))
-    self.verify.Expansion(t, {'foo': ['a', 'b', 'c']}, 'a,b,c')
-
-    # Beginning of line style
-    t = taste.ClassDef(B("""
-        {.repeated section foo}
-        {.nospace}  ({@}){.nospace}
-        {.end}
-        """))
-    self.verify.Expansion(t, {'foo': ['a', 'b', 'c']}, '(a)(b)(c)')
-
-    t = taste.ClassDef('{.nospace}')
-    self.verify.Expansion(t, {}, '')
-
-    t = taste.ClassDef('{.nospace}  ')
-    self.verify.Expansion(t, {}, '')
-
-    t = taste.ClassDef('{.nospace}{.nospace}')
-    self.verify.Expansion(t, {}, '')
-    t = taste.ClassDef('{.nospace} {.nospace} ')
-    self.verify.Expansion(t, {}, '')
-
-    t = taste.ClassDef('{.nospace} {.nospace} {.tab}')
-    self.verify.Expansion(t, {}, '\t')
-
-    # letters before and after
-    t = taste.ClassDef('a {.nospace}')
-    self.verify.Expansion(t, {}, 'a ')
-
-    t = taste.ClassDef('{.nospace} b') 
-    self.verify.Expansion(t, {}, 'b')
-
-    # Here I want a space
-    t = taste.ClassDef('{.nospace}   {.space}b') 
-    self.verify.Expansion(t, {}, ' b')
-
-    t = taste.ClassDef('{.nospace} b\n') 
-    self.verify.Expansion(t, {}, 'b\n')
+    self.verify.Expansion(t, {'foo': ['a', 'b', 'c']}, 'a \t,b \t,c \t')
 
 
 class SubstitutionsTest(taste.Test):
@@ -1521,12 +1482,12 @@ class ValuesTest(taste.Test):
   def testValue(self):
     t = taste.ClassDef(B("""
         {.block TITLE}
-        Definition of '{word}'{.nospace}
+        Definition of '{word}'
         {.end}
         {# Now we can use the value here}
         <h3>{:TITLE}</h3>
         """))
-    self.verify.Expansion(t, {'word': 'hello'}, "<h3>Definition of 'hello'</h3>\n")
+    self.verify.Expansion(t, {'word': 'hello'}, "<h3>Definition of 'hello'\n</h3>\n")
 
 
 def main(argv):
