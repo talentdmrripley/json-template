@@ -1511,8 +1511,8 @@ class ValuesTest(taste.Test):
 
   TODO: Compilation errors:
 
-  - {.value} not at the top level (value in section, value in value, etc.)
-  - same {.value} defined twice
+  - {.block} not at the top level (value in section, value in value, etc.)
+  - same {.block} defined twice
   """
 
   LABELS = ['multilanguage']
@@ -1520,24 +1520,13 @@ class ValuesTest(taste.Test):
   @taste.only_verify('python')
   def testValue(self):
     t = taste.ClassDef(B("""
-        {.value TITLE}
+        {.block TITLE}
         Definition of '{word}'{.nospace}
         {.end}
         {# Now we can use the value here}
-        <h3>{TITLE}</h3>
+        <h3>{:TITLE}</h3>
         """))
     self.verify.Expansion(t, {'word': 'hello'}, "<h3>Definition of 'hello'</h3>\n")
-
-    # The value takes precedence over the variable
-    d = {'word': 'hello', 'TITLE': 'dummy'}
-    t = taste.ClassDef(B("""
-        {.value TITLE}
-        Definition of '{word}'{.nospace}
-        {.end}
-        {# Now we can use the value here}
-        <h3>{TITLE}</h3>
-        """))
-    self.verify.Expansion(t, d, "<h3>Definition of 'hello'</h3>\n")
 
 
 def main(argv):
