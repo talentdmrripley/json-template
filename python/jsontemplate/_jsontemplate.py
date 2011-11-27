@@ -106,8 +106,8 @@ class TemplateSyntaxError(CompilationError):
 class UndefinedVariable(EvaluationError):
   """The template contains a variable name not defined by the data dictionary."""
 
-class UndefinedBlock(EvaluationError):
-  """The template contains a block name not defined anywhere."""
+class UndefinedDef(EvaluationError):
+  """The template contains a "define" substitution not defined anywhere."""
 
 
 # The last group is of the form 'name | f1 | f2 ...'
@@ -403,9 +403,9 @@ class _ProgramBuilder(object):
     elif token_type == SECTION_TOKEN:
       new_block = _Section(section_name, pre_formatters)
       func = _DoSection
-    elif token_type == BLOCK_DEF_TOKEN:
+    elif token_type == DEF_TOKEN:
       new_block = _Section(section_name, [])
-      func = _DoBlock
+      func = _DoDef
     else:
       raise AssertionError('Invalid token type %s' % token_type)
 
@@ -532,25 +532,10 @@ class _ScopedContext(object):
 
   If the variable isn't in the current context, then we search up the stack.
 
-  This also stores the results of {.value NAME} evaluation.
+  The context also stores the results of evaluating {.define :NAME}, and lets the
+  values be looked up later with a "def" substitution: {:NAME}.
 
-  NEW IMPLEMENTATION SKETCH:
-
-  self.block_values = {}  ONE LEVEL dictionary of LISTS
-
-  Lookup(":TITLE") -> look up in self.block_values, return LIST
-  Lookup(":@") -> look up top of frame... could be a LIST
-
-  PushSection(":TITLE") -> push _Frame(self.block_values[name])  on the stack?
-
-  Predicates?  {.:TITLE?}   not allowed
-
-  normal _DoSubstitute block
-  if we get a LIST value back... and the NAME starts with (':') -- then execute
-  the it and skip the foramtters
-
-  : basically means -- get the value from a separate dictionary, and assume it's
-  a list, and then write each token to the callback
+  {.section :NAME} {:@} {.end} is also supported here by PushSection.
   """
 
   def __init__(self, context, undefined_str):
@@ -561,26 +546,22 @@ class _ScopedContext(object):
     """
     self.stack = [_Frame(context)]
     self.undefined_str = undefined_str
-    self.block_values = {}  # for {.value NAME}
-    # block_cursor is either a list of tokens or None.
-    # It is like self.stack for block :NAME.
-    #
-    # Usually this is None, and we will look up :NAME in self.block_values.
-    # When we do PushSection(':NAME'), then the value will be pushed here.
-    # it is
-    self.block_cursor = None
+    self.def_values = {}  # for {.define :NAME}
+    # Analogous to self.stack for definition, but there is only one level.
+    # It is either a list of tokens or None.
+    self.def_cursor = None
 
-  def PushBlock(self, name):
+  def PushDef(self, name):
     # Separate
     assert name.startswith(':')
-    if self.block_cursor is not None:
+    if self.def_cursor is not None:
       # This could be caught at compile time
-      assert 0, "Can't push block while already inside a block section"
-    self.block_cursor = self.block_values.get(name)
-    return self.block_cursor
+      assert 0, "Can't push define while already inside a define section"
+    self.def_cursor = self.def_values.get(name)
+    return self.def_cursor
 
-  def PopBlock(self):
-    self.block_cursor = None
+  def PopDef(self):
+    self.def_cursor = None
 
   def PushSection(self, name, pre_formatters):
     """Given a section name, push it on the top of the stack.
@@ -675,14 +656,14 @@ class _ScopedContext(object):
     """
     if name.startswith(':'):
       if name == ':@':
-        if self.block_cursor is not None:
-          return self.block_cursor
+        if self.def_cursor is not None:
+          return self.def_cursor
         else:
-          raise UndefinedBlock('Not inside a block')
+          raise UndefinedDef('Not inside a {.section :FOO}')
       try:
-        value = self.block_values[name]
+        value = self.def_values[name]
       except KeyError:
-        raise UndefinedBlock('Block %r is not defined' % name)
+        raise UndefinedDef('Value %r is not defined' % name)
       return value  # EARLY return
 
     if name == '@':
@@ -700,15 +681,15 @@ class _ScopedContext(object):
 
     return value
 
-  def BeginBlock(self, name):
+  def BeginDef(self, name):
     """Returns a callback to write strings to."""
-    assert name not in self.block_values
+    assert name not in self.def_values
     tokens = []
-    self.block_values[name] = tokens
+    self.def_values[name] = tokens
     return tokens.append
 
-  def EndBlock(self):
-    # Nothing needs to be done when a block definition is ended.
+  def EndDef(self):
+    # Nothing needs to be done when a definition is ended.
     pass
 
 
@@ -969,8 +950,8 @@ def MakeTokenRegex(meta_left, meta_right):
   OR_TOKEN,  # {.or}
   END_TOKEN,  # {.end}
 
-  SUBST_BLOCK_TOKEN,  # {:TITLE}
-  BLOCK_DEF_TOKEN,  # {.block TITLE}
+  SUBST_DEF_TOKEN,  # {:TITLE}
+  DEF_TOKEN,  # {.define TITLE}
 
   COMMENT_BEGIN_TOKEN,  # {##BEGIN}
   COMMENT_END_TOKEN,  # {##END}
@@ -1015,8 +996,8 @@ def _MatchDirective(token):
   if token.startswith('block '):
     name = token[6:].strip()
     if not name.startswith(':'):
-      raise CompilationError('Block names must start with a colon (:)')
-    return BLOCK_DEF_TOKEN, name
+      raise CompilationError('Definition names must start with a colon (:)')
+    return DEF_TOKEN, name
   if token.startswith('if '):
     return IF_TOKEN, token[3:].strip()
   if token.endswith('?'):
@@ -1099,7 +1080,7 @@ def _Tokenize(template_str, meta_left, meta_right, whitespace):
         if token.startswith('#'):
           continue
 
-        # : is a "block substitution as opposed to a normal one.
+        # : is a "def" substitution as opposed to a normal one.
         #
         # Other characters considered:
         # > conflicts with HTML:          <title>{>TITLE}</title> parses badly
@@ -1107,7 +1088,7 @@ def _Tokenize(template_str, meta_left, meta_right, whitespace):
         # ! is reasonable but we could use that for other things, like user
         # defined functions with side effects
         if token.startswith(':'):
-          yield SUBST_BLOCK_TOKEN, token
+          yield SUBST_DEF_TOKEN, token
           continue
 
         if token.startswith('.'):
@@ -1183,7 +1164,7 @@ def _CompileTemplate(
   balance_counter = 0
   comment_counter = 0  # ditto for ##BEGIN/##END
 
-  has_block_defs = False  # TODO: REMOVE with execute_with_style_LEGACY
+  has_defines = False  # TODO: REMOVE with execute_with_style_LEGACY
 
   for token_type, token in _Tokenize(template_str, meta_left, meta_right,
                                      whitespace):
@@ -1204,7 +1185,7 @@ def _CompileTemplate(
         builder.Append(token)
       continue
 
-    if token_type in (SECTION_TOKEN, REPEATED_SECTION_TOKEN, BLOCK_DEF_TOKEN):
+    if token_type in (SECTION_TOKEN, REPEATED_SECTION_TOKEN, DEF_TOKEN):
       parts = [p.strip() for p in token.split(format_char)]
       if len(parts) == 1:
         name = parts[0]
@@ -1215,8 +1196,8 @@ def _CompileTemplate(
       builder.NewSection(token_type, name, formatters)
       balance_counter += 1
       # TODO: REMOVE with execute_with_style_LEGACY
-      if token_type == BLOCK_DEF_TOKEN:
-        has_block_defs = True
+      if token_type == DEF_TOKEN:
+        has_defines = True
       continue
 
     if token_type == PREDICATE_TOKEN:
@@ -1265,7 +1246,7 @@ def _CompileTemplate(
       builder.AppendSubstitution(name, formatters)
       continue
 
-    if token_type == SUBST_BLOCK_TOKEN:
+    if token_type == SUBST_DEF_TOKEN:
       # no formatters
       builder.AppendSubstitution(token, [])
       continue
@@ -1276,7 +1257,7 @@ def _CompileTemplate(
   if comment_counter != 0:
     raise CompilationError('Got %d more {##BEGIN}s than {##END}s' % comment_counter)
 
-  return builder.Root(), has_block_defs
+  return builder.Root(), has_defines
 
 
 _OPTION_RE = re.compile(r'^([a-zA-Z\-]+):\s*(.*)')
@@ -1405,8 +1386,8 @@ class Template(object):
     self.template_registry = TemplateRegistry(self)
     builder = _ProgramBuilder(more_formatters, more_predicates,
                               self.template_registry)
-    # TODO: Remove has_block_defs along with execute_with_style_LEGACY
-    self._program, self.has_block_defs = _CompileTemplate(
+    # TODO: Remove has_defines along with execute_with_style_LEGACY
+    self._program, self.has_defines = _CompileTemplate(
         template_str, builder, **compile_options)
     self.undefined_str = undefined_str
 
@@ -1575,11 +1556,11 @@ def _DoSection(args, context, callback, trace):
   block = args
 
   if block.section_name.startswith(':'):
-    if context.PushBlock(block.section_name):
+    if context.PushDef(block.section_name):
       _Execute(block.Statements(), context, callback, trace)
-      context.PopBlock()
+      context.PopDef()
     else:  # missing or "false" -- show the {.or} section
-      context.PopBlock()
+      context.PopDef()
       _Execute(block.Statements('or'), context, callback, trace)
     return  # EARLY return
 
@@ -1613,27 +1594,27 @@ def _DoPredicates(args, context, callback, trace):
       break
 
 
-def _DoBlock(args, context, callback, trace):
-  """Definition of {.block TITLE}"""
+def _DoDef(args, context, callback, trace):
+  """Definition of {.define TITLE}"""
   # Instead of writing to the "real" output stream passed as 'callback', ask the
   # context for a callback "on the side".  After the value block is done
   # executing, the rest of the template can use the value.
   block = args
-  callback = context.BeginBlock(block.section_name)
+  callback = context.BeginDef(block.section_name)
   _Execute(block.Statements(), context, callback, trace)
-  context.EndBlock()
+  context.EndDef()
 
 
 def _DoSubstitute(args, context, callback, trace):
   """Variable or substitution, e.g. {foo} or {:FOO}
 
-  Differences between normal substitution and block substitution:
+  Differences between normal substitution and "def" substitution:
 
   - We get a list of strings (after execution) rather than a big string
   - No formatters (it's possible to implement them, but I don't see a use case
     and it's more complex, although arguably more orthogonal to have them)
 
-  The separate concept of block substitution exists basically for efficiency.
+  The separate concept of "def" substitution exists basically for efficiency.
   If we're generating 200K of HTML in the body, I don't want to materialize that entire
   string, only to then substitute it into a style to make a 201K string.
   """
@@ -1802,8 +1783,8 @@ def expand_with_style(template, style, data, body_subtree='body'):
     body_subtree: key that specifies the subtree of 'data' to expand 'template'
                   into
   """
-  # Use the new algorithm for a template with {.block}
-  if template.has_block_defs:
+  # Use the new algorithm for a template with {.define}
+  if template.has_defines:
     tokens = []
     execute_with_style(template, style, data, tokens.append)
     return ''.join(tokens)
