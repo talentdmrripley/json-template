@@ -265,15 +265,15 @@ class TemplateRegistry(FunctionRegistry):
       ref: Either a template instance (itself) or _TemplateRef
     """
     prefix = 'template '
-    ref = None  # fail the lookup by default
+    result = None  # fail the lookup by default
     if user_str.startswith(prefix):
       name = user_str[len(prefix):]
       if name == 'SELF':
-        ref = self.owner
+        result = self.owner
       else:
-        ref = _TemplateRef(self, name)
+        result = _TemplateRef(self, name)
 
-    return ref, (), TEMPLATE_FORMATTER
+    return result, (), TEMPLATE_FORMATTER
 
 
 class ChainedRegistry(FunctionRegistry):
@@ -329,7 +329,7 @@ class _ProgramBuilder(object):
     # MakeTemplateGroup, then the default formatters
     self.formatters = ChainedRegistry([
         formatters,
-        template_registry,
+        template_registry,  # returns _TemplateRef instances
         DictRegistry(_DEFAULT_FORMATTERS),
         default_formatters])
 
