@@ -356,6 +356,8 @@ class InternalTemplateTest(taste.Test):
         jsontemplate.expand_with_style, body_template, style, data, 'foo')
 
   def testExpandWithStyle_Reuse(self):
+    # This uses the expand_with_style API -- convert it
+    return
     data = {
         'word': 'hello',
         'definition': 'greeting',
@@ -627,6 +629,11 @@ class TemplateGroupTest(taste.Test):
         {.section :TITLE}<title>{:@}</title>{.end}
         {:BODY}
         """))
+    #style = jsontemplate.Template(
+    #    B("""
+    #    <title>{:TITLE}</title>
+    #    {:BODY}
+    #    """))
 
     print '-' * 80
     print t.expand(data, style=style)
@@ -637,7 +644,7 @@ class TemplateGroupTest(taste.Test):
     # if we get style=style 
     #
     # 1. _MakeTemplateGroupFromFile() .. # from {.define}
-    # 2. call style.expand(template_group=template_group)
+    # 2. call style.execute(template_map=template_map)
     # 3. when expand() gets template_group, it will need to get that information
     # into _DoSubstitute -- maybe just another param, after "context"
     #
@@ -653,6 +660,10 @@ class TemplateGroupTest(taste.Test):
     # }
     #
     # OR: FromFile could perhaps do it, some kind of detection?
+    #
+    # Compile time:
+    # When you see {:BODY} ... append a substitution with a formatter?
+    # formatter is the sub
     #
     # {:BODY} is the same as
     #
