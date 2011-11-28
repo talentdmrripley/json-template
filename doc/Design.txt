@@ -3,21 +3,71 @@ Design Notes for Posterity
 
 XXX Explain how these 2 things related XXX
 
-There are 2 kinds of template reuse.
+Originally I described how you could reuse templates "manually" -- "reusing the
+inside" by using a template as a formatter, and "reusing the outside" by
+expanding templates into JSON values, and then expanding those with another
+template.
 
-1. TemplateGroup with the MakeTemplateGroup() function
+These methods are good for programmatic use of JSON Template, since they only
+cost you a couple lines of code.  But sometimes you want a more data-driven
+approach that doesn't require these repetetitive steps..  I decided to back
+down somewhat from my purist stance and implement these in the language.  It
+took awhile to find the right abstractions, but they ended up being small
+additions that were well worth it, and don't compromise the nice algebraic
+model of JSON Template.
 
-2. "definitions" with {.define}
+Both of these rely on an abstraction which I will call the "Template Group".
+Basically this is just a map from { name -> Template() instance }, where the
+templates can reference each other by name.
 
-The former is more of a programmatic (Python) API.  If you are embedding JSON
-Template in a larger program and have a lot of text generation to do, it is a
-clean API.  It may be useful for formatting abstract syntax trees, for example.
+For "reusing the inside", use the built-in "template" formatter.  This exploits
+the equivalence between templates and formatters.
 
-The latter is more "data-driven".  I wrote a whole essay about why JSON Template
-doesn't have "template inheritance", but eventually I fell sway to "practiality
-beats purity" (a Python design principle).
+directory.jsont:
 
-The main use for definitions is:
+Workers:
+{.repeated section workers}
+  {@|template user-profile}
+{.end}
+Supervisor:
+{supervisor|template user-profile}
+
+user-profile.jsont:
+
+{name} / {job}
+
+data dictionary:
+{ 
+  "workers": [
+    {"name": "Alice", "job": "tooth extractor"},
+    {"name": "Bob",   "job": "snow shoveler"},
+    ]
+  "supervisor":
+    {"name": "Carl",  "job": "pencil pusher"},
+}
+
+Each item in the repeated section is a record, and it is formatted by another
+template.
+
+In this pattern, each .jsont text file corresponds to one Template() instance.
+
+In order to allow the templates to reference each other, call
+MakeTemplateGroup() on a dictionary of { name -> Template() instance }.
+
+This is useful for factoring large templates into components that can be
+reused.
+
+
+"Reusing the outside"
+---------------------
+
+For "reusing the outside", a common pattern is to have a common "style" for
+HTML pages, while fields like the title and body differ for each page.
+
+This is what Django's "template inheritance" helps you with.
+
+
+Example:
 
 page.jsont:
 {.define :TITLE}
@@ -37,53 +87,47 @@ STYLE.jsont:
 {:BODY}
 </body>
 
-This is very convenient, but from the standpoint of "orthogonality" it is
-perhaps odd:
+Note that the BODY template can reference "TITLE", which I don't believe
+Django's template inheritance can handle.  This nicely falls out of the common
+"template group" model.
 
-1. It is mixing up 2 ideas: 1) a template is literal text with holes in it, and
-2) a language for defining template "functions".  For example, the "whitespace"
-text around {.define} is meaningless, whereas if you omit {.define} and have a
-"normal" template, then it suddenly means something.
+You actually instantiate a single Template() instance from page.jsont, but it
+parses the {.define} sections and creates a template group for you.  That is, a
+single file corresponds to MULTIPLE Template() instances under the covers.
+(Of course, this isn't strictly necessary, as I pointed out in my original
+article, but I don't think people would want juggle a lot of 1-line text files
+that contain page titles.)
 
-2. Why does there need to be a separate namespace for defines?  (The :
-namespace)
-
-3. Why is there a separate one-level dictionary for "defines"?
-
-4. Do predicates work with "def" subsitutions?  (No, only {:TITLE} and {.section
-:TITLE} work.)
-
-5. Separate APIs:
-
-  t.expand() vs. jsontemplate.expand_with_style(t, style_template, data)
+This makes it easy to keep all your strings in templates.  In the original
+model, sometimes it was tempting to just put short strings in code, which is
+sloppy.
 
 
-Points 2 and 3 are why I originally thought it would be better to just make
-people write 5 lines of Python code to "wire up" their own templates.
+The way this works is:
 
-But there are a large varity of ways of doing this.  Generating HTML is
-obviously a very common use case (and the one that motivated JSON Template,
-although I've tried to keep it generic enough to generate other stuff like
-source code.)
+# TODO:
 
+1. 
+2.
 
-Things in its favor:
+Syntax for section:
+<head>
+  {.section :TITLE}<title>{:@}</title>{.end}
+</head>
 
-1. Small implementation.  I think the 2 separate mechanisms are actually less
-code than a full template instantiation / import template file / template loader
-/ "multiple Template() instances in a file" solution would be.
+<title>{.template TITLE}</title>
 
-2. Convenient to read and write.  It would be silly if for every web page, you
-had a separate file for the title (which would be one line) and for the body.
+To test if a template exists in the template group:
 
+{.if template TITLE}<title>{.template TITLE}</title>{.end}
 
-The only thing I could think of to unify both solutions would be pretty
-complicated:
+# the
 
-Defining
+This is analogous to:
 
+{.section TITLE}<title>{@}</title>{.end}
 
-
+except the context isn't changed.
 
 
 Whitespace Options (Python)
