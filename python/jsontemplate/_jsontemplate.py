@@ -228,10 +228,12 @@ class _TemplateRef(object):
     # it has to somehow reach into "runtime"?
 
     # need to peek back into the template map somehow?
+    t = None
     if self.name == ':@':
       t = context.def_cursor
     else:
-      t = context.template_map.get(self.name)
+      if context.template_map:
+        t = context.template_map.get(self.name)
     print 'TTTTTTTTTTTTT', context.template_map
     if t:
       return t
@@ -567,8 +569,8 @@ class _ScopedContext(object):
     if self.def_cursor is not None:
       # This could be caught at compile time
       assert 0, "Can't push define while already inside a define section"
-    # TODO: What if there is no template map?
-    self.def_cursor = self.template_map.get(name)
+    if self.template_map:
+      self.def_cursor = self.template_map.get(name)
     return self.def_cursor
 
   def PopDef(self):
@@ -1512,6 +1514,10 @@ class Template(object):
     if style:
       style.execute(data_dict, tokens.append, template_map=self._MakeTemplateMap())
     else:
+      # TODO(11/11): Does it make sense to pass your own template map here?  So
+      # without a style, you can refernce sections defined before?  Doesn't seem
+      # to work.
+      #template_map=self._MakeTemplateMap(),
       self.execute(data_dict, tokens.append, trace=trace)
 
     print 'TOKENS%%', tokens
@@ -1735,6 +1741,8 @@ def _DoSubstitute(args, context, callback, trace):
       raise
 
     except Exception, e:
+      if formatter_type == TEMPLATE_FORMATTER:
+        raise  # in this case we want to see the original exception
       raise EvaluationError(
           'Formatting name %r, value %r with formatter %s raised exception: %r '
           '-- see e.original_exc_info' % (name, value, f, e),
