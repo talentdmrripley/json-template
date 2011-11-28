@@ -1,0 +1,164 @@
+Design Notes for Posterity
+==========================
+
+XXX Explain how these 2 things related XXX
+
+There are 2 kinds of template reuse.
+
+1. TemplateGroup with the MakeTemplateGroup() function
+
+2. "definitions" with {.define}
+
+The former is more of a programmatic (Python) API.  If you are embedding JSON
+Template in a larger program and have a lot of text generation to do, it is a
+clean API.  It may be useful for formatting abstract syntax trees, for example.
+
+The latter is more "data-driven".  I wrote a whole essay about why JSON Template
+doesn't have "template inheritance", but eventually I fell sway to "practiality
+beats purity" (a Python design principle).
+
+The main use for definitions is:
+
+page.jsont:
+{.define :TITLE}
+  Welcome, {user}
+{.end}
+
+{.define :BODY}
+  <h3>{:TITLE}</h3>
+  You have {points} points.
+{.end}
+
+STYLE.jsont:
+<head>
+  {.section :TITLE}<title>{:@}</title>{.end}
+</head>
+<body>
+{:BODY}
+</body>
+
+This is very convenient, but from the standpoint of "orthogonality" it is
+perhaps odd:
+
+1. It is mixing up 2 ideas: 1) a template is literal text with holes in it, and
+2) a language for defining template "functions".  For example, the "whitespace"
+text around {.define} is meaningless, whereas if you omit {.define} and have a
+"normal" template, then it suddenly means something.
+
+2. Why does there need to be a separate namespace for defines?  (The :
+namespace)
+
+3. Why is there a separate one-level dictionary for "defines"?
+
+4. Do predicates work with "def" subsitutions?  (No, only {:TITLE} and {.section
+:TITLE} work.)
+
+5. Separate APIs:
+
+  t.expand() vs. jsontemplate.expand_with_style(t, style_template, data)
+
+
+Points 2 and 3 are why I originally thought it would be better to just make
+people write 5 lines of Python code to "wire up" their own templates.
+
+But there are a large varity of ways of doing this.  Generating HTML is
+obviously a very common use case (and the one that motivated JSON Template,
+although I've tried to keep it generic enough to generate other stuff like
+source code.)
+
+
+Things in its favor:
+
+1. Small implementation.  I think the 2 separate mechanisms are actually less
+code than a full template instantiation / import template file / template loader
+/ "multiple Template() instances in a file" solution would be.
+
+2. Convenient to read and write.  It would be silly if for every web page, you
+had a separate file for the title (which would be one line) and for the body.
+
+
+The only thing I could think of to unify both solutions would be pretty
+complicated:
+
+Defining
+
+
+
+
+
+Whitespace Options (Python)
+------------------
+
+If you want to precisely control the whitespace in the output but want to
+maintain a readable, nicely indented template, use the "strip-line" whitespace
+option.
+
+{.OPTION strip-line}
+  {.repeated section name}
+    {@},
+  {.end}
+{.end}
+
+Instead of getting:
+
+   a,   b,   c,
+
+because of the leading indent, you will get "a,b,c,".
+
+
+Multiline Comments (Python)
+------------------
+
+{##BEGIN}
+{##END}
+
+
+
+"Pre-Formatters" (Python)
+------------
+
+TODO: Describe
+
+{.repeated section dict | pairs}
+  {key} {value}
+{.end}
+
+{.repeated section dict | sort}
+  {key} {value}
+{.end}
+
+
+Predicates (Python, JavaScript)
+----------
+
+JSON Template has two kinds of "user-defined functions" -- formatters and
+predicates.
+
+Predicates are used in the if statement:
+
+{.section num_users}
+  {.if singular}  {# tests if the cursor num_users is equal to 1}
+    {@} user.
+  {.or}
+    {@} users.
+  {.end}
+{.end}
+
+'singular' is a predicate name.  Predicate names must be registered and
+associated a function that takes the current context and returns a boolean.
+('singular' happens to be built in, so it is available by default).
+
+The most common type of test is to test whether an attribute is "true".  This is
+done with the "test" predicate:
+
+{.if test debug}
+  <i>Rendered in {seconds} seconds</i>
+{.end}
+
+Since this is so common, we provide a synonym for this -- instead of "if test
+<name>", you can just use "<name>?" :
+
+{.debug?}
+  <i>Rendered in {seconds} seconds</i>
+{.end}
+
