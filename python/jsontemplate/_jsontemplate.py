@@ -1353,15 +1353,16 @@ def _MakeTemplateMap(root_section):
     root_section: _Section instance -- root of the original parse tree
   """
   template_map = {}
-  for func, args in root_section.Statements():
-    if func == _DoDef and isinstance(args, _Section):
+  for statement in root_section.Statements():
+    if isinstance(statement, basestring):
+      continue
+    func, args = statement
+    # here the function acts as ID for the block type
+    if func is _DoDef and isinstance(args, _Section):
       section = args
       # Construct a Template instance from a this _Section subtree
       t = Template._FromSection(section, template_map)
       template_map[section.section_name] = t
-  print '----------'
-  print template_map
-  print '----------'
   return template_map
 
 
@@ -1511,16 +1512,15 @@ class Template(object):
       style = None
 
     tokens = []
+    template_map = self._MakeTemplateMap()
     if style:
-      style.execute(data_dict, tokens.append, template_map=self._MakeTemplateMap())
+      style.execute(data_dict, tokens.append, template_map=template_map,
+                    trace=trace)
     else:
-      # TODO(11/11): Does it make sense to pass your own template map here?  So
-      # without a style, you can refernce sections defined before?  Doesn't seem
-      # to work.
-      #template_map=self._MakeTemplateMap(),
-      self.execute(data_dict, tokens.append, trace=trace)
+      # Needs a template_map to reference its OWN {.define}s
+      self.execute(data_dict, tokens.append, template_map=template_map,
+                   trace=trace)
 
-    print 'TOKENS%%', tokens
     return ''.join(tokens)
 
   def tokenstream(self, data_dict):
