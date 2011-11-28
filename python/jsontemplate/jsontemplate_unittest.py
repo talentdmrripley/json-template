@@ -629,15 +629,21 @@ class TemplateGroupTest(taste.Test):
         {.section :TITLE}<title>{:@}</title>{.end}
         {:BODY}
         """))
-    #style = jsontemplate.Template(
-    #    B("""
-    #    <title>{:TITLE}</title>
-    #    {:BODY}
-    #    """))
 
     print '-' * 80
     print t.expand(data, style=style)
     print '-' * 80
+
+    style = jsontemplate.Template(
+        B("""
+        <title>{:TITLE}</title>
+        {:BODY}
+        """))
+    print '-' * 80
+    print t.expand(data, style=style)
+    print '-' * 80
+
+
     #
     # NOTES
     #
