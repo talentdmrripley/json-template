@@ -218,15 +218,21 @@ class PrefixRegistry(FunctionRegistry):
 class _TemplateRef(object):
   """A reference from one template to another.
   
-  TemplateRef is a simple data object that holds the template group and an
-  optional name.  If there's no name, then it's a self-reference.
+  The _TemplateRef sits statically in the program tree as one of the formatters.
+  At runtime, _DoSubstitute calls Resolve() with the template_map being used.
   """
-  def __init__(self, registry, name):
-    self.registry = registry
+  def __init__(self, name):
     self.name = name
 
-  def Resolve(self):
-    t = self.registry.group.get(self.name)
+  def Resolve(self, context):
+    # it has to somehow reach into "runtime"?
+
+    # need to peek back into the template map somehow?
+    if self.name == ':@':
+      t = context.def_cursor
+    else:
+      t = context.template_map.get(self.name)
+    print 'TTTTTTTTTTTTT', context.template_map
     if t:
       return t
     else:
@@ -235,13 +241,12 @@ class _TemplateRef(object):
           % self.name)
 
 
-class TemplateRegistry(FunctionRegistry):
-  """Each template owns a TemplateRegistry.
+class _TemplateRegistry(FunctionRegistry):
+  """Each template owns a _TemplateRegistry.
 
   LookupWithType always returns a TemplateRef to the template compiler
   (_ProgramBuilder).  At runtime, which may be after MakeTemplateGroup is
-  called, the _DoSubstitute can resolve the template name and execute it as
-  a formatter.
+  called, the names can be resolved.
   """
   def __init__(self, owner):
     """
@@ -250,14 +255,6 @@ class TemplateRegistry(FunctionRegistry):
       exactly one)
     """
     self.owner = owner
-    self.group = {}  # public attributes
-
-  def RegisterGroup(self, group):
-    """
-    Args:
-      group: dictionary of template name -> compiled Template instance
-    """
-    self.group = group
 
   def LookupWithType(self, user_str):
     """
@@ -271,7 +268,7 @@ class TemplateRegistry(FunctionRegistry):
       if name == 'SELF':
         result = self.owner
       else:
-        result = _TemplateRef(self, name)
+        result = _TemplateRef(name)
 
     return result, (), TEMPLATE_FORMATTER
 
@@ -384,8 +381,15 @@ class _ProgramBuilder(object):
     return pred
 
   def AppendSubstitution(self, name, formatters):
-    formatters = [self._GetFormatter(f) for f in formatters]
-    self.current_section.Append((_DoSubstitute, (name, formatters)))
+    if name.startswith(':'):
+      assert len(formatters) == 0
+      # This is simulating something like {$|template BODY}, where $ is the root
+      formatters = [self._GetFormatter('template ' + name)]
+      print 'GOT FORMATTER', formatters
+      self.current_section.Append((_DoSubstitute, (None, formatters)))
+    else:
+      formatters = [self._GetFormatter(f) for f in formatters]
+      self.current_section.Append((_DoSubstitute, (name, formatters)))
 
   def _NewSection(self, func, new_block):
     self.current_section.Append((func, new_block))
@@ -538,11 +542,12 @@ class _ScopedContext(object):
   {.section :NAME} {:@} {.end} is also supported here by PushSection.
   """
 
-  def __init__(self, context, undefined_str):
+  def __init__(self, context, undefined_str, template_map=None):
     """
     Args:
       context: The root context
       undefined_str: See Template() constructor.
+      template_map: dictinonary, right now it's just along for the ride
     """
     self.stack = [_Frame(context)]
     self.undefined_str = undefined_str
@@ -550,14 +555,20 @@ class _ScopedContext(object):
     # Analogous to self.stack for definition, but there is only one level.
     # It is either a list of tokens or None.
     self.def_cursor = None
+    self.template_map = template_map  # used by _DoSubstitute?
+    self.root = context
+
+  def Root(self):
+    """For :FOO template substitution."""
+    return self.root
 
   def PushDef(self, name):
-    # Separate
     assert name.startswith(':')
     if self.def_cursor is not None:
       # This could be caught at compile time
       assert 0, "Can't push define while already inside a define section"
-    self.def_cursor = self.def_values.get(name)
+    # TODO: What if there is no template map?
+    self.def_cursor = self.template_map.get(name)
     return self.def_cursor
 
   def PopDef(self):
@@ -654,18 +665,6 @@ class _ScopedContext(object):
     Raises:
       UndefinedVariable if self.undefined_str is not set
     """
-    if name.startswith(':'):
-      if name == ':@':
-        if self.def_cursor is not None:
-          return self.def_cursor
-        else:
-          raise UndefinedDef('Not inside a {.section :FOO}')
-      try:
-        value = self.def_values[name]
-      except KeyError:
-        raise UndefinedDef('Value %r is not defined' % name)
-      return value  # EARLY return
-
     if name == '@':
       return self.stack[-1].context
 
@@ -1339,6 +1338,31 @@ def FromFile(f, more_formatters=lambda x: None, more_predicates=lambda x: None,
                       **options)
 
 
+def _MakeTemplateMap(root_section):
+  """
+  Construct a dictinoary name ->
+
+  A "Template Dict" is just a dictionary of unconnected templates.
+
+  A "Template Group" is the same structure, except now the templates are wired
+  to reference each other.
+
+  Args:
+    root_section: _Section instance -- root of the original parse tree
+  """
+  template_map = {}
+  for func, args in root_section.Statements():
+    if func == _DoDef and isinstance(args, _Section):
+      section = args
+      # Construct a Template instance from a this _Section subtree
+      t = Template._FromSection(section, template_map)
+      template_map[section.section_name] = t
+  print '----------'
+  print template_map
+  print '----------'
+  return template_map
+
+
 class Template(object):
   """Represents a compiled template.
 
@@ -1383,25 +1407,44 @@ class Template(object):
 
     It also accepts all the compile options that _CompileTemplate does.
     """
-    self.template_registry = TemplateRegistry(self)
-    builder = _ProgramBuilder(more_formatters, more_predicates,
-                              self.template_registry)
-    # TODO: Remove has_defines along with execute_with_style_LEGACY
-    self._program, self.has_defines = _CompileTemplate(
-        template_str, builder, **compile_options)
+    r = _TemplateRegistry(self)
+    self.template_map = None  # optionally set by _SetTemplateMap
+    builder = _ProgramBuilder(more_formatters, more_predicates, r)
+    # None used by _FromSection
+    if template_str is not None:
+      # TODO: Remove has_defines along with execute_with_style_LEGACY
+      self._program, self.has_defines = _CompileTemplate(
+          template_str, builder, **compile_options)
     self.undefined_str = undefined_str
+
+  @staticmethod
+  def _FromSection(section, template_map):
+    t = Template(None)  # NOTE: we lost undefined_str
+    t._program = section
+    t.has_defines = False
+    # This "subtemplate" needs the template_map too for its own references
+    t.template_map = template_map
+    return t
 
   def _Statements(self):
     # for execute_with_style
     return self._program.Statements()
 
-  def _RegisterGroup(self, group):
+  def _MakeTemplateMap(self):
+    """Makes a template map from THIS template (it should have {.define}s)
+
+    In contrast, _SetTemplateMap lets this template reference other template.  It may
+    not have any {.define}s
+    """
+    return _MakeTemplateMap(self._program)
+
+  def _SetTemplateMap(self, template_map):
     """Allow this template to reference templates in the group via formatters.
 
     Args:
       group: dictionary of template name -> compiled Template instance
     """
-    self.template_registry.RegisterGroup(group) 
+    self.template_map = template_map
 
   def _CheckRefs(self):
     """Check that the template names referenced in this template exist.
@@ -1414,17 +1457,21 @@ class Template(object):
   # Public API
   #
 
-  def execute(self, data_dict, callback, trace=None):
+  def execute(self, data_dict, callback, template_map=None, trace=None):
     """Low level method to expand the template piece by piece.
 
     Args:
       data_dict: The JSON data dictionary.
       callback: A callback which should be called with each expanded token.
+      template_map: Dictionary of name -> Template instance (for styles)
 
     Example: You can pass 'f.write' as the callback to write directly to a file
     handle.
     """
-    context = _ScopedContext(data_dict, self.undefined_str)
+    # First try the passed in version, then the one set by _SetTemplateMap.  May
+    # be None.
+    tm = template_map or self.template_map
+    context = _ScopedContext(data_dict, self.undefined_str, template_map=tm)
     _Execute(self._program.Statements(), context, callback, trace)
 
   render = execute  # Alias for backward compatibility
@@ -1436,9 +1483,12 @@ class Template(object):
     interface.
 
     Args:
-      The JSON data dictionary.  Like the builtin dict() constructor, it can
+      data_dict: The JSON data dictionary.  Like the builtin dict() constructor, it can
       take a single dictionary as a positional argument, or arbitrary keyword
       arguments.
+      trace: Trace object for debugging
+      style: Template instance to be treated as a style for this template (the
+          "outside")
 
     Returns:
       The return value could be a str() or unicode() instance, depending on the
@@ -1449,15 +1499,22 @@ class Template(object):
       if len(args) == 1:
         data_dict = args[0]
         trace = kwargs.get('trace')
+        style = kwargs.get('style')
       else:
         raise TypeError(
             'expand() only takes 1 positional argument (got %s)' % args)
     else:
       data_dict = kwargs
       trace = None  # Can't use trace= with the kwargs style
+      style = None
 
     tokens = []
-    self.execute(data_dict, tokens.append, trace=trace)
+    if style:
+      style.execute(data_dict, tokens.append, template_map=self._MakeTemplateMap())
+    else:
+      self.execute(data_dict, tokens.append, trace=trace)
+
+    print 'TOKENS%%', tokens
     return ''.join(tokens)
 
   def tokenstream(self, data_dict):
@@ -1498,7 +1555,7 @@ class Trace(object):
     return 'Trace %s %s' % (self.exec_depth, self.template_depth)
 
 
-def MakeTemplateGroup(group):
+def MakeTemplateGroup(template_map):
   """Wire templates together so that they can reference each other by name.
 
   The templates becomes formatters with the 'template' prefix.  For example:
@@ -1513,9 +1570,9 @@ def MakeTemplateGroup(group):
   Args:
     group: dictionary of template name -> compiled Template instance
   """
-  for t in group.itervalues():
-    t._RegisterGroup(group)
-    t._CheckRefs()
+  for t in template_map.itervalues():
+    t._SetTemplateMap(template_map)
+    #t._CheckRefs()
 
 
 def _DoRepeatedSection(args, context, callback, trace):
@@ -1619,20 +1676,27 @@ def _DoSubstitute(args, context, callback, trace):
   string, only to then substitute it into a style to make a 201K string.
   """
   name, formatters = args
-  try:
-    value = context.Lookup(name)
-  except TypeError, e:
-    raise EvaluationError(
-        'Error evaluating %r in context %r: %r' % (name, context, e))
+
+  if name is None:
+    value = context.Root()  # don't use the cursor
+    print '-'*80
+    print 'FORMATTERS', formatters
+    print '-'*80
+  else:
+    try:
+      value = context.Lookup(name)
+    except TypeError, e:
+      raise EvaluationError(
+          'Error evaluating %r in context %r: %r' % (name, context, e))
 
   # It's possible and arguably more consistent to move this test to compile
   # time.  But it's such a small piece of code that I won't bother for now.
-  if name.startswith(':'):
-    parts = context.Lookup(name)
-    assert isinstance(parts, list)
-    for p in parts:
-      callback(p)
-    return  # EARLY return
+  #if name.startswith(':'):
+  #  parts = context.Lookup(name)
+  #  assert isinstance(parts, list)
+  #  for p in parts:
+  #    callback(p)
+  #  return  # EARLY return
 
   last_index = len(formatters) - 1
   for i, (f, args, formatter_type) in enumerate(formatters):
@@ -1642,7 +1706,7 @@ def _DoSubstitute(args, context, callback, trace):
           template = f
         elif isinstance(f, _TemplateRef):
           # TODO: This can be done in _CheckRefs
-          template = f.Resolve()
+          template = f.Resolve(context)
         else:
           assert False, 'Invalid formatter %r' % f
 
