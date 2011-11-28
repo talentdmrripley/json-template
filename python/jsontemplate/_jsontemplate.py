@@ -234,7 +234,6 @@ class _TemplateRef(object):
     else:
       if context.template_map:
         t = context.template_map.get(self.name)
-    print 'TTTTTTTTTTTTT', context.template_map
     if t:
       return t
     else:
@@ -1473,6 +1472,17 @@ class Template(object):
     """
     # First try the passed in version, then the one set by _SetTemplateMap.  May
     # be None.
+    # TODO: What happens if we call MakeTemplateGroup() on a template with
+    # {.defines} in it?  The internal refernces will be broken.  Options:
+    #
+    # 1. Raise an error -- only "simple" templates can be wired together with
+    # MakeTemplateGroup().
+    # 2. Somehow merge the template maps (then you have namespace conflicts of
+    # course)
+    # 
+    # This issue is caused by the weirdness where a Template() with {.defines}
+    # is actually composed of multiple Template() instances -- it is a template
+    # group.  There could be a cleaner solution.
     tm = template_map or self.template_map
     context = _ScopedContext(data_dict, self.undefined_str, template_map=tm)
     _Execute(self._program.Statements(), context, callback, trace)
@@ -1486,9 +1496,9 @@ class Template(object):
     interface.
 
     Args:
-      data_dict: The JSON data dictionary.  Like the builtin dict() constructor, it can
-      take a single dictionary as a positional argument, or arbitrary keyword
-      arguments.
+      data_dict: The JSON data dictionary.  Like the builtin dict() constructor,
+          it can take a single dictionary as a positional argument, or arbitrary
+          keyword arguments.
       trace: Trace object for debugging
       style: Template instance to be treated as a style for this template (the
           "outside")
