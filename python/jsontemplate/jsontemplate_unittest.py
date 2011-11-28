@@ -605,6 +605,64 @@ class TemplateGroupTest(taste.Test):
         b.txt
         """), ignore_all_whitespace=True)
 
+  def testStyle(self):
+    data = {
+      'word': 'hello',
+      'definition': 'greeting',
+      }
+
+    t = jsontemplate.Template(
+        B("""
+        {.define :TITLE}
+          Definition of {word}
+        {.end}
+        {.define :BODY}
+          <h3>{:TITLE}</h3>
+          {definition}
+        {.end}
+        """))
+
+    style = jsontemplate.Template(
+        B("""
+        {.section :TITLE}<title>{:@}</title>{.end}
+        {:BODY}
+        """))
+
+    print '-' * 80
+    print t.expand(data, style=style)
+    print '-' * 80
+    #
+    # NOTES
+    #
+    # if we get style=style 
+    #
+    # 1. _MakeTemplateGroupFromFile() .. # from {.define}
+    # 2. call style.expand(template_group=template_group)
+    # 3. when expand() gets template_group, it will need to get that information
+    # into _DoSubstitute -- maybe just another param, after "context"
+    #
+    # how to parse "self" into a bunch of different templates?
+    #   it's actually not that hard, just extract _Section from
+    #   self._program
+    #   and then instantiate Template from that instead of text
+    #
+    # parse the name out of _Section
+    # { "TITLE": _Section(),
+    #   "BODY": _Section(),
+    #   ...
+    # }
+    #
+    # OR: FromFile could perhaps do it, some kind of detection?
+    #
+    # {:BODY} is the same as
+    #
+    # {$|template BODY}
+    #
+    # $ should be the "root", not cursor...
+    #
+    # Right now within _DoSubstitute we call template.execute() on "value", we
+    # should call it on context.Root()  (the shared context between the 2)
+
 
 if __name__ == '__main__':
   taste.RunThisModule()
