@@ -222,15 +222,9 @@ class _TemplateRef(object):
     self.name = name
 
   def Resolve(self, context):
-    # it has to somehow reach into "runtime"?
-
-    # need to peek back into the template map somehow?
     t = None
-    if self.name == ':@':
-      t = context.def_cursor
-    else:
-      if context.template_map:
-        t = context.template_map.get(self.name)
+    if context.template_map:
+      t = context.template_map.get(self.name)
     if t:
       return t
     else:
@@ -534,11 +528,7 @@ class _ScopedContext(object):
   """Allows scoped lookup of variables.
 
   If the variable isn't in the current context, then we search up the stack.
-
-  This object also stores the results of evaluating {.define :NAME}, and allows
-  these values be looked up later with a "def" substitution: {:NAME}.
-
-  {.section :NAME} {:@} {.end} is also supported here by PushSection.
+  This object also stores the template_map.
   """
 
   def __init__(self, context, undefined_str, template_map=None):
@@ -546,19 +536,16 @@ class _ScopedContext(object):
     Args:
       context: The root context
       undefined_str: See Template() constructor.
-      template_map: dictinonary, right now it's just along for the ride
+      template_map: Used by the {.if template FOO} predicate, and _DoSubstitute
+          which is passed the context.
     """
     self.stack = [_Frame(context)]
     self.undefined_str = undefined_str
-    self.def_values = {}  # for {.define :NAME}
-    # Analogous to self.stack for definition, but there is only one level.
-    # It is either a list of tokens or None.
-    self.def_cursor = None
     self.template_map = template_map  # used by _DoSubstitute?
     self.root = context
 
   def Root(self):
-    """For :FOO template substitution."""
+    """For {.template FOO} substitution."""
     return self.root
 
   def HasTemplate(self, name):
