@@ -216,7 +216,7 @@ class _TemplateRef(object):
   """A reference from one template to another.
   
   The _TemplateRef sits statically in the program tree as one of the formatters.
-  At runtime, _DoSubstitute calls Resolve() with the template_map being used.
+  At runtime, _DoSubstitute calls Resolve() with the group being used.
   """
   def __init__(self, name=None, template=None):
     self.name = name
@@ -225,8 +225,8 @@ class _TemplateRef(object):
   def Resolve(self, context):
     if self.template:
       return self.template
-    if context.template_map:
-      return context.template_map.get(self.name)
+    if context.group:
+      return context.group.get(self.name)
     else:
       raise EvaluationError(
           "Couldn't find template with name %r (create a template group?)"
@@ -529,20 +529,20 @@ class _ScopedContext(object):
   """Allows scoped lookup of variables.
 
   If the variable isn't in the current context, then we search up the stack.
-  This object also stores the template_map.
+  This object also stores the group.
   """
 
-  def __init__(self, context, undefined_str, template_map=None):
+  def __init__(self, context, undefined_str, group=None):
     """
     Args:
       context: The root context
       undefined_str: See Template() constructor.
-      template_map: Used by the {.if template FOO} predicate, and _DoSubstitute
+      group: Used by the {.if template FOO} predicate, and _DoSubstitute
           which is passed the context.
     """
     self.stack = [_Frame(context)]
     self.undefined_str = undefined_str
-    self.template_map = template_map  # used by _DoSubstitute?
+    self.group = group  # used by _DoSubstitute?
     self.root = context
 
   def Root(self):
@@ -550,9 +550,9 @@ class _ScopedContext(object):
     return self.root
 
   def HasTemplate(self, name):
-    if not self.template_map:  # Could be None?
+    if not self.group:  # Could be None?
       return False
-    return name in self.template_map
+    return name in self.group
 
   def PushSection(self, name, pre_formatters):
     """Given a section name, push it on the top of the stack.
@@ -1306,26 +1306,6 @@ def FromFile(f, more_formatters=lambda x: None, more_predicates=lambda x: None,
                       **options)
 
 
-def _MakeTemplateMap(root_section):
-  """Construct a dictinary { template name -> Template() instance }
-
-  Args:
-    root_section: _Section instance -- root of the original parse tree
-  """
-  template_map = {}
-  for statement in root_section.Statements():
-    if isinstance(statement, basestring):
-      continue
-    func, args = statement
-    # here the function acts as ID for the block type
-    if func is _DoDef and isinstance(args, _Section):
-      section = args
-      # Construct a Template instance from a this _Section subtree
-      t = Template._FromSection(section, template_map)
-      template_map[section.section_name] = t
-  return template_map
-
-
 class Template(object):
   """Represents a compiled template.
 
@@ -1371,7 +1351,7 @@ class Template(object):
     It also accepts all the compile options that _CompileTemplate does.
     """
     r = _TemplateRegistry(self)
-    self.template_map = None  # optionally set by _SetTemplateMap
+    self.group = None  # optionally set by _SetTemplateGroup
     builder = _ProgramBuilder(more_formatters, more_predicates, r)
     # None used by _FromSection
     if template_str is not None:
@@ -1381,25 +1361,25 @@ class Template(object):
     self.undefined_str = undefined_str
 
   @staticmethod
-  def _FromSection(section, template_map):
+  def _FromSection(section, group):
     t = Template(None)  # NOTE: we lost undefined_str
     t._program = section
     t.has_defines = False
-    # This "subtemplate" needs the template_map too for its own references
-    t.template_map = template_map
+    # This "subtemplate" needs the group too for its own references
+    t.group = group
     return t
 
   def _Statements(self):
     # for execute_with_style
     return self._program.Statements()
 
-  def _SetTemplateMap(self, template_map):
+  def _SetTemplateGroup(self, group):
     """Allow this template to reference templates in the group via formatters.
 
     Args:
-      template_map: dictionary of template name -> compiled Template instance
+      group: dictionary of template name -> compiled Template instance
     """
-    self.template_map = template_map
+    self.group = group
 
   def _CheckRefs(self):
     """Check that the template names referenced in this template exist."""
@@ -1412,32 +1392,32 @@ class Template(object):
   # Public API
   #
 
-  def execute(self, data_dict, callback, template_map=None, trace=None):
+  def execute(self, data_dict, callback, group=None, trace=None):
     """Low level method to expand the template piece by piece.
 
     Args:
       data_dict: The JSON data dictionary.
       callback: A callback which should be called with each expanded token.
-      template_map: Dictionary of name -> Template instance (for styles)
+      group: Dictionary of name -> Template instance (for styles)
 
     Example: You can pass 'f.write' as the callback to write directly to a file
     handle.
     """
-    # First try the passed in version, then the one set by _SetTemplateMap.  May
+    # First try the passed in version, then the one set by _SetTemplateGroup.  May
     # be None.
     # TODO: What happens if we call MakeTemplateGroup() on a template with
     # {.defines} in it?  The internal refernces will be broken.  Options:
     #
     # 1. Raise an error -- only "simple" templates can be wired together with
     # MakeTemplateGroup().
-    # 2. Somehow merge the template maps (then you have namespace conflicts of
+    # 2. Somehow merge the template groups (then you have namespace conflicts of
     # course)
     # 
     # This issue is caused by the weirdness where a Template() with {.defines}
     # is actually composed of multiple Template() instances -- it is a template
     # group.  There could be a cleaner solution.
-    tm = template_map or self.template_map
-    context = _ScopedContext(data_dict, self.undefined_str, template_map=tm)
+    group = group or self.group
+    context = _ScopedContext(data_dict, self.undefined_str, group=group)
     _Execute(self._program.Statements(), context, callback, trace)
 
   render = execute  # Alias for backward compatibility
@@ -1475,13 +1455,13 @@ class Template(object):
       style = None
 
     tokens = []
-    template_map = _MakeTemplateMap(self._program)
+    group = _MakeGroupFromRootSection(self._program)
     if style:
-      style.execute(data_dict, tokens.append, template_map=template_map,
+      style.execute(data_dict, tokens.append, group=group,
                     trace=trace)
     else:
-      # Needs a template_map to reference its OWN {.define}s
-      self.execute(data_dict, tokens.append, template_map=template_map,
+      # Needs a group to reference its OWN {.define}s
+      self.execute(data_dict, tokens.append, group=group,
                    trace=trace)
 
     return ''.join(tokens)
@@ -1524,8 +1504,30 @@ class Trace(object):
     return 'Trace %s %s' % (self.exec_depth, self.template_depth)
 
 
-def MakeTemplateGroup(template_map):
+def _MakeGroupFromRootSection(root_section):
+  """Construct a dictinary { template name -> Template() instance }
+
+  Args:
+    root_section: _Section instance -- root of the original parse tree
+  """
+  group = {}
+  for statement in root_section.Statements():
+    if isinstance(statement, basestring):
+      continue
+    func, args = statement
+    # here the function acts as ID for the block type
+    if func is _DoDef and isinstance(args, _Section):
+      section = args
+      # Construct a Template instance from a this _Section subtree
+      t = Template._FromSection(section, group)
+      group[section.section_name] = t
+  return group
+
+
+def MakeTemplateGroup(group):
   """Wire templates together so that they can reference each other by name.
+
+  This is a public API.
 
   The templates becomes formatters with the 'template' prefix.  For example:
   {var|template NAME} formats the node 'var' with the template 'NAME'
@@ -1539,8 +1541,9 @@ def MakeTemplateGroup(template_map):
   Args:
     group: dictionary of template name -> compiled Template instance
   """
-  for t in template_map.itervalues():
-    t._SetTemplateMap(template_map)
+  # mutate all of the templates so that they can reference each other
+  for t in group.itervalues():
+    t._SetTemplateGroup(group)
     #t._CheckRefs()
 
 
