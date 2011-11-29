@@ -369,12 +369,12 @@ class InternalTemplateTest(taste.Test):
         {.end}
 
         {.define :BODY}
-          <h3>{:TITLE}</h3>
+          <h3>{.template :TITLE}</h3>
           {definition}
         {.end}
         """))
     style = jsontemplate.Template(B("""
-        <title>{:TITLE}</title>
+        <title>{.template :TITLE}</title>
         <body>
         {:BODY}
         </body>
@@ -615,19 +615,19 @@ class TemplateGroupTest(taste.Test):
 
     t = jsontemplate.Template(
         B("""
-        {.define :TITLE}
+        {.define TITLE}
           Definition of {word}
         {.end}
-        {.define :BODY}
-          <h3>{:TITLE}</h3>
+        {.define BODY}
+          <h3>{.template TITLE}</h3>
           {definition}
         {.end}
         """))
 
     style = jsontemplate.Template(
         B("""
-        {.section :TITLE}<title>{:@}</title>{.end}
-        {:BODY}
+        {.if template TITLE}<title>{.template TITLE}</title>{.end}
+        {.template BODY}
         """))
 
     print '-' * 80
@@ -636,8 +636,8 @@ class TemplateGroupTest(taste.Test):
 
     style = jsontemplate.Template(
         B("""
-        <title>{:TITLE}</title>
-        {:BODY}
+        <title>{.template TITLE}</title>
+        {.template BODY}
         """))
     print '-' * 80
     print t.expand(data, style=style)

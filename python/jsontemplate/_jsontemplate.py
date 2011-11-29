@@ -382,15 +382,16 @@ class _ProgramBuilder(object):
     return pred
 
   def AppendSubstitution(self, name, formatters):
-    if name.startswith(':'):
-      assert len(formatters) == 0
-      # This is simulating something like {$|template BODY}, where $ is the root
-      formatters = [self._GetFormatter('template ' + name)]
-      print 'GOT FORMATTER', formatters
-      self.current_section.Append((_DoSubstitute, (None, formatters)))
-    else:
-      formatters = [self._GetFormatter(f) for f in formatters]
-      self.current_section.Append((_DoSubstitute, (name, formatters)))
+    formatters = [self._GetFormatter(f) for f in formatters]
+    self.current_section.Append((_DoSubstitute, (name, formatters)))
+
+  def AppendTemplateSubstitution(self, name):
+    # {.template BODY} is semantically something like {$|template BODY}, where $
+    # is the root
+    formatters = [self._GetFormatter('template ' + name)]
+    print 'GOT FORMATTER', formatters
+    # None as the name indicates we use the context.Root()
+    self.current_section.Append((_DoSubstitute, (None, formatters)))
 
   def _NewSection(self, func, new_block):
     self.current_section.Append((func, new_block))
@@ -950,7 +951,7 @@ def MakeTokenRegex(meta_left, meta_right):
   OR_TOKEN,  # {.or}
   END_TOKEN,  # {.end}
 
-  SUBST_DEF_TOKEN,  # {:TITLE}
+  SUBST_TEMPLATE_TOKEN,  # {.template TITLE}
   DEF_TOKEN,  # {.define TITLE}
 
   COMMENT_BEGIN_TOKEN,  # {##BEGIN}
@@ -993,11 +994,11 @@ def _MatchDirective(token):
     else:
       return SECTION_TOKEN, section_name
 
+  if token.startswith('template '):
+    return SUBST_TEMPLATE_TOKEN, token[9:].strip()
   if token.startswith('define '):
-    name = token[7:].strip()
-    if not name.startswith(':'):
-      raise CompilationError('Definition names must start with a colon (:)')
-    return DEF_TOKEN, name
+    return DEF_TOKEN, token[7:].strip()
+
   if token.startswith('if '):
     return IF_TOKEN, token[3:].strip()
   if token.endswith('?'):
@@ -1078,17 +1079,6 @@ def _Tokenize(template_str, meta_left, meta_right, whitespace):
 
         # A single-line comment
         if token.startswith('#'):
-          continue
-
-        # : is a "def" substitution as opposed to a normal one.
-        #
-        # Other characters considered:
-        # > conflicts with HTML:          <title>{>TITLE}</title> parses badly
-        # / seems to imply "end" in HTML: <title>{/TITLE}</title>
-        # ! is reasonable but we could use that for other things, like user
-        # defined functions with side effects
-        if token.startswith(':'):
-          yield SUBST_DEF_TOKEN, token
           continue
 
         if token.startswith('.'):
@@ -1246,9 +1236,9 @@ def _CompileTemplate(
       builder.AppendSubstitution(name, formatters)
       continue
 
-    if token_type == SUBST_DEF_TOKEN:
+    if token_type == SUBST_TEMPLATE_TOKEN:
       # no formatters
-      builder.AppendSubstitution(token, [])
+      builder.AppendTemplateSubstitution(token)
       continue
 
   if balance_counter != 0:
