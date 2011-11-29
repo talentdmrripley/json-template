@@ -106,9 +106,6 @@ class TemplateSyntaxError(CompilationError):
 class UndefinedVariable(EvaluationError):
   """The template contains a variable name not defined by the data dictionary."""
 
-class UndefinedDef(EvaluationError):
-  """The template contains a "define" substitution not defined anywhere."""
-
 
 # The last group is of the form 'name | f1 | f2 ...'
 _SECTION_RE = re.compile(r'(repeated)?\s*section\s+(.+)')
@@ -568,18 +565,6 @@ class _ScopedContext(object):
     if not self.template_map:  # Could be None?
       return False
     return name in self.template_map
-
-  def PushDef(self, name):
-    assert name.startswith(':')
-    if self.def_cursor is not None:
-      # This could be caught at compile time
-      assert 0, "Can't push define while already inside a define section"
-    if self.template_map:
-      self.def_cursor = self.template_map.get(name)
-    return self.def_cursor
-
-  def PopDef(self):
-    self.def_cursor = None
 
   def PushSection(self, name, pre_formatters):
     """Given a section name, push it on the top of the stack.
@@ -1344,13 +1329,7 @@ def FromFile(f, more_formatters=lambda x: None, more_predicates=lambda x: None,
 
 
 def _MakeTemplateMap(root_section):
-  """
-  Construct a dictinoary name ->
-
-  A "Template Dict" is just a dictionary of unconnected templates.
-
-  A "Template Group" is the same structure, except now the templates are wired
-  to reference each other.
+  """Construct a dictinary { template name -> Template() instance }
 
   Args:
     root_section: _Section instance -- root of the original parse tree
@@ -1436,28 +1415,20 @@ class Template(object):
     # for execute_with_style
     return self._program.Statements()
 
-  def _MakeTemplateMap(self):
-    """Makes a template map from THIS template (it should have {.define}s)
-
-    In contrast, _SetTemplateMap lets this template reference other template.  It may
-    not have any {.define}s
-    """
-    return _MakeTemplateMap(self._program)
-
   def _SetTemplateMap(self, template_map):
     """Allow this template to reference templates in the group via formatters.
 
     Args:
-      group: dictionary of template name -> compiled Template instance
+      template_map: dictionary of template name -> compiled Template instance
     """
     self.template_map = template_map
 
   def _CheckRefs(self):
-    """Check that the template names referenced in this template exist.
-    
-    _RegisterGroup must have been called.
-    """
-    # TODO: Implement this
+    """Check that the template names referenced in this template exist."""
+    # TODO: Implement this.
+    # This is called by MakeTemplateGroup.
+    # We would walk the program Statements() tree, look for name=None
+    # substitutions, with a template formatter, and call Resolve().
 
   #
   # Public API
@@ -1526,7 +1497,7 @@ class Template(object):
       style = None
 
     tokens = []
-    template_map = self._MakeTemplateMap()
+    template_map = _MakeTemplateMap(self._program)
     if style:
       style.execute(data_dict, tokens.append, template_map=template_map,
                     trace=trace)
@@ -1631,16 +1602,6 @@ def _DoRepeatedSection(args, context, callback, trace):
 def _DoSection(args, context, callback, trace):
   """{.section foo}"""
   block = args
-
-  if block.section_name.startswith(':'):
-    if context.PushDef(block.section_name):
-      _Execute(block.Statements(), context, callback, trace)
-      context.PopDef()
-    else:  # missing or "false" -- show the {.or} section
-      context.PopDef()
-      _Execute(block.Statements('or'), context, callback, trace)
-    return  # EARLY return
-
   # If a section present and "true", push the dictionary onto the stack as the
   # new context, and show it
   if context.PushSection(block.section_name, block.pre_formatters):
@@ -1705,15 +1666,6 @@ def _DoSubstitute(args, context, callback, trace):
     except TypeError, e:
       raise EvaluationError(
           'Error evaluating %r in context %r: %r' % (name, context, e))
-
-  # It's possible and arguably more consistent to move this test to compile
-  # time.  But it's such a small piece of code that I won't bother for now.
-  #if name.startswith(':'):
-  #  parts = context.Lookup(name)
-  #  assert isinstance(parts, list)
-  #  for p in parts:
-  #    callback(p)
-  #  return  # EARLY return
 
   last_index = len(formatters) - 1
   for i, (f, args, formatter_type) in enumerate(formatters):
