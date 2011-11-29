@@ -106,9 +106,6 @@ class TemplateSyntaxError(CompilationError):
 class UndefinedVariable(EvaluationError):
   """The template contains a variable name not defined by the data dictionary."""
 
-class UndefinedDef(EvaluationError):
-  """The template contains a "define" substitution not defined anywhere."""
-
 
 # The last group is of the form 'name | f1 | f2 ...'
 _SECTION_RE = re.compile(r'(repeated)?\s*section\s+(.+)')
@@ -218,15 +215,16 @@ class PrefixRegistry(FunctionRegistry):
 class _TemplateRef(object):
   """A reference from one template to another.
   
-  TemplateRef is a simple data object that holds the template group and an
-  optional name.  If there's no name, then it's a self-reference.
+  The _TemplateRef sits statically in the program tree as one of the formatters.
+  At runtime, _DoSubstitute calls Resolve() with the template_map being used.
   """
-  def __init__(self, registry, name):
-    self.registry = registry
+  def __init__(self, name):
     self.name = name
 
-  def Resolve(self):
-    t = self.registry.group.get(self.name)
+  def Resolve(self, context):
+    t = None
+    if context.template_map:
+      t = context.template_map.get(self.name)
     if t:
       return t
     else:
@@ -235,13 +233,12 @@ class _TemplateRef(object):
           % self.name)
 
 
-class TemplateRegistry(FunctionRegistry):
-  """Each template owns a TemplateRegistry.
+class _TemplateRegistry(FunctionRegistry):
+  """Each template owns a _TemplateRegistry.
 
   LookupWithType always returns a TemplateRef to the template compiler
   (_ProgramBuilder).  At runtime, which may be after MakeTemplateGroup is
-  called, the _DoSubstitute can resolve the template name and execute it as
-  a formatter.
+  called, the names can be resolved.
   """
   def __init__(self, owner):
     """
@@ -250,14 +247,6 @@ class TemplateRegistry(FunctionRegistry):
       exactly one)
     """
     self.owner = owner
-    self.group = {}  # public attributes
-
-  def RegisterGroup(self, group):
-    """
-    Args:
-      group: dictionary of template name -> compiled Template instance
-    """
-    self.group = group
 
   def LookupWithType(self, user_str):
     """
@@ -271,7 +260,7 @@ class TemplateRegistry(FunctionRegistry):
       if name == 'SELF':
         result = self.owner
       else:
-        result = _TemplateRef(self, name)
+        result = _TemplateRef(name)
 
     return result, (), TEMPLATE_FORMATTER
 
@@ -342,6 +331,7 @@ class _ProgramBuilder(object):
     # default predicates with arguments
     default_predicates = PrefixRegistry([
         ('test', _TestAttribute),
+        ('template', _TemplateExists),
         ])
 
     self.predicates = ChainedRegistry(
@@ -386,6 +376,13 @@ class _ProgramBuilder(object):
   def AppendSubstitution(self, name, formatters):
     formatters = [self._GetFormatter(f) for f in formatters]
     self.current_section.Append((_DoSubstitute, (name, formatters)))
+
+  def AppendTemplateSubstitution(self, name):
+    # {.template BODY} is semantically something like {$|template BODY}, where $
+    # is the root
+    formatters = [self._GetFormatter('template ' + name)]
+    # None as the name indicates we use the context.Root()
+    self.current_section.Append((_DoSubstitute, (None, formatters)))
 
   def _NewSection(self, func, new_block):
     self.current_section.Append((func, new_block))
@@ -531,37 +528,30 @@ class _ScopedContext(object):
   """Allows scoped lookup of variables.
 
   If the variable isn't in the current context, then we search up the stack.
-
-  This object also stores the results of evaluating {.define :NAME}, and allows
-  these values be looked up later with a "def" substitution: {:NAME}.
-
-  {.section :NAME} {:@} {.end} is also supported here by PushSection.
+  This object also stores the template_map.
   """
 
-  def __init__(self, context, undefined_str):
+  def __init__(self, context, undefined_str, template_map=None):
     """
     Args:
       context: The root context
       undefined_str: See Template() constructor.
+      template_map: Used by the {.if template FOO} predicate, and _DoSubstitute
+          which is passed the context.
     """
     self.stack = [_Frame(context)]
     self.undefined_str = undefined_str
-    self.def_values = {}  # for {.define :NAME}
-    # Analogous to self.stack for definition, but there is only one level.
-    # It is either a list of tokens or None.
-    self.def_cursor = None
+    self.template_map = template_map  # used by _DoSubstitute?
+    self.root = context
 
-  def PushDef(self, name):
-    # Separate
-    assert name.startswith(':')
-    if self.def_cursor is not None:
-      # This could be caught at compile time
-      assert 0, "Can't push define while already inside a define section"
-    self.def_cursor = self.def_values.get(name)
-    return self.def_cursor
+  def Root(self):
+    """For {.template FOO} substitution."""
+    return self.root
 
-  def PopDef(self):
-    self.def_cursor = None
+  def HasTemplate(self, name):
+    if not self.template_map:  # Could be None?
+      return False
+    return name in self.template_map
 
   def PushSection(self, name, pre_formatters):
     """Given a section name, push it on the top of the stack.
@@ -654,18 +644,6 @@ class _ScopedContext(object):
     Raises:
       UndefinedVariable if self.undefined_str is not set
     """
-    if name.startswith(':'):
-      if name == ':@':
-        if self.def_cursor is not None:
-          return self.def_cursor
-        else:
-          raise UndefinedDef('Not inside a {.section :FOO}')
-      try:
-        value = self.def_values[name]
-      except KeyError:
-        raise UndefinedDef('Value %r is not defined' % name)
-      return value  # EARLY return
-
     if name == '@':
       return self.stack[-1].context
 
@@ -680,17 +658,6 @@ class _ScopedContext(object):
         return self._Undefined(part)
 
     return value
-
-  def BeginDef(self, name):
-    """Returns a callback to write strings to."""
-    assert name not in self.def_values
-    tokens = []
-    self.def_values[name] = tokens
-    return tokens.append
-
-  def EndDef(self):
-    # Nothing needs to be done when a definition is ended.
-    pass
 
 
 def _ToString(x):
@@ -883,6 +850,15 @@ def _TestAttribute(unused_value, context, args):
     return False
 
 
+def _TemplateExists(unused_value, context, args):
+  """Returns whether the given name is in the current Template's template group."""
+  try:
+    name = args[0]
+  except IndexError:
+    raise EvaluationError('The "template" predicate requires an argument.')
+  return context.HasTemplate(name)
+
+
 _SINGULAR = lambda x: x == 1
 _PLURAL = lambda x: x > 1
 
@@ -950,7 +926,7 @@ def MakeTokenRegex(meta_left, meta_right):
   OR_TOKEN,  # {.or}
   END_TOKEN,  # {.end}
 
-  SUBST_DEF_TOKEN,  # {:TITLE}
+  SUBST_TEMPLATE_TOKEN,  # {.template TITLE}
   DEF_TOKEN,  # {.define TITLE}
 
   COMMENT_BEGIN_TOKEN,  # {##BEGIN}
@@ -993,11 +969,11 @@ def _MatchDirective(token):
     else:
       return SECTION_TOKEN, section_name
 
+  if token.startswith('template '):
+    return SUBST_TEMPLATE_TOKEN, token[9:].strip()
   if token.startswith('define '):
-    name = token[7:].strip()
-    if not name.startswith(':'):
-      raise CompilationError('Definition names must start with a colon (:)')
-    return DEF_TOKEN, name
+    return DEF_TOKEN, token[7:].strip()
+
   if token.startswith('if '):
     return IF_TOKEN, token[3:].strip()
   if token.endswith('?'):
@@ -1078,17 +1054,6 @@ def _Tokenize(template_str, meta_left, meta_right, whitespace):
 
         # A single-line comment
         if token.startswith('#'):
-          continue
-
-        # : is a "def" substitution as opposed to a normal one.
-        #
-        # Other characters considered:
-        # > conflicts with HTML:          <title>{>TITLE}</title> parses badly
-        # / seems to imply "end" in HTML: <title>{/TITLE}</title>
-        # ! is reasonable but we could use that for other things, like user
-        # defined functions with side effects
-        if token.startswith(':'):
-          yield SUBST_DEF_TOKEN, token
           continue
 
         if token.startswith('.'):
@@ -1246,9 +1211,9 @@ def _CompileTemplate(
       builder.AppendSubstitution(name, formatters)
       continue
 
-    if token_type == SUBST_DEF_TOKEN:
+    if token_type == SUBST_TEMPLATE_TOKEN:
       # no formatters
-      builder.AppendSubstitution(token, [])
+      builder.AppendTemplateSubstitution(token)
       continue
 
   if balance_counter != 0:
@@ -1339,6 +1304,26 @@ def FromFile(f, more_formatters=lambda x: None, more_predicates=lambda x: None,
                       **options)
 
 
+def _MakeTemplateMap(root_section):
+  """Construct a dictinary { template name -> Template() instance }
+
+  Args:
+    root_section: _Section instance -- root of the original parse tree
+  """
+  template_map = {}
+  for statement in root_section.Statements():
+    if isinstance(statement, basestring):
+      continue
+    func, args = statement
+    # here the function acts as ID for the block type
+    if func is _DoDef and isinstance(args, _Section):
+      section = args
+      # Construct a Template instance from a this _Section subtree
+      t = Template._FromSection(section, template_map)
+      template_map[section.section_name] = t
+  return template_map
+
+
 class Template(object):
   """Represents a compiled template.
 
@@ -1383,48 +1368,74 @@ class Template(object):
 
     It also accepts all the compile options that _CompileTemplate does.
     """
-    self.template_registry = TemplateRegistry(self)
-    builder = _ProgramBuilder(more_formatters, more_predicates,
-                              self.template_registry)
-    # TODO: Remove has_defines along with execute_with_style_LEGACY
-    self._program, self.has_defines = _CompileTemplate(
-        template_str, builder, **compile_options)
+    r = _TemplateRegistry(self)
+    self.template_map = None  # optionally set by _SetTemplateMap
+    builder = _ProgramBuilder(more_formatters, more_predicates, r)
+    # None used by _FromSection
+    if template_str is not None:
+      # TODO: Remove has_defines along with execute_with_style_LEGACY
+      self._program, self.has_defines = _CompileTemplate(
+          template_str, builder, **compile_options)
     self.undefined_str = undefined_str
+
+  @staticmethod
+  def _FromSection(section, template_map):
+    t = Template(None)  # NOTE: we lost undefined_str
+    t._program = section
+    t.has_defines = False
+    # This "subtemplate" needs the template_map too for its own references
+    t.template_map = template_map
+    return t
 
   def _Statements(self):
     # for execute_with_style
     return self._program.Statements()
 
-  def _RegisterGroup(self, group):
+  def _SetTemplateMap(self, template_map):
     """Allow this template to reference templates in the group via formatters.
 
     Args:
-      group: dictionary of template name -> compiled Template instance
+      template_map: dictionary of template name -> compiled Template instance
     """
-    self.template_registry.RegisterGroup(group) 
+    self.template_map = template_map
 
   def _CheckRefs(self):
-    """Check that the template names referenced in this template exist.
-    
-    _RegisterGroup must have been called.
-    """
-    # TODO: Implement this
+    """Check that the template names referenced in this template exist."""
+    # TODO: Implement this.
+    # This is called by MakeTemplateGroup.
+    # We would walk the program Statements() tree, look for name=None
+    # substitutions, with a template formatter, and call Resolve().
 
   #
   # Public API
   #
 
-  def execute(self, data_dict, callback, trace=None):
+  def execute(self, data_dict, callback, template_map=None, trace=None):
     """Low level method to expand the template piece by piece.
 
     Args:
       data_dict: The JSON data dictionary.
       callback: A callback which should be called with each expanded token.
+      template_map: Dictionary of name -> Template instance (for styles)
 
     Example: You can pass 'f.write' as the callback to write directly to a file
     handle.
     """
-    context = _ScopedContext(data_dict, self.undefined_str)
+    # First try the passed in version, then the one set by _SetTemplateMap.  May
+    # be None.
+    # TODO: What happens if we call MakeTemplateGroup() on a template with
+    # {.defines} in it?  The internal refernces will be broken.  Options:
+    #
+    # 1. Raise an error -- only "simple" templates can be wired together with
+    # MakeTemplateGroup().
+    # 2. Somehow merge the template maps (then you have namespace conflicts of
+    # course)
+    # 
+    # This issue is caused by the weirdness where a Template() with {.defines}
+    # is actually composed of multiple Template() instances -- it is a template
+    # group.  There could be a cleaner solution.
+    tm = template_map or self.template_map
+    context = _ScopedContext(data_dict, self.undefined_str, template_map=tm)
     _Execute(self._program.Statements(), context, callback, trace)
 
   render = execute  # Alias for backward compatibility
@@ -1436,9 +1447,12 @@ class Template(object):
     interface.
 
     Args:
-      The JSON data dictionary.  Like the builtin dict() constructor, it can
-      take a single dictionary as a positional argument, or arbitrary keyword
-      arguments.
+      data_dict: The JSON data dictionary.  Like the builtin dict() constructor,
+          it can take a single dictionary as a positional argument, or arbitrary
+          keyword arguments.
+      trace: Trace object for debugging
+      style: Template instance to be treated as a style for this template (the
+          "outside")
 
     Returns:
       The return value could be a str() or unicode() instance, depending on the
@@ -1449,15 +1463,25 @@ class Template(object):
       if len(args) == 1:
         data_dict = args[0]
         trace = kwargs.get('trace')
+        style = kwargs.get('style')
       else:
         raise TypeError(
             'expand() only takes 1 positional argument (got %s)' % args)
     else:
       data_dict = kwargs
       trace = None  # Can't use trace= with the kwargs style
+      style = None
 
     tokens = []
-    self.execute(data_dict, tokens.append, trace=trace)
+    template_map = _MakeTemplateMap(self._program)
+    if style:
+      style.execute(data_dict, tokens.append, template_map=template_map,
+                    trace=trace)
+    else:
+      # Needs a template_map to reference its OWN {.define}s
+      self.execute(data_dict, tokens.append, template_map=template_map,
+                   trace=trace)
+
     return ''.join(tokens)
 
   def tokenstream(self, data_dict):
@@ -1498,7 +1522,7 @@ class Trace(object):
     return 'Trace %s %s' % (self.exec_depth, self.template_depth)
 
 
-def MakeTemplateGroup(group):
+def MakeTemplateGroup(template_map):
   """Wire templates together so that they can reference each other by name.
 
   The templates becomes formatters with the 'template' prefix.  For example:
@@ -1513,9 +1537,9 @@ def MakeTemplateGroup(group):
   Args:
     group: dictionary of template name -> compiled Template instance
   """
-  for t in group.itervalues():
-    t._RegisterGroup(group)
-    t._CheckRefs()
+  for t in template_map.itervalues():
+    t._SetTemplateMap(template_map)
+    #t._CheckRefs()
 
 
 def _DoRepeatedSection(args, context, callback, trace):
@@ -1554,16 +1578,6 @@ def _DoRepeatedSection(args, context, callback, trace):
 def _DoSection(args, context, callback, trace):
   """{.section foo}"""
   block = args
-
-  if block.section_name.startswith(':'):
-    if context.PushDef(block.section_name):
-      _Execute(block.Statements(), context, callback, trace)
-      context.PopDef()
-    else:  # missing or "false" -- show the {.or} section
-      context.PopDef()
-      _Execute(block.Statements('or'), context, callback, trace)
-    return  # EARLY return
-
   # If a section present and "true", push the dictionary onto the stack as the
   # new context, and show it
   if context.PushSection(block.section_name, block.pre_formatters):
@@ -1595,44 +1609,29 @@ def _DoPredicates(args, context, callback, trace):
 
 
 def _DoDef(args, context, callback, trace):
-  """Definition of {.define TITLE}"""
-  # Instead of writing to the "real" output stream passed as 'callback', ask the
-  # context for a callback "on the side".  After the value block is done
-  # executing, the rest of the template can use the value.
-  block = args
-  callback = context.BeginDef(block.section_name)
-  _Execute(block.Statements(), context, callback, trace)
-  context.EndDef()
+  """{.define TITLE}"""
+  # We do nothing here -- the block is parsed into the template tree, turned
+  # into a Template() instance, and then the template is called as a formatter
+  # in _DoSubstitute.
 
 
 def _DoSubstitute(args, context, callback, trace):
-  """Variable or "def" value substitution, i.e. {foo} or {:FOO}
+  """Variable substitution, i.e. {foo}
 
-  Differences between normal substitution and "def" substitution:
-
-  - We get a list of strings (after execution) rather than a big string
-  - No formatters (it's possible to implement them, but I don't see a use case
-    and it's more complex, although arguably more orthogonal to have them)
-
-  The separate concept of "def" substitution exists basically for efficiency.
-  If we're generating 200K of HTML in the body, I don't want to materialize that entire
-  string, only to then substitute it into a style to make a 201K string.
+  We also implement template formatters here, i.e.  {foo|template bar} as well
+  as {.template FOO} for templates that operate on the root of the data dict
+  rather than a subtree.
   """
   name, formatters = args
-  try:
-    value = context.Lookup(name)
-  except TypeError, e:
-    raise EvaluationError(
-        'Error evaluating %r in context %r: %r' % (name, context, e))
 
-  # It's possible and arguably more consistent to move this test to compile
-  # time.  But it's such a small piece of code that I won't bother for now.
-  if name.startswith(':'):
-    parts = context.Lookup(name)
-    assert isinstance(parts, list)
-    for p in parts:
-      callback(p)
-    return  # EARLY return
+  if name is None:
+    value = context.Root()  # don't use the cursor
+  else:
+    try:
+      value = context.Lookup(name)
+    except TypeError, e:
+      raise EvaluationError(
+          'Error evaluating %r in context %r: %r' % (name, context, e))
 
   last_index = len(formatters) - 1
   for i, (f, args, formatter_type) in enumerate(formatters):
@@ -1641,8 +1640,7 @@ def _DoSubstitute(args, context, callback, trace):
         if isinstance(f, Template):
           template = f
         elif isinstance(f, _TemplateRef):
-          # TODO: This can be done in _CheckRefs
-          template = f.Resolve()
+          template = f.Resolve(context)
         else:
           assert False, 'Invalid formatter %r' % f
 
@@ -1671,6 +1669,8 @@ def _DoSubstitute(args, context, callback, trace):
       raise
 
     except Exception, e:
+      if formatter_type == TEMPLATE_FORMATTER:
+        raise  # in this case we want to see the original exception
       raise EvaluationError(
           'Formatting name %r, value %r with formatter %s raised exception: %r '
           '-- see e.original_exc_info' % (name, value, f, e),

@@ -355,70 +355,6 @@ class InternalTemplateTest(taste.Test):
         jsontemplate.EvaluationError,
         jsontemplate.expand_with_style, body_template, style, data, 'foo')
 
-  def testExpandWithStyle_Reuse(self):
-    data = {
-        'word': 'hello',
-        'definition': 'greeting',
-        }
-    # TITLE is reused
-    body_template = jsontemplate.Template(B("""
-        {.define :TITLE}
-        Definition of '{word}'
-        {.end}
-
-        {.define :BODY}
-          <h3>{:TITLE}</h3>
-          {definition}
-        {.end}
-        """))
-    style = jsontemplate.Template(B("""
-        <title>{:TITLE}</title>
-        <body>
-        {:BODY}
-        </body>
-        """))
-    result = jsontemplate.expand_with_style(body_template, style, data)
-    self.verify.LongStringsEqual(B("""
-        <title>Definition of 'hello'
-        </title>
-        <body>
-          <h3>Definition of 'hello'
-        </h3>
-          greeting
-        
-        </body>
-        """), result)
-
-    # Now do it with "strip-line"
-    body_template = jsontemplate.Template(B("""
-        {.OPTION strip-line}
-          {.define :TITLE}
-            Definition of '{word}'
-          {.end}
-        {.END}
-
-        {.define :BODY}
-          <h3>{:TITLE}</h3>
-          {definition}
-        {.end}
-        """))
-
-    style = jsontemplate.Template(B("""
-        <title>{:TITLE}</title>
-        <body>
-        {:BODY}
-        </body>
-        """))
-    result = jsontemplate.expand_with_style(body_template, style, data)
-    self.verify.LongStringsEqual(B("""
-        <title>Definition of 'hello'</title>
-        <body>
-          <h3>Definition of 'hello'</h3>
-          greeting
-        
-        </body>
-        """), result)
-
 
 class FunctionsApiTest(taste.Test):
   """Tests that can only be run internally."""
@@ -605,63 +541,68 @@ class TemplateGroupTest(taste.Test):
         b.txt
         """), ignore_all_whitespace=True)
 
-  def testStyle(self):
+  def testStyles(self):
+    # This uses the expand_with_style API -- convert it
     data = {
-      'word': 'hello',
-      'definition': 'greeting',
-      }
-
-    t = jsontemplate.Template(
-        B("""
-        {.define :TITLE}
-          Definition of {word}
+        'word': 'hello',
+        'definition': 'greeting',
+        }
+    # TITLE is reused
+    body_template = jsontemplate.Template(B("""
+        {.define TITLE}
+        Definition of '{word}'
         {.end}
-        {.define :BODY}
-          <h3>{:TITLE}</h3>
+
+        {.define BODY}
+          <h3>{.template TITLE}</h3>
+          {definition}
+        {.end}
+        """))
+    style = jsontemplate.Template(B("""
+        <title>{.template TITLE}</title>
+        <body>
+        {.template BODY}
+        </body>
+        """))
+    s = body_template.expand(data, style=style)
+    self.verify.LongStringsEqual(B("""
+        <title>Definition of 'hello'
+        </title>
+        <body>
+          <h3>Definition of 'hello'
+        </h3>
+          greeting
+        </body>
+        """), s)
+
+    # Now do it with "strip-line"
+    body_template = jsontemplate.Template(B("""
+        {.OPTION strip-line}
+          {.define TITLE}
+            Definition of '{word}'
+          {.end}
+        {.END}
+
+        {.define BODY}
+          <h3>{.template TITLE}</h3>
           {definition}
         {.end}
         """))
 
-    style = jsontemplate.Template(
-        B("""
-        {.section :TITLE}<title>{:@}</title>{.end}
-        {:BODY}
+    style = jsontemplate.Template(B("""
+        <title>{.template TITLE}</title>
+        <body>
+        {.template BODY}
+        </body>
         """))
-
-    print '-' * 80
-    print t.expand(data, style=style)
-    print '-' * 80
-    #
-    # NOTES
-    #
-    # if we get style=style 
-    #
-    # 1. _MakeTemplateGroupFromFile() .. # from {.define}
-    # 2. call style.expand(template_group=template_group)
-    # 3. when expand() gets template_group, it will need to get that information
-    # into _DoSubstitute -- maybe just another param, after "context"
-    #
-    # how to parse "self" into a bunch of different templates?
-    #   it's actually not that hard, just extract _Section from
-    #   self._program
-    #   and then instantiate Template from that instead of text
-    #
-    # parse the name out of _Section
-    # { "TITLE": _Section(),
-    #   "BODY": _Section(),
-    #   ...
-    # }
-    #
-    # OR: FromFile could perhaps do it, some kind of detection?
-    #
-    # {:BODY} is the same as
-    #
-    # {$|template BODY}
-    #
-    # $ should be the "root", not cursor...
-    #
-    # Right now within _DoSubstitute we call template.execute() on "value", we
-    # should call it on context.Root()  (the shared context between the 2)
+    s = body_template.expand(data, style=style)
+    self.verify.LongStringsEqual(B("""
+        <title>Definition of 'hello'</title>
+        <body>
+          <h3>Definition of 'hello'</h3>
+          greeting
+        </body>
+        """), s)
 
 
 if __name__ == '__main__':
