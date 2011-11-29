@@ -1487,11 +1487,11 @@ class BlockTest(taste.Test):
         {# Now we can use the value here}
         <h3>{.template TITLE}</h3>
         """))
-    self.verify.Expansion(t, {'word': 'hello'}, "<h3>Definition of 'hello'\n</h3>\n")
+    self.verify.Expansion(t, {'word': 'hello'},
+        "<h3>Definition of 'hello'\n</h3>\n")
 
   @taste.only_verify('python')
   def testBlockSection(self):
-    return
     t = taste.ClassDef(B("""
         {.define TITLE}
         Definition of '{word}'

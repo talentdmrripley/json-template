@@ -340,7 +340,7 @@ class _ProgramBuilder(object):
     # default predicates with arguments
     default_predicates = PrefixRegistry([
         ('test', _TestAttribute),
-        ('template ', _TemplateExists),
+        ('template', _TemplateExists),
         ])
 
     self.predicates = ChainedRegistry(
@@ -390,7 +390,6 @@ class _ProgramBuilder(object):
     # {.template BODY} is semantically something like {$|template BODY}, where $
     # is the root
     formatters = [self._GetFormatter('template ' + name)]
-    print 'GOT FORMATTER', formatters
     # None as the name indicates we use the context.Root()
     self.current_section.Append((_DoSubstitute, (None, formatters)))
 
@@ -1700,9 +1699,6 @@ def _DoSubstitute(args, context, callback, trace):
 
   if name is None:
     value = context.Root()  # don't use the cursor
-    print '-'*80
-    print 'FORMATTERS', formatters
-    print '-'*80
   else:
     try:
       value = context.Lookup(name)
