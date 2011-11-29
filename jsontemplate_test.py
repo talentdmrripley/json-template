@@ -1481,37 +1481,29 @@ class BlockTest(taste.Test):
   @taste.only_verify('python')
   def testBlock(self):
     t = taste.ClassDef(B("""
-        {.define :TITLE}
+        {.define TITLE}
         Definition of '{word}'
         {.end}
         {# Now we can use the value here}
-        <h3>{:TITLE}</h3>
+        <h3>{.template TITLE}</h3>
         """))
-    self.verify.Expansion(t, {'word': 'hello'}, "<h3>Definition of 'hello'\n</h3>\n")
+    self.verify.Expansion(t, {'word': 'hello'},
+        "<h3>Definition of 'hello'\n</h3>\n")
 
   @taste.only_verify('python')
   def testBlockSection(self):
     t = taste.ClassDef(B("""
-        {.define :TITLE}
+        {.define TITLE}
         Definition of '{word}'
         {.end}
         {# Now we can use the value here}
-        {.section :TITLE}<h3>{:@}</h3>{.end}
-        {.section :NONEXISTENT}<h3>{:@}</h3>{.end}
-        {.section :ALTERNATE}<h3>{:@}</h3>{.or}NONE{.end}
+        {.if template TITLE}<h3>{.template TITLE}</h3>{.end}
+        {.if template NONEXISTENT}<h3>{.template NONEXISTENT}</h3>{.end}
+        {.if template ALTERNATE}<h3>{.template ALTERNATE}</h3>{.or}NONE{.end}
         """))
     self.verify.Expansion(
         t, {'word': 'hello'},
         "<h3>Definition of 'hello'\n</h3>\n\nNONE\n")
-
-  @taste.only_verify('python')
-  def testBadBlock(self):
-    t = B("""
-        {# No leading colon}
-        {.define TITLE}
-        {.end}
-        """)
-    self.verify.CompilationError(jsontemplate.CompilationError, t)
 
 
 def main(argv):
