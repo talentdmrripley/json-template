@@ -1383,6 +1383,9 @@ class Template(object):
     Args:
       group: dictionary of template name -> compiled Template instance
     """
+    if self.has_defines:
+      raise UsageError(
+          "Can't make a template group out of a template with {.define}.")
     if self.group is None:
       self.group = group
     else:
