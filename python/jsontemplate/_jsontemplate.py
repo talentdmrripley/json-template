@@ -69,6 +69,10 @@ class Error(Exception):
       return self.args[0]
 
 
+class UsageError(Error):
+  """Errors in using the API, not a result of compilation or evaluation."""
+
+
 class CompilationError(Error):
   """Base class for errors that happen during the compilation stage."""
 
@@ -1379,7 +1383,12 @@ class Template(object):
     Args:
       group: dictionary of template name -> compiled Template instance
     """
-    self.group = group
+    if self.group is None:
+      self.group = group
+    else:
+      raise UsageError(
+          "Can't set a template group multiple times.  You may want to "
+          "instantiate another template from the same text.")
 
   def _CheckRefs(self):
     """Check that the template names referenced in this template exist."""

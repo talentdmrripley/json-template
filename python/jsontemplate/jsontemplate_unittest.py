@@ -662,6 +662,13 @@ class TemplateGroupTest(taste.Test):
         </body>
         """), s)
 
+    jsontemplate.MakeTemplateGroup({'style': style, 'body': body_template})
+    # Can't do it twice
+    self.verify.Raises(
+        jsontemplate.UsageError,
+        jsontemplate.MakeTemplateGroup,
+        {'style': style, 'body': body_template})
+
 
 if __name__ == '__main__':
   taste.RunThisModule()
