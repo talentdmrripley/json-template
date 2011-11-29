@@ -672,17 +672,6 @@ class _ScopedContext(object):
 
     return value
 
-  def BeginDef(self, name):
-    """Returns a callback to write strings to."""
-    assert name not in self.def_values
-    tokens = []
-    self.def_values[name] = tokens
-    return tokens.append
-
-  def EndDef(self):
-    # Nothing needs to be done when a definition is ended.
-    pass
-
 
 def _ToString(x):
   # Some cross-language values for primitives
@@ -1633,28 +1622,18 @@ def _DoPredicates(args, context, callback, trace):
 
 
 def _DoDef(args, context, callback, trace):
-  """Definition of {.define TITLE}"""
-  # Instead of writing to the "real" output stream passed as 'callback', ask the
-  # context for a callback "on the side".  After the value block is done
-  # executing, the rest of the template can use the value.
-  block = args
-  callback = context.BeginDef(block.section_name)
-  _Execute(block.Statements(), context, callback, trace)
-  context.EndDef()
+  """{.define TITLE}"""
+  # We do nothing here -- the block is parsed into the template tree, turned
+  # into a Template() instance, and then the template is called as a formatter
+  # in _DoSubstitute.
 
 
 def _DoSubstitute(args, context, callback, trace):
-  """Variable or "def" value substitution, i.e. {foo} or {:FOO}
+  """Variable substitution, i.e. {foo}
 
-  Differences between normal substitution and "def" substitution:
-
-  - We get a list of strings (after execution) rather than a big string
-  - No formatters (it's possible to implement them, but I don't see a use case
-    and it's more complex, although arguably more orthogonal to have them)
-
-  The separate concept of "def" substitution exists basically for efficiency.
-  If we're generating 200K of HTML in the body, I don't want to materialize that entire
-  string, only to then substitute it into a style to make a 201K string.
+  We also implement template formatters here, i.e.  {foo|template bar} as well
+  as {.template FOO} for templates that operate on the root of the data dict
+  rather than a subtree.
   """
   name, formatters = args
 
@@ -1674,7 +1653,6 @@ def _DoSubstitute(args, context, callback, trace):
         if isinstance(f, Template):
           template = f
         elif isinstance(f, _TemplateRef):
-          # TODO: This can be done in _CheckRefs
           template = f.Resolve(context)
         else:
           assert False, 'Invalid formatter %r' % f
