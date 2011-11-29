@@ -218,10 +218,13 @@ class _TemplateRef(object):
   The _TemplateRef sits statically in the program tree as one of the formatters.
   At runtime, _DoSubstitute calls Resolve() with the template_map being used.
   """
-  def __init__(self, name):
+  def __init__(self, name=None, template=None):
     self.name = name
+    self.template = template  # a template that's already been resolved
 
   def Resolve(self, context):
+    if self.template:
+      return self.template
     if context.template_map:
       return context.template_map.get(self.name)
     else:
@@ -251,15 +254,16 @@ class _TemplateRegistry(FunctionRegistry):
       ref: Either a template instance (itself) or _TemplateRef
     """
     prefix = 'template '
-    result = None  # fail the lookup by default
+    ref = None  # fail the lookup by default
     if user_str.startswith(prefix):
       name = user_str[len(prefix):]
       if name == 'SELF':
-        result = self.owner
+        # we can resolve this right away
+        ref = _TemplateRef(template=self.owner)  # special value
       else:
-        result = _TemplateRef(name)
+        ref = _TemplateRef(name)
 
-    return result, (), TEMPLATE_FORMATTER
+    return ref, (), TEMPLATE_FORMATTER
 
 
 class ChainedRegistry(FunctionRegistry):
@@ -1635,13 +1639,7 @@ def _DoSubstitute(args, context, callback, trace):
   for i, (f, args, formatter_type) in enumerate(formatters):
     try:
       if formatter_type == TEMPLATE_FORMATTER:
-        if isinstance(f, Template):
-          template = f
-        elif isinstance(f, _TemplateRef):
-          template = f.Resolve(context)
-        else:
-          assert False, 'Invalid formatter %r' % f
-
+        template = f.Resolve(context)
         if i == last_index:
           # In order to keep less template output in memory, we can just let the
           # other template write to our callback directly, and then stop.
