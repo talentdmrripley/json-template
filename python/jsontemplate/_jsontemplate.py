@@ -1753,6 +1753,8 @@ def execute_with_style_LEGACY(template, style, data, callback, body_subtree='bod
 def expand_with_style(template, style, data, body_subtree='body'):
   """Expand a data dictionary with a template AND a style.
 
+  DEPRECATED -- Remove this entire function in favor of expand(d, style=style)
+
   A style is a Template instance that factors out the common strings in several
   "body" templates.
 
@@ -1760,12 +1762,11 @@ def expand_with_style(template, style, data, body_subtree='body'):
     template: Template instance for the inner "page content"
     style: Template instance for the outer "page style"  
     data: Data dictionary, with a 'body' key (or body_subtree
-
-    TODO: DELETE body_subtree along with execute_with_style_LEGACY
-    body_subtree: key that specifies the subtree of 'data' to expand 'template'
-                  into
   """
-  tokens = []
-  execute_with_style_LEGACY(template, style, data, tokens.append,
-                            body_subtree=body_subtree)
-  return ''.join(tokens)
+  if template.has_defines:
+    return template.expand(data, style=style)
+  else:
+    tokens = []
+    execute_with_style_LEGACY(template, style, data, tokens.append,
+                              body_subtree=body_subtree)
+    return ''.join(tokens)
