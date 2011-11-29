@@ -222,11 +222,8 @@ class _TemplateRef(object):
     self.name = name
 
   def Resolve(self, context):
-    t = None
     if context.template_map:
-      t = context.template_map.get(self.name)
-    if t:
-      return t
+      return context.template_map.get(self.name)
     else:
       raise EvaluationError(
           "Couldn't find template with name %r (create a template group?)"
