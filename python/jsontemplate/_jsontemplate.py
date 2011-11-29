@@ -898,12 +898,13 @@ def MakeTokenRegex(meta_left, meta_right):
   key = meta_left, meta_right
   if key not in _token_re_cache:
     # - Need () grouping for re.split
-    # - For simplicity, we allow all characters except newlines inside
-    #   metacharacters ({} / [])
+    # - The first character must be a non-space.  This allows us to ignore
+    # literals like function() { return 1; } when
+    # - There must be at least one (non-space) character inside {}
     _token_re_cache[key] = re.compile(
         r'(' +
         re.escape(meta_left) +
-        r'.*?' +
+        r'\S.*?' +
         re.escape(meta_right) +
         r')')
   return _token_re_cache[key]

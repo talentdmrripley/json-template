@@ -49,6 +49,32 @@ text
 """)
     self.verify.Equal(len(tokens), 17)
 
+  def testTokenRegexIgnoresCode(self):
+    # Special case:
+    s = jsontemplate.expand('{foo}', {'foo': 'bar'})
+    self.verify.Equal('bar', s)
+
+    s = jsontemplate.expand('{.repeated section foo}{@}{.end}',
+                            {'foo': ['a', 'b', 'c']})
+    self.verify.Equal('abc', s)
+
+    # This didn't used to work because the variable would be " foo" and it would
+    # be undefined.  Now we just let it pass through as literal text.
+    s = jsontemplate.expand('{ foo}', {'foo': 'bar'})
+    self.verify.Equal('{ foo}', s)
+
+    s = jsontemplate.expand('function() { return {@}; }', 1)
+    self.verify.Equal('function() { return 1; }', s)
+
+    s = jsontemplate.expand('function() { return {@};', 1)
+    self.verify.Equal('function() { return 1;', s)
+
+    # If you have an {.end} you'll get a different error because it'll be
+    # unmatched
+    s = jsontemplate.expand('{ .repeated section foo}',
+                            {'foo': ['a', 'b', 'c']})
+    self.verify.Equal('{ .repeated section foo}', s)  # ignored
+
   def testSectionRegex(self):
 
     # Section names are required
@@ -378,7 +404,6 @@ class InternalTemplateTest(taste.Test):
         'definition': 'greeting',
         }
     s = jsontemplate.expand_with_style(body_template, style, data)
-    print repr(s), '##'
     self.verify.LongStringsEqual(B("""
         <title>Definition of 'hello'
         </title>
