@@ -1135,7 +1135,7 @@ def _CompileTemplate(
   balance_counter = 0
   comment_counter = 0  # ditto for ##BEGIN/##END
 
-  has_defines = False  # TODO: REMOVE with execute_with_style_LEGACY
+  has_defines = False
 
   for token_type, token in _Tokenize(template_str, meta_left, meta_right,
                                      whitespace):
@@ -1166,7 +1166,6 @@ def _CompileTemplate(
         formatters = parts[1:]
       builder.NewSection(token_type, name, formatters)
       balance_counter += 1
-      # TODO: REMOVE with execute_with_style_LEGACY
       if token_type == DEF_TOKEN:
         has_defines = True
       continue
@@ -1359,7 +1358,6 @@ class Template(object):
     builder = _ProgramBuilder(more_formatters, more_predicates, r)
     # None used by _FromSection
     if template_str is not None:
-      # TODO: Remove has_defines along with execute_with_style_LEGACY
       self._program, self.has_defines = _CompileTemplate(
           template_str, builder, **compile_options)
     self.undefined_str = undefined_str
@@ -1416,18 +1414,7 @@ class Template(object):
     handle.
     """
     # First try the passed in version, then the one set by _SetTemplateGroup.  May
-    # be None.
-    # TODO: What happens if we call MakeTemplateGroup() on a template with
-    # {.defines} in it?  The internal refernces will be broken.  Options:
-    #
-    # 1. Raise an error -- only "simple" templates can be wired together with
-    # MakeTemplateGroup().
-    # 2. Somehow merge the template groups (then you have namespace conflicts of
-    # course)
-    # 
-    # This issue is caused by the weirdness where a Template() with {.defines}
-    # is actually composed of multiple Template() instances -- it is a template
-    # group.  There could be a cleaner solution.
+    # be None.  Only one of these should be set.
     group = group or self.group
     context = _ScopedContext(data_dict, self.undefined_str, group=group)
     _Execute(self._program.Statements(), context, callback, trace)
