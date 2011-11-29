@@ -340,6 +340,7 @@ class _ProgramBuilder(object):
     # default predicates with arguments
     default_predicates = PrefixRegistry([
         ('test', _TestAttribute),
+        ('template ', _TemplateExists),
         ])
 
     self.predicates = ChainedRegistry(
@@ -563,6 +564,11 @@ class _ScopedContext(object):
   def Root(self):
     """For :FOO template substitution."""
     return self.root
+
+  def HasTemplate(self, name):
+    if not self.template_map:  # Could be None?
+      return False
+    return name in self.template_map
 
   def PushDef(self, name):
     assert name.startswith(':')
@@ -882,6 +888,15 @@ def _TestAttribute(unused_value, context, args):
     return bool(context.Lookup(name))
   except UndefinedVariable:
     return False
+
+
+def _TemplateExists(unused_value, context, args):
+  """Returns whether the given name is in the current Template's template group."""
+  try:
+    name = args[0]
+  except IndexError:
+    raise EvaluationError('The "template" predicate requires an argument.')
+  return context.HasTemplate(name)
 
 
 _SINGULAR = lambda x: x == 1
