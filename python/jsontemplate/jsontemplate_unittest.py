@@ -662,12 +662,31 @@ class TemplateGroupTest(taste.Test):
         </body>
         """), s)
 
-    jsontemplate.MakeTemplateGroup({'style': style, 'body': body_template})
+  def testMultipleTemplateGroups(self):
+    style = jsontemplate.Template('')
+    body = jsontemplate.Template('')
+    jsontemplate.MakeTemplateGroup({'style': style, 'body': body})
     # Can't do it twice
     self.verify.Raises(
         jsontemplate.UsageError,
         jsontemplate.MakeTemplateGroup,
-        {'style': style, 'body': body_template})
+        {'style': style, 'body': body})
+
+  def testConflictingGroups(self):
+    t = jsontemplate.Template(B("""
+        {.define TITLE}
+        Definition of '{word}'
+        {.end}
+
+        {.define BODY}
+          <h3>{.template TITLE}</h3>
+          {definition}
+        {.end}
+        """))
+    self.verify.Raises(
+        jsontemplate.UsageError,
+        jsontemplate.MakeTemplateGroup,
+        {'body': t})
 
 
 if __name__ == '__main__':
