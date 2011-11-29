@@ -199,6 +199,21 @@ class WhitespaceTest(taste.Test):
     self.verify.Expansion(t, {'foo': ['a', 'b', 'c']}, 'a \t,b \t,c \t')
 
 
+class WhitespaceTest(taste.Test):
+  LABELS = ['multilanguage']
+
+  @taste.only_verify('python', 'javascript')
+  def testIgnoresCode(self):
+    # A common use case is generating code with curly braces.  We try to be more
+    # lenient by requiring "directives" to have a non-space character as the
+    # first one.
+    t = taste.ClassDef('function() { return {@}; }')
+    self.verify.Expansion(t, 1, 'function() { return 1; }')
+
+    t = taste.ClassDef('function() { return {@};')
+    self.verify.Expansion(t, 1, 'function() { return 1;')
+
+
 class SubstitutionsTest(taste.Test):
   """Language-independent tests for JSON Template."""
 

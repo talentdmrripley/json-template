@@ -38,7 +38,9 @@ function _MakeTokenRegex(meta_left, meta_right) {
   var key = meta_left + meta_right;
   var regex = token_re_cache[key];
   if (regex === undefined) {
-    var str = '(' + EscapeMeta(meta_left) + '.*?' + EscapeMeta(meta_right) +
+    // there must at least one character inside {}, and the first one must be a
+    // non-space, to be accepting of "function() { return {@}; }"
+    var str = '(' + EscapeMeta(meta_left) + '\\S.*?' + EscapeMeta(meta_right) +
               '\n?)';
     regex = new RegExp(str, 'g');
   }
