@@ -1753,21 +1753,6 @@ def execute_with_style_LEGACY(template, style, data, callback, body_subtree='bod
   _FlattenToCallback(tokens, callback)
 
 
-def execute_with_style(template, style, data, callback, trace=None):
-  """Execute both a "body" template and a style with the same data dict."""
-  undefined_str = None
-  context = _ScopedContext(data, undefined_str)
-
-  # Expand into a throwaway.  The context is populated with "side effects".
-  # TODO: warn if there is anything significant here.
-  throwaway = []
-  _Execute(template._Statements(), context, throwaway.append, trace=trace)
-
-  # Now use the same context to expand the style into the callback passed by the
-  # caller.
-  _Execute(style._Statements(), context, callback, trace=trace)
-
-
 def expand_with_style(template, style, data, body_subtree='body'):
   """Expand a data dictionary with a template AND a style.
 
@@ -1783,13 +1768,7 @@ def expand_with_style(template, style, data, body_subtree='body'):
     body_subtree: key that specifies the subtree of 'data' to expand 'template'
                   into
   """
-  # Use the new algorithm for a template with {.define}
-  if template.has_defines:
-    tokens = []
-    execute_with_style(template, style, data, tokens.append)
-    return ''.join(tokens)
-  else:
-    tokens = []
-    execute_with_style_LEGACY(template, style, data, tokens.append,
-                              body_subtree=body_subtree)
-    return ''.join(tokens)
+  tokens = []
+  execute_with_style_LEGACY(template, style, data, tokens.append,
+                            body_subtree=body_subtree)
+  return ''.join(tokens)
