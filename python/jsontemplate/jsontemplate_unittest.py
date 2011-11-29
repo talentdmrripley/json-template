@@ -355,31 +355,30 @@ class InternalTemplateTest(taste.Test):
         jsontemplate.EvaluationError,
         jsontemplate.expand_with_style, body_template, style, data, 'foo')
 
-  def testExpandWithStyle_Reuse(self):
+  def testStyles(self):
     # This uses the expand_with_style API -- convert it
-    return
     data = {
         'word': 'hello',
         'definition': 'greeting',
         }
     # TITLE is reused
     body_template = jsontemplate.Template(B("""
-        {.define :TITLE}
+        {.define TITLE}
         Definition of '{word}'
         {.end}
 
-        {.define :BODY}
-          <h3>{.template :TITLE}</h3>
+        {.define BODY}
+          <h3>{.template TITLE}</h3>
           {definition}
         {.end}
         """))
     style = jsontemplate.Template(B("""
-        <title>{.template :TITLE}</title>
+        <title>{.template TITLE}</title>
         <body>
-        {:BODY}
+        {.template BODY}
         </body>
         """))
-    result = jsontemplate.expand_with_style(body_template, style, data)
+    s = body_template.expand(data, style=style)
     self.verify.LongStringsEqual(B("""
         <title>Definition of 'hello'
         </title>
@@ -387,39 +386,37 @@ class InternalTemplateTest(taste.Test):
           <h3>Definition of 'hello'
         </h3>
           greeting
-        
         </body>
-        """), result)
+        """), s)
 
     # Now do it with "strip-line"
     body_template = jsontemplate.Template(B("""
         {.OPTION strip-line}
-          {.define :TITLE}
+          {.define TITLE}
             Definition of '{word}'
           {.end}
         {.END}
 
-        {.define :BODY}
-          <h3>{:TITLE}</h3>
+        {.define BODY}
+          <h3>{.template TITLE}</h3>
           {definition}
         {.end}
         """))
 
     style = jsontemplate.Template(B("""
-        <title>{:TITLE}</title>
+        <title>{.template TITLE}</title>
         <body>
-        {:BODY}
+        {.template BODY}
         </body>
         """))
-    result = jsontemplate.expand_with_style(body_template, style, data)
+    s = body_template.expand(data, style=style)
     self.verify.LongStringsEqual(B("""
         <title>Definition of 'hello'</title>
         <body>
           <h3>Definition of 'hello'</h3>
           greeting
-        
         </body>
-        """), result)
+        """), s)
 
 
 class FunctionsApiTest(taste.Test):
