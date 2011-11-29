@@ -1363,8 +1363,8 @@ class Template(object):
     self.undefined_str = undefined_str
 
   @staticmethod
-  def _FromSection(section, group):
-    t = Template(None)  # NOTE: we lost undefined_str
+  def _FromSection(section, group, undefined_str):
+    t = Template(None, undefined_str=undefined_str)
     t._program = section
     t.has_defines = False
     # This "subtemplate" needs the group too for its own references
@@ -1454,7 +1454,7 @@ class Template(object):
       style = None
 
     tokens = []
-    group = _MakeGroupFromRootSection(self._program)
+    group = _MakeGroupFromRootSection(self._program, self.undefined_str)
     if style:
       style.execute(data_dict, tokens.append, group=group,
                     trace=trace)
@@ -1503,7 +1503,7 @@ class Trace(object):
     return 'Trace %s %s' % (self.exec_depth, self.template_depth)
 
 
-def _MakeGroupFromRootSection(root_section):
+def _MakeGroupFromRootSection(root_section, undefined_str):
   """Construct a dictinary { template name -> Template() instance }
 
   Args:
@@ -1518,7 +1518,7 @@ def _MakeGroupFromRootSection(root_section):
     if func is _DoDef and isinstance(args, _Section):
       section = args
       # Construct a Template instance from a this _Section subtree
-      t = Template._FromSection(section, group)
+      t = Template._FromSection(section, group, undefined_str)
       group[section.section_name] = t
   return group
 
