@@ -355,6 +355,40 @@ class InternalTemplateTest(taste.Test):
         jsontemplate.EvaluationError,
         jsontemplate.expand_with_style, body_template, style, data, 'foo')
 
+    # New style with old API
+    body_template = jsontemplate.Template(B("""
+        {.define TITLE}
+        Definition of '{word}'
+        {.end}
+
+        {.define BODY}
+          <h3>{.template TITLE}</h3>
+          {definition}
+        {.end}
+        """))
+
+    style = jsontemplate.Template(B("""
+        <title>{.template TITLE}</title>
+        <body>
+        {.template BODY}
+        </body>
+        """))
+    data = {
+        'word': 'hello',
+        'definition': 'greeting',
+        }
+    s = jsontemplate.expand_with_style(body_template, style, data)
+    print repr(s), '##'
+    self.verify.LongStringsEqual(B("""
+        <title>Definition of 'hello'
+        </title>
+        <body>
+          <h3>Definition of 'hello'
+        </h3>
+          greeting
+        </body>
+        """), s)
+
 
 class FunctionsApiTest(taste.Test):
   """Tests that can only be run internally."""
@@ -542,7 +576,6 @@ class TemplateGroupTest(taste.Test):
         """), ignore_all_whitespace=True)
 
   def testStyles(self):
-    # This uses the expand_with_style API -- convert it
     data = {
         'word': 'hello',
         'definition': 'greeting',
