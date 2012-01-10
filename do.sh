@@ -34,4 +34,33 @@ all-tests() {
   ./jsontemplate_test.py --all
 }
 
+google-code-upload() {
+  wget http://support.googlecode.com/svn/trunk/scripts/googlecode_upload.py
+  chmod +x googlecode_upload.py
+}
+
+# Make release zip with Python and JavaScript versions
+# I am doing it this way because Google Code only lets you upload versioned
+# files (which is a good thing).  But I don't want people to have to rename
+# jsontemplate-0.8.py to jsontemplate.py, etc.
+
+release() {
+  local version=$1
+  if test -z "$version"; then
+    echo "Version required"
+    exit 1
+  fi
+
+  set -o errexit
+
+  rm -rf release-tmp
+  mkdir -p release-tmp
+  cd release-tmp
+  # remove underscore
+  cp ../python/jsontemplate/_jsontemplate.py jsontemplate.py
+  cp ../javascript/json-template.js .
+  zip json-template-$version.zip json*
+  ls *.zip
+}
+
 "$@"
