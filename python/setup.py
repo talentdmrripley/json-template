@@ -9,6 +9,11 @@ CHANGES = """
 Changes
 -------
 
+0.86
+~~~~
+
+Trying again.
+
 0.85b3
 ~~~~~~
 
@@ -62,7 +67,7 @@ long_description = (
 
 setup(
     name="jsontemplate",
-    version="0.85b3",
+    version="0.86",
     description="A declarative templating language based on JSON",
     long_description=long_description,
     classifiers=[
