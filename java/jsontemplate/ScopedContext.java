@@ -85,7 +85,7 @@ class ScopedContext {
 
 	private static Object lookup(Object context, String name) {
 		if (context instanceof Map) {
-			return ((Map) context).get(name);
+			return lookupMap((Map) context, name);
 		}
 		else {
 			// bean?
@@ -125,6 +125,29 @@ class ScopedContext {
 			} catch (IllegalAccessException e) {
 				// swallow
 			}
+			return value;
+		}
+	}
+
+	private static Object lookupMap(Map map, String name) {
+		Object value = map.get(name);
+
+		if (value == null) {
+			int dotIndex = name.indexOf('.');
+			if (dotIndex < 0) {
+				return null;
+			}
+
+			String parentName = name.substring(0, dotIndex);
+			Object parentMap = map.get(parentName);
+			if (!(parentMap instanceof Map)) {
+				return null;
+			}
+
+			String childName = name.substring(dotIndex + 1);
+			return lookupMap((Map) parentMap, childName);
+
+		} else {
 			return value;
 		}
 	}
