@@ -17,6 +17,7 @@ class SectionStatement implements IStatement {
 					callback);
 			context.pop();
 		} else {
+			context.pop();
 			TemplateExecutor.execute(this.block.getStatements("or"), context,
 					callback);
 		}
