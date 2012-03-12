@@ -849,7 +849,6 @@ class DottedLookupTest(taste.Test):
 
   LABELS = ['multilanguage']
 
-  @taste.no_verify('java')
   def testDottedLookup(self):
     t = taste.ClassDef('{foo.bar}')
 
@@ -858,7 +857,6 @@ class DottedLookupTest(taste.Test):
         {'foo': {'bar': 'Hello'}},
         'Hello')
 
-  @taste.no_verify('java')
   def testDottedLookupErrors(self):
 
     # TODO: Also test everything with setting undefined_str
@@ -904,7 +902,6 @@ class DottedLookupTest(taste.Test):
         {'foo': {}, 'bar': 100},
         'UNDEFINED')
 
-  @taste.no_verify('java')
   def testThreeLookups(self):
     t = taste.ClassDef('{foo.bar.baz}')
 
@@ -918,7 +915,6 @@ class DottedLookupTest(taste.Test):
         t,
         {'foo': 100})
 
-  @taste.no_verify('java')
   def testScopedLookup(self):
     t = taste.ClassDef(
         B("""
