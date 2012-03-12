@@ -728,6 +728,26 @@ class SectionsTest(taste.PyUnitCompatibleTest):
         [.end]
         """), meta='[]')
 
+#  @taste.labels('documentation')
+  def testSectionOrInSectionRepeatedTwice(self):
+    t = taste.ClassDef(
+        B("""
+        {.section content}
+          {any_content}
+        {.or}
+          {.repeated section content_alt}
+            {any_other_content}
+          {.or}
+            No content
+          {.end}
+        {.end}
+        """))
+
+    self.verify.Expansion(t, {}, 
+        B("""
+            No content
+        """),ignore_all_whitespace=True)
+        
   @taste.labels('documentation')
   def testRepeatedSectionOr(self):
     t = taste.ClassDef(
@@ -755,7 +775,7 @@ class SectionsTest(taste.PyUnitCompatibleTest):
           Andy 20
           Bob 25
         """))
-
+        
     # Empty list
     without_people = {
         'header': 'People',
