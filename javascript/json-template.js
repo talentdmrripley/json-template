@@ -32,18 +32,13 @@ function EscapeMeta(meta) {
   return meta.replace(/([\{\}\(\)\[\]\|\^\$\-\+\?])/g, '\\$1');
 }
 
-var token_re_cache = {};
-
 function _MakeTokenRegex(meta_left, meta_right) {
   var key = meta_left + meta_right;
-  var regex = token_re_cache[key];
-  if (regex === undefined) {
-    // there must at least one character inside {}, and the first one must be a
-    // non-space, to be accepting of "function() { return {@}; }"
-    var str = '(' + EscapeMeta(meta_left) + '\\S.*?' + EscapeMeta(meta_right) +
-              '\n?)';
-    regex = new RegExp(str, 'g');
-  }
+  // there must at least one character inside {}, and the first one must be a
+  // non-space, to be accepting of "function() { return {@}; }"
+  var str = '(' + EscapeMeta(meta_left) + '\\S.*?' + EscapeMeta(meta_right) +
+            '\n?)';
+  var regex = new RegExp(str, 'g');
   return regex;
 }
 
