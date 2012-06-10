@@ -23,6 +23,31 @@ methods, which allow Template constructor options to be embedded in the template
 string itself.
 
 Other functions are exposed for tools which may want to process templates.
+
+Unicode
+-------
+
+JSON Template can work on unicode strings or byte strings.  The template parser
+and expansion loop don't care which type they get.
+
+However, it's up to the caller to ensure that they get *compatible* types.
+Python auto-conversion can make this a bit confusing.
+
+If you have a byte string template and a dictionary with byte strings, expansion
+will work:
+
+'Hello {name}' +  {name: '\0'}  ->  'Hello \0'
+
+If you have a unicode template and unicode data in the dictionary, it will work:
+
+u'Hello {name}' +  {name: u'\u00B5'}  ->  u'Hello \u00B5'
+
+If you have a unicode template and byte string data, Python will try to decode
+the byte strings using the default ASCII encoding.  This may not be possible,
+and you'll get a UnicodeDecodeError.
+
+u'Hello {name}' +  {name: 'there'}  ->  'Hello there'
+u'Hello {name}' +  {name: '\0'}     ->  ERROR: \0 is not decodable as ASCII
 """
 
 __author__ = 'Andy Chu'
