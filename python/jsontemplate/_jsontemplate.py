@@ -36,18 +36,20 @@ Python auto-conversion can make this a bit confusing.
 If you have a byte string template and a dictionary with byte strings, expansion
 will work:
 
-'Hello {name}' +  {name: '\0'}  ->  'Hello \0'
+'Hello {name}' +  {name: '\xb5'}  ->  'Hello \xb5'
 
 If you have a unicode template and unicode data in the dictionary, it will work:
 
 u'Hello {name}' +  {name: u'\u00B5'}  ->  u'Hello \u00B5'
 
 If you have a unicode template and byte string data, Python will try to decode
-the byte strings using the default ASCII encoding.  This may not be possible,
-and you'll get a UnicodeDecodeError.
+the byte strings using the utf-8 encoding.  This may not be possible, in which
+case you'll get a UnicodeDecodeError.
 
 u'Hello {name}' +  {name: 'there'}  ->  'Hello there'
-u'Hello {name}' +  {name: '\0'}     ->  ERROR: \0 is not decodable as ASCII
+u'Hello {name}' +  {name: '\xb5'}     ->  ERROR: \xb5 is not decodable as ASCII
+
+Mixing types may incur a performance penalty.
 """
 
 __author__ = 'Andy Chu'
@@ -1489,7 +1491,7 @@ class Template(object):
       self.execute(data_dict, tokens.append, group=group,
                    trace=trace)
 
-    return ''.join(tokens)
+    return JoinTokens(tokens)
 
   def tokenstream(self, data_dict):
     """Yields a list of tokens resulting from expansion.
@@ -1570,6 +1572,27 @@ def MakeTemplateGroup(group):
   for t in group.itervalues():
     t._SetTemplateGroup(group)
     #t._CheckRefs()
+
+
+def JoinTokens(tokens):
+  """Join tokens (which may be a mix of unicode and str values).
+
+  See notes on unicode at the top.  This function allows mixing encoded utf-8
+  byte string tokens with unicode tokens.  (Python's default encoding is ASCII,
+  and we don't want to change that.)
+
+  We also want to support pure byte strings, so we can't get rid of the
+  try/except.  Two tries necessary.
+
+  If someone really wanted to use another encoding, they could monkey patch
+  jsontemplate.JoinTokens (this function).
+  """
+  try:
+    return ''.join(tokens)
+  except UnicodeDecodeError:
+    # This can still raise UnicodeDecodeError, but will work for UTF-8.
+    #raise
+    return ''.join(t.decode('utf-8') for t in tokens)
 
 
 def _DoRepeatedSection(args, context, callback, trace):
@@ -1677,7 +1700,7 @@ def _DoSubstitute(args, context, callback, trace):
           # We have more formatters to apply, so explicitly construct 'value'
           tokens = []
           template.execute(value, tokens.append, trace=trace)
-          value = ''.join(tokens)
+          value = JoinTokens(tokens)
 
       elif formatter_type == ENHANCED_FUNC:
         value = f(value, context, args)
@@ -1796,4 +1819,4 @@ def expand_with_style(template, style, data, body_subtree='body'):
     tokens = []
     execute_with_style_LEGACY(template, style, data, tokens.append,
                               body_subtree=body_subtree)
-    return ''.join(tokens)
+    return JoinTokens(tokens)
