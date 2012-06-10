@@ -140,7 +140,7 @@ Hello <there>
 
   def testEncoding(self):
     # Bug fix: Templates that are Unicode strings should expand as Unicode
-    # strings
+    # strings.  (This is why we use StringIO instead of cStringIO).
     t = jsontemplate.FromString(u'\u00FF')
     self.verify.Equal(t.expand({}), u'\u00FF')
 
@@ -324,9 +324,33 @@ class InternalTemplateTest(taste.Test):
 
     self.verify.Equal(t.expand({u'name': u'World'}), u'Hello World')
 
-    # TODO: Need a lot more comprehensive *external* unicode tests, as well as
-    # ones for the internal API.  Need to test mixing of unicode() and str()
-    # instances (or declare it undefined).
+  def testUnicodeTemplateMixed(self):
+    # Unicode template
+    t = jsontemplate.Template(u'Hello {name}')
+
+    # Encoded utf-8 data is OK
+    self.verify.Equal(t.expand({u'name': '\xc2\xb5'}), u'Hello \xb5')
+
+    # Latin-1 data is not OK
+    self.verify.Raises(UnicodeDecodeError, t.expand, {u'name': '\xb5'})
+
+    # Byte string \0 turns into code point 0
+    self.verify.Equal(t.expand({u'name': '\0'}), u'Hello \u0000')
+
+  def testByteTemplateMixed(self):
+
+    # (Latin-1) Byte string template
+    t = jsontemplate.Template('Hello \xb5 {name}')
+
+    # Byte string OK
+    self.verify.Equal(t.expand({u'name': '\xb5'}), 'Hello \xb5 \xb5')
+
+    self.verify.Raises(UnicodeDecodeError, t.expand, {u'name': u'\u00b5'})
+
+    # Byte string template without any special chars
+    t = jsontemplate.Template('Hello {name}')
+    # Unicode data is OK
+    self.verify.Equal(t.expand({u'name': u'\u00b5'}), u'Hello \u00B5')
 
   def testRepeatedSectionFormatter(self):
     def _Columns(x):
