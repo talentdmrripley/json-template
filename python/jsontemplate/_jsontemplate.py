@@ -1590,8 +1590,7 @@ def JoinTokens(tokens):
   try:
     return ''.join(tokens)
   except UnicodeDecodeError:
-    # This can still raise UnicodeDecodeError, but will work for UTF-8.
-    #raise
+    # This can still raise UnicodeDecodeError if that data isn't utf-8.
     return ''.join(t.decode('utf-8') for t in tokens)
 
 
