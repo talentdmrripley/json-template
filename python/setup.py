@@ -81,6 +81,7 @@ setup(
         "Topic :: Text Processing :: Markup :: HTML",
         ],
     keywords='json template templating jsontemplate',
+    provides=['jsontemplate'],
     author='Andy Chu',
     author_email='json-template@googlegroups.com',
     url='http://json-template.googlecode.com',
