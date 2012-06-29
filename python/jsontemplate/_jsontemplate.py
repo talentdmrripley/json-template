@@ -693,7 +693,9 @@ class _ScopedContext(object):
 
 
 def _ToString(x):
-  # Some cross-language values for primitives
+  """The default default formatter!."""
+  # Some cross-language values for primitives.  This is tested in
+  # jsontemplate_test.py.
   if x is None:
     return 'null'
   if isinstance(x, basestring):
@@ -780,6 +782,9 @@ _DEFAULT_FORMATTERS = {
     # this could be lambda x: json.dumps(x, indent=2), but here we want to be
     # compatible to Python 2.4.
     'str': _ToString,
+    # Python-specific representation for safely debugging any value as an ASCII
+    # string (unicode can cause issues when using 'str')
+    'repr': repr,
 
     'upper': lambda x: x.upper(),
     'lower': lambda x: x.lower(),
