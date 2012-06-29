@@ -60,6 +60,10 @@ class FormattersTest(taste.Test):
     t = jsontemplate.Template('{a}')
     self.verify.Equal(t.expand(a=1), '1')
 
+  def testRepr(self):
+    t = jsontemplate.Template('{a|repr}')
+    self.verify.Equal(t.expand(a=u'\u00b5'), "u'\\xb5'")
+
   def testPythonPercentFormat(self):
     t = jsontemplate.Template(
         self.printf_template, more_formatters=formatters.PythonPercentFormat)
