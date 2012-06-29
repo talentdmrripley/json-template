@@ -9,6 +9,11 @@ CHANGES = """
 Changes
 -------
 
+0.87
+~~~~
+
+Applied patch that adds "provides" to setup.py.
+
 0.86
 ~~~~
 
@@ -67,7 +72,7 @@ long_description = (
 
 setup(
     name="jsontemplate",
-    version="0.86",
+    version="0.87",
     description="A declarative templating language based on JSON",
     long_description=long_description,
     classifiers=[
