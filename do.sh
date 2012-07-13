@@ -63,4 +63,10 @@ release() {
   ls *.zip
 }
 
+# To run an individual test with the environment
+unit() {
+  export PYTHONPATH=$TASTE_DIR
+  "$@"
+}
+
 "$@"

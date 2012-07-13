@@ -1386,13 +1386,14 @@ class Template(object):
     It also accepts all the compile options that _CompileTemplate does.
     """
     r = _TemplateRegistry(self)
-    self.group = None  # optionally set by _SetTemplateGroup
+    self.undefined_str = undefined_str
+    self.group = {}  # optionally updated by _UpdateTemplateGroup
     builder = _ProgramBuilder(more_formatters, more_predicates, r)
     # None used by _FromSection
     if template_str is not None:
       self._program, self.has_defines = _CompileTemplate(
           template_str, builder, **compile_options)
-    self.undefined_str = undefined_str
+      self.group = _MakeGroupFromRootSection(self._program, self.undefined_str)
 
   @staticmethod
   def _FromSection(section, group, undefined_str):
@@ -1407,8 +1408,8 @@ class Template(object):
     # for execute_with_style
     return self._program.Statements()
 
-  def _SetTemplateGroup(self, group):
-    """Allow this template to reference templates in the group via formatters.
+  def _UpdateTemplateGroup(self, group):
+    """Allow this template to reference templates in the group.
 
     Args:
       group: dictionary of template name -> compiled Template instance
@@ -1417,12 +1418,14 @@ class Template(object):
     #if self.has_defines:
     #  raise UsageError(
     #      "Can't make a template group out of a template with {.define}.")
-    if self.group is None:
-      self.group = group
-    else:
+    bad = []
+    for name in group:
+      if name in self.group:
+        bad.append(name)
+    if bad:
       raise UsageError(
-          "Can't set a template group multiple times.  You may want to "
-          "instantiate another template from the same text.")
+          "This template already has these named templates defined: %s" % bad)
+    self.group.update(group)
 
   def _CheckRefs(self):
     """Check that the template names referenced in this template exist."""
@@ -1446,8 +1449,8 @@ class Template(object):
     Example: You can pass 'f.write' as the callback to write directly to a file
     handle.
     """
-    # First try the passed in version, then the one set by _SetTemplateGroup.  May
-    # be None.  Only one of these should be set.
+    # First try the passed in version, then the one set by _UpdateTemplateGroup.
+    # May be None.  Only one of these should be set.
     group = group or self.group
     context = _ScopedContext(data_dict, self.undefined_str, group=group)
     _Execute(self._program.Statements(), context, callback, trace)
@@ -1487,13 +1490,12 @@ class Template(object):
       style = None
 
     tokens = []
-    group = _MakeGroupFromRootSection(self._program, self.undefined_str)
     if style:
-      style.execute(data_dict, tokens.append, group=group,
+      style.execute(data_dict, tokens.append, group=self.group,
                     trace=trace)
     else:
       # Needs a group to reference its OWN {.define}s
-      self.execute(data_dict, tokens.append, group=group,
+      self.execute(data_dict, tokens.append, group=self.group,
                    trace=trace)
 
     return JoinTokens(tokens)
@@ -1575,7 +1577,7 @@ def MakeTemplateGroup(group):
   """
   # mutate all of the templates so that they can reference each other
   for t in group.itervalues():
-    t._SetTemplateGroup(group)
+    t._UpdateTemplateGroup(group)
     #t._CheckRefs()
 
 

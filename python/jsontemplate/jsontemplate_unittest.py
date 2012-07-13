@@ -380,7 +380,7 @@ class InternalTemplateTest(taste.Test):
         t.expand(d))
 
   def testExpandWithStyle(self):
-    # TODO: REMOVE with execute_with_style_LEGACY
+    # TODO: REMOVE with expand_with_style and execute_with_style_LEGACY
     data = {
         'title': 'Greetings!',
         'body': {'names': ['andy', 'bob']},
@@ -624,68 +624,6 @@ class TemplateGroupTest(taste.Test):
         b.txt
         """), ignore_all_whitespace=True)
 
-  def testStyles(self):
-    data = {
-        'word': 'hello',
-        'definition': 'greeting',
-        }
-    # TITLE is reused
-    body_template = jsontemplate.Template(B("""
-        {.define TITLE}
-        Definition of '{word}'
-        {.end}
-
-        {.define BODY}
-          <h3>{.template TITLE}</h3>
-          {definition}
-        {.end}
-        """))
-    style = jsontemplate.Template(B("""
-        <title>{.template TITLE}</title>
-        <body>
-        {.template BODY}
-        </body>
-        """))
-    s = body_template.expand(data, style=style)
-    self.verify.LongStringsEqual(B("""
-        <title>Definition of 'hello'
-        </title>
-        <body>
-          <h3>Definition of 'hello'
-        </h3>
-          greeting
-        </body>
-        """), s)
-
-    # Now do it with "strip-line"
-    body_template = jsontemplate.Template(B("""
-        {.OPTION strip-line}
-          {.define TITLE}
-            Definition of '{word}'
-          {.end}
-        {.END}
-
-        {.define BODY}
-          <h3>{.template TITLE}</h3>
-          {definition}
-        {.end}
-        """))
-
-    style = jsontemplate.Template(B("""
-        <title>{.template TITLE}</title>
-        <body>
-        {.template BODY}
-        </body>
-        """))
-    s = body_template.expand(data, style=style)
-    self.verify.LongStringsEqual(B("""
-        <title>Definition of 'hello'</title>
-        <body>
-          <h3>Definition of 'hello'</h3>
-          greeting
-        </body>
-        """), s)
-
   def testMultipleTemplateGroups(self):
     style = jsontemplate.Template('')
     body = jsontemplate.Template('')
@@ -712,6 +650,111 @@ class TemplateGroupTest(taste.Test):
     #    jsontemplate.UsageError,
     #    jsontemplate.MakeTemplateGroup,
     #    {'body': t})
+
+
+class StylesTest(taste.Test):
+
+  # Used in multiple tests
+  STYLE = jsontemplate.Template(B("""
+      <title>{.template TITLE}</title>
+      <body>
+      {.template BODY}
+      </body>
+      """))
+
+  DATA = {
+      'word': 'hello',
+      'definition': 'greeting',
+      }
+
+  def testTemplateReference(self):
+
+    # TITLE is referenced
+    body_template = jsontemplate.Template(B("""
+        {.define TITLE}
+        Definition of '{word}'
+        {.end}
+
+        {.define BODY}
+          <h3>{.template TITLE}</h3>
+          {definition}
+        {.end}
+        """))
+
+    s = body_template.expand(self.DATA, style=self.STYLE)
+
+    self.verify.LongStringsEqual(B("""
+        <title>Definition of 'hello'
+        </title>
+        <body>
+          <h3>Definition of 'hello'
+        </h3>
+          greeting
+        </body>
+        """), s)
+
+
+  def testOption(self):
+    # Now do it with "strip-line"
+    body_template = jsontemplate.Template(B("""
+        {.OPTION strip-line}
+          {.define TITLE}
+            Definition of '{word}'
+          {.end}
+        {.END}
+
+        {.define BODY}
+          <h3>{.template TITLE}</h3>
+          {definition}
+        {.end}
+        """))
+
+    s = body_template.expand(self.DATA, style=self.STYLE)
+    self.verify.LongStringsEqual(B("""
+        <title>Definition of 'hello'</title>
+        <body>
+          <h3>Definition of 'hello'</h3>
+          greeting
+        </body>
+        """), s)
+
+  def testStyleWithTemplateGroup(self):
+    body_template = jsontemplate.Template(B("""
+        {.define TITLE}
+        Definition of '{word}'
+        {.end}
+
+        {.define BODY}
+          <h3>{.template TITLE}</h3>
+          {definition}
+        {.template t1}
+        {@|template t1}
+        {word|template t2}
+        {.end}
+        """))
+    t1 = jsontemplate.Template('T1')
+    t2 = jsontemplate.Template('{@}')
+
+    # Create a template group, and make sure it doesn't mess up how .template
+    # TITLE is referenced.
+    jsontemplate.MakeTemplateGroup({
+        'body': body_template,
+        't1': t1,
+        't2': t2,
+        })
+
+    s = body_template.expand(self.DATA, style=self.STYLE)
+    self.verify.LongStringsEqual(B("""
+        <title>Definition of 'hello'
+        </title>
+        <body>
+          <h3>Definition of 'hello'
+        </h3>
+          greeting
+        T1T1
+        hello
+        </body>
+        """), s)
 
 
 if __name__ == '__main__':
