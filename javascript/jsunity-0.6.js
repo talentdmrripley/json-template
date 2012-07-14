@@ -389,3 +389,8 @@ jsUnity = (function () {
     };
 })();
 //%>
+
+// JSON TEMPLATE PATCH: Make it a CommonJS module so we can run under node.js.
+if (typeof exports !== 'undefined') {
+  for (var key in jsUnity) exports[key] = jsUnity[key];
+}
