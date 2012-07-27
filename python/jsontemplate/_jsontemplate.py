@@ -594,7 +594,12 @@ class _ScopedContext(object):
     if name == '@':
       value = self.stack[-1].context
     else:
-      value = self.stack[-1].context.get(name)
+      top = self.stack[-1].context
+      try:
+        value = top.get(name)
+      except AttributeError:  # no .get()
+        raise EvaluationError(
+            "Can't get name %r from top value %s" % (name, top))
 
     # Apply pre-formatters
     for i, (f, args, formatter_type) in enumerate(pre_formatters):
