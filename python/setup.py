@@ -9,6 +9,17 @@ CHANGES = """
 Changes
 -------
 
+0.89
+~~~~
+
+...
+
+0.88
+~~~~
+
+Experimental release of Python 3 (not released to PyPI, see
+http://code.google.com/p/json-template/downloads/list)
+
 0.87
 ~~~~
 
@@ -72,7 +83,7 @@ long_description = (
 
 setup(
     name="jsontemplate",
-    version="0.87",
+    version="0.89",
     description="A declarative templating language based on JSON",
     long_description=long_description,
     classifiers=[
