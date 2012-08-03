@@ -63,6 +63,27 @@ release() {
   ls *.zip
 }
 
+# First run python3/do.sh to create the file to release!
+release-python3() {
+  local version=$1
+  if test -z "$version"; then
+    echo "Version required"
+    exit 1
+  fi
+  local outname=json-template-py3k-$version.zip
+  rm $outname
+
+  set -o errexit
+
+  rm -rf release-tmp
+  mkdir -p release-tmp
+  pushd release-tmp
+  cp ../python3/jsontemplate.py ../python3/README .
+  zip $outname jsontemplate.py README
+  ls *.zip
+  popd
+}
+
 # To run an individual test with the environment
 unit() {
   export PYTHONPATH=$TASTE_DIR
