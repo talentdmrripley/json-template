@@ -1,0 +1,111 @@
+--- jsontemplate.py.orig	Fri Jun 29 10:03:38 2012
++++ jsontemplate.py	Thu Aug  2 12:38:04 2012
+@@ -38,16 +38,28 @@
+     # Function API
+     'SIMPLE_FUNC', 'ENHANCED_FUNC']
+ 
+-import StringIO
++try:
++    from StringIO import StringIO
++except ImportError:
++    from io import StringIO
+ import pprint
+ import re
+ import sys
++try:
++    basestring
++except NameError:
++    # Python 3
++    basestring = str
+ 
+ # For formatters
+ import cgi  # cgi.escape
+ import time  # for strftime
+-import urllib  # for urllib.encode
+-import urlparse  # for urljoin
++try:
++    # Python 3
++    from urllib.parse import urlencode, urljoin, quote_plus
++except ImportError:
++    from urllib import urlencode, quote_plus
++    from urlparse import urljoin
+ 
+ 
+ class Error(Exception):
+@@ -702,7 +714,7 @@
+   """
+   # urljoin is flexible about trailing/leading slashes -- it will add or de-dupe
+   # them
+-  return urlparse.urljoin(context.Lookup('base-url'), relative_url)
++  return urljoin(context.Lookup('base-url'), relative_url)
+ 
+ 
+ def _Reverse(x):
+@@ -744,10 +756,10 @@
+     'size': lambda value: str(len(value)),
+ 
+     # The argument is a dictionary, and we get a a=1&b=2 string back.
+-    'url-params': lambda x: urllib.urlencode(x, doseq=True),
++    'url-params': lambda x: urlencode(x, doseq=True),
+ 
+     # The argument is an atom, and it takes 'Search query?' -> 'Search+query%3F'
+-    'url-param-value': urllib.quote_plus,  # param is an atom
++    'url-param-value': quote_plus,  # param is an atom
+ 
+     # The default formatter, when no other default is specifier.  For debugging,
+     # this could be lambda x: json.dumps(x, indent=2), but here we want to be
+@@ -889,7 +901,7 @@
+   if n % 2 == 1:
+     raise ConfigurationError(
+         '%r has an odd number of metacharacters' % meta)
+-  return meta[:n/2], meta[n/2:]
++  return meta[:n//2], meta[n//2:]
+ 
+ 
+ _token_re_cache = {}
+@@ -1238,7 +1250,7 @@
+ def FromString(s, **kwargs):
+   """Like FromFile, but takes a string."""
+ 
+-  f = StringIO.StringIO(s)
++  f = StringIO(s)
+   return FromFile(f, **kwargs)
+ 
+ 
+@@ -1280,7 +1292,8 @@
+       # HTTP/E-mail headers.
+       name = name.lower()
+       # In Python 2.4, kwargs must be plain strings
+-      name = name.encode('utf-8')
++      # XXX Python 3
++#      name = name.encode('utf-8')
+ 
+       if name in _OPTION_NAMES:
+         name = name.replace('-', '_')
+@@ -1634,7 +1647,7 @@
+   else:
+     try:
+       value = context.Lookup(name)
+-    except TypeError, e:
++    except TypeError as e:
+       raise EvaluationError(
+           'Error evaluating %r in context %r: %r' % (name, context, e))
+ 
+@@ -1667,7 +1680,7 @@
+       # Don't "wrap" recursive EvaluationErrors
+       raise
+ 
+-    except Exception, e:
++    except Exception as e:
+       if formatter_type == TEMPLATE_FORMATTER:
+         raise  # in this case we want to see the original exception
+       raise EvaluationError(
+@@ -1702,7 +1715,7 @@
+       try:
+         func, args = statement
+         func(args, context, callback, trace)
+-      except UndefinedVariable, e:
++      except UndefinedVariable as e:
+         # Show context for statements
+         start = max(0, i-3)
+         end = i+3
