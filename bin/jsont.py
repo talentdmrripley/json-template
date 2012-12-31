@@ -38,7 +38,7 @@ def main(argv):
     template_file = opts['<template-file>']
     if template_file:
       try:
-        f = open(template_file).read()
+        f = open(template_file)
       except IOError, e:
         raise RuntimeError(e)
       template_str = f.read()
@@ -53,7 +53,8 @@ def main(argv):
                               more_predicates=None)
 
   dictionary = json.load(sys.stdin)
-  sys.stdout.write(t.expand(dictionary))
+  s = t.expand(dictionary)
+  sys.stdout.write(s.encode('utf-8'))
   return 0
 
 
