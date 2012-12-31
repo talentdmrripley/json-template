@@ -1,0 +1,6 @@
+#!/bin/sh
+#
+# Small jsont wrapper for tests and so forth.
+
+PYTHONPATH=python:~/git/docopt:~/hg/tnet/python bin/jsont.py "$@"
+

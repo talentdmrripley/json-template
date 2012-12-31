@@ -11,11 +11,6 @@ pygrep() {
   find . -name \*.py | xargs grep "$@"
 }
 
-# Run the jsont tool
-jsont() {
-  PYTHONPATH=python:~/git/docopt:~/hg/tnet/python bin/jsont.py "$@"
-}
-
 make-docs() {
   PYTHONPATH=.:$TASTE_DIR doc/makedocs.py "$@"
 }

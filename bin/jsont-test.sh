@@ -2,9 +2,9 @@
 #
 # jsont-test.sh
 
-# TODO: Shouldn't need do.sh?  Maybe just bin/jsont.
+# TODO: is there a simpler way to do this?
 jsont() {
-  ./do.sh jsont "$@"
+  bin/jsont "$@"
 }
 
 test-inline() {
