@@ -19,6 +19,12 @@ Expand a JSON template, given a data dictionary.
 
 Usage:
   expand.py 'a is {a}' '{"a": 1}'
+
+TODO: REMOVE this file.  This is subsumed by bin/jsont.  It is still used by
+python/jsontemplate_test.py, passed to python/verifier.py ExternalVerifier.
+
+What's the point of that test?  I guess it's to see that you can actually use
+JSON for all the tests, rather than in-memory dictionaries.
 """
 
 __author__ = 'Andy Chu'

@@ -1,1 +1,5 @@
 glob:*.pyc
+# ignore output of makedocs for now
+test-cases
+browser-tests
+python/dist
