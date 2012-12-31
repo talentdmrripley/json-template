@@ -11,6 +11,10 @@ pygrep() {
   find . -name \*.py | xargs grep "$@"
 }
 
+make-docs() {
+  PYTHONPATH=.:$TASTE_DIR doc/makedocs.py "$@"
+}
+
 py-tests() {
   # Run Python unit tests
   export PYTHONPATH=$TASTE_DIR

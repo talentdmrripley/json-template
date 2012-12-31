@@ -41,7 +41,11 @@ def BlogPosts(directory):
     blog_template = open(filename).read()
 
     dictionary = {}
-    body = jsontemplate.FromString(blog_template).expand(dictionary)
+    try:
+      body = jsontemplate.FromString(blog_template).expand(dictionary)
+    except jsontemplate.EvaluationError, e:
+      print >>sys.stderr, 'Error expanding %s' % filename
+      raise
 
     posts.append(dict(
         filename=filename, title=title, body=body, outfilename=outfilename,
