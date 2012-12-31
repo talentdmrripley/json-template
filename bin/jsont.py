@@ -31,7 +31,6 @@ def main(argv):
 
   opts = docopt.docopt(__doc__, version='jsont 0.1')
 
-  dictionary = json.load(sys.stdin)
   if opts['--template']:
     # TODO: Could provide an option to suppress this newline.
     template_str = opts['--template'] + '\n'
@@ -52,6 +51,8 @@ def main(argv):
                               more_formatters=more_formatters,
                               # TODO: add more?
                               more_predicates=None)
+
+  dictionary = json.load(sys.stdin)
   sys.stdout.write(t.expand(dictionary))
   return 0
 
