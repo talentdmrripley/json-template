@@ -15,7 +15,10 @@ Options:
 """
 
 import sys
-import json
+try:
+  import json
+except ImportError:
+  from simplejson import json
 
 import jsontemplate
 from jsontemplate import formatters
