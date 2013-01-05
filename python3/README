@@ -1,0 +1,10 @@
+This is an experimental version of JSON Template for Python 3.
+
+It is experimental because it doesn't have automated tests run before release.
+If you are using it, then feel free to hook up the language-independent tests in
+jsontemplate_test.py.
+
+Changes
+-------
+
+August 2, 2012: Initial release (v0.88).  Patch by kevin.steves@gmail.com.

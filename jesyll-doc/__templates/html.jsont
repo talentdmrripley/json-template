@@ -1,0 +1,95 @@
+meta: []
+default-formatter: raw
+
+<!DOCTYPE HTML>
+
+[# A simple template for HTML docs]
+
+<html lang=en>
+
+<head>
+<meta charset=utf-8>
+<title>[title]</title>
+
+[.repeated section include-js]
+  <script type='text/javascript' src="[@|html-attr-value]"></script>
+[.end]
+
+[.repeated section include-css]
+  <link rel="stylesheet" type="text/css"
+        href="[@|html-attr-value]" />
+[.end]
+
+[# This one lets you set the media attribute ]
+[.repeated section fancy-css]
+  <link rel="stylesheet" type="text/css"
+        href="[href|html-attr-value]" media="[media]" />
+[.end]
+
+<style type=text/css>
+/* Literals are blocks, maybe not the best name. */
+.literal {
+  background-color: #EEE;
+  padding: 0.5em;
+}
+
+/* Override what's in the google-code-prettify CSS */
+pre.prettyprint {
+  background-color: #EEE;
+  padding: 0.5em;
+  border: none;
+}
+
+/* Make keywords bold, and comments italicized.
+See http://google-code-prettify.googlecode.com/svn/trunk/src/prettify.css 
+*/
+.kwd { color: #008; font-weight: bold; }
+.com { color: #800; font-style: italic; }
+
+/* Inline code */
+code {
+  color: green;
+}
+
+.footnotes {
+  font-size: small;
+}
+
+</style>
+</head>
+
+<body onload="[.section onload-js][@][.end]">
+<table>
+  <tr>
+    <td>
+    </td>
+    <td width="40%">
+[body]
+    </td> 
+[.section img-right]
+    <td align="center" width="30%" valign="top">
+      <a href="[href]">
+        <img src="[src]" />
+      </a>
+    </td>
+[.or]
+    <td>
+    </td>
+[.end]
+  </tr>
+</table>
+
+[.section google-analytics-id]
+<script type="text/javascript">
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript">
+try {
+var pageTracker = _gat._getTracker("[@]");
+pageTracker._trackPageview();
+} catch(err) {}</script>
+[.end]
+</body>
+
+</html>

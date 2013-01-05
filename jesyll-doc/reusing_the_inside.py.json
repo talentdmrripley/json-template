@@ -1,0 +1,15 @@
+{ 
+  "$title": "source listing: {filename}",
+  ".template": "html",
+
+  "filename": "reusing_the_inside.py",
+
+  "$raw": "{raw-base}{filename}/",
+  "$live": "{live-base}{filename}",
+
+  "&code": "reusing_the_inside.py",
+  "pretty": true,
+
+  # TODO: Make this work
+  "&$body": "__templates/python-examples.jsont",
+}
