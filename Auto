@@ -9,12 +9,12 @@ tin() {
   $CDI_DEPS/tin.tin "$@"
 }
 
-readonly pypath=.:$CDI_DEPS/docopt-master:$CDI_DEPS/simplejson-2.6.2
+# . is to import bin.jsont
+# python is to import json-template
+readonly pypath=.:python:$CDI_DEPS/docopt-master:$CDI_DEPS/simplejson-2.6.2
 
 Build() {
   PYTHONPATH=$pypath tin build-python bin.jsont --output=$CDI_OUT/jsont.tin
-  PYTHONPATH=$pypath tin build-python bin.pin --output=$CDI_OUT/pin.tin
-  PYTHONPATH=$pypath tin build-python bin.snip --output=$CDI_OUT/snip.tin
 
   #poly build doc/
 }
