@@ -1,0 +1,208 @@
+Design Notes for Posterity
+==========================
+
+XXX Explain how these 2 things related XXX
+
+Originally I described how you could reuse templates "manually" -- "reusing the
+inside" by using a template as a formatter, and "reusing the outside" by
+expanding templates into JSON values, and then expanding those with another
+template.
+
+These methods are good for programmatic use of JSON Template, since they only
+cost you a couple lines of code.  But sometimes you want a more data-driven
+approach that doesn't require these repetetitive steps..  I decided to back
+down somewhat from my purist stance and implement these in the language.  It
+took awhile to find the right abstractions, but they ended up being small
+additions that were well worth it, and don't compromise the nice algebraic
+model of JSON Template.
+
+Both of these rely on an abstraction which I will call the "Template Group".
+Basically this is just a map from { name -> Template() instance }, where the
+templates can reference each other by name.
+
+For "reusing the inside", use the built-in "template" formatter.  This exploits
+the equivalence between templates and formatters.
+
+directory.jsont:
+
+Workers:
+{.repeated section workers}
+  {@|template user-profile}
+{.end}
+Supervisor:
+{supervisor|template user-profile}
+
+user-profile.jsont:
+
+{name} / {job}
+
+data dictionary:
+{ 
+  "workers": [
+    {"name": "Alice", "job": "tooth extractor"},
+    {"name": "Bob",   "job": "snow shoveler"},
+    ]
+  "supervisor":
+    {"name": "Carl",  "job": "pencil pusher"},
+}
+
+Each item in the repeated section is a record, and it is formatted by another
+template.
+
+In this pattern, each .jsont text file corresponds to one Template() instance.
+
+In order to allow the templates to reference each other, call
+MakeTemplateGroup() on a dictionary of { name -> Template() instance }.
+
+This is useful for factoring large templates into components that can be
+reused.
+
+
+"Reusing the outside"
+---------------------
+
+For "reusing the outside", a common pattern is to have a common "style" for
+HTML pages, while fields like the title and body differ for each page.
+
+This is what Django's "template inheritance" helps you with.
+
+
+Example:
+
+page.jsont:
+{.define :TITLE}
+  Welcome, {user}
+{.end}
+
+{.define :BODY}
+  <h3>{:TITLE}</h3>
+  You have {points} points.
+{.end}
+
+STYLE.jsont:
+<head>
+  {.section :TITLE}<title>{:@}</title>{.end}
+</head>
+<body>
+{:BODY}
+</body>
+
+Note that the BODY template can reference "TITLE", which I don't believe
+Django's template inheritance can handle.  This nicely falls out of the common
+"template group" model.
+
+You actually instantiate a single Template() instance from page.jsont, but it
+parses the {.define} sections and creates a template group for you.  That is, a
+single file corresponds to MULTIPLE Template() instances under the covers.
+(Of course, this isn't strictly necessary, as I pointed out in my original
+article, but I don't think people would want juggle a lot of 1-line text files
+that contain page titles.)
+
+This makes it easy to keep all your strings in templates.  In the original
+model, sometimes it was tempting to just put short strings in code, which is
+sloppy.
+
+
+The way this works is:
+
+# TODO:
+
+1. 
+2.
+
+Syntax for section:
+<head>
+  {.section :TITLE}<title>{:@}</title>{.end}
+</head>
+
+<title>{.template TITLE}</title>
+
+To test if a template exists in the template group:
+
+{.if template TITLE}<title>{.template TITLE}</title>{.end}
+
+# the
+
+This is analogous to:
+
+{.section TITLE}<title>{@}</title>{.end}
+
+except the context isn't changed.
+
+
+Whitespace Options (Python)
+------------------
+
+If you want to precisely control the whitespace in the output but want to
+maintain a readable, nicely indented template, use the "strip-line" whitespace
+option.
+
+{.OPTION strip-line}
+  {.repeated section name}
+    {@},
+  {.end}
+{.end}
+
+Instead of getting:
+
+   a,   b,   c,
+
+because of the leading indent, you will get "a,b,c,".
+
+
+Multiline Comments (Python)
+------------------
+
+{##BEGIN}
+{##END}
+
+
+
+"Pre-Formatters" (Python)
+------------
+
+TODO: Describe
+
+{.repeated section dict | pairs}
+  {key} {value}
+{.end}
+
+{.repeated section dict | sort}
+  {key} {value}
+{.end}
+
+
+Predicates (Python, JavaScript)
+----------
+
+JSON Template has two kinds of "user-defined functions" -- formatters and
+predicates.
+
+Predicates are used in the if statement:
+
+{.section num_users}
+  {.if singular}  {# tests if the cursor num_users is equal to 1}
+    {@} user.
+  {.or}
+    {@} users.
+  {.end}
+{.end}
+
+'singular' is a predicate name.  Predicate names must be registered and
+associated a function that takes the current context and returns a boolean.
+('singular' happens to be built in, so it is available by default).
+
+The most common type of test is to test whether an attribute is "true".  This is
+done with the "test" predicate:
+
+{.if test debug}
+  <i>Rendered in {seconds} seconds</i>
+{.end}
+
+Since this is so common, we provide a synonym for this -- instead of "if test
+<name>", you can just use "<name>?" :
+
+{.debug?}
+  <i>Rendered in {seconds} seconds</i>
+{.end}
+

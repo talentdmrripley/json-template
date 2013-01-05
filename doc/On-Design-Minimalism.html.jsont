@@ -1,0 +1,433 @@
+meta: {{}}
+default-formatter: raw
+
+<p align="right">
+<i>April 2009</i>
+</p>
+
+<h1>On Design Minimalism</h1>
+
+<ul>
+<p>... or, <b><i>How to implement "includes" on top of JSON Template</i></b></p>
+<p>... or, <b><i>Avoiding the Dinosaur Snaggletooth</i></b></p>
+</ul>
+
+{{#table-of-contents}}
+
+<p> After <a href="Introducing-JSON-Template.html">introducing JSON Template</a>, the most common feature request was for
+some kind of <b>include</b> or <b>macro</b> system.  The language isn't frozen
+yet by any means, but it's meant to have a minimal design, while still retaining
+power.
+
+<p>
+This article includes two detailed examples that show how <a
+href="http://code.google.com/p/json-template/">JSON Template</a> solves the
+problem of reuse, <i>without</i> any new features.  I'll then use this as a
+general illustration of the principle of <b>design minimalism</b>.
+</p>
+
+<h3>Contents</h3>
+<ul>
+{{table-of-contents}}
+</ul>
+
+<a name="section1"><h3>Two Template Reuse Patterns</h3></a>
+
+<p>
+Notice that an "include" or "macro" system is actually a <i>solution</i>.  I
+want know what <i>problem</i> the solution addresses.  And then I can figure out
+how to solve these problems, without blindly copying what other template systems
+do.
+</p>
+
+<p>
+The problem is <b>reuse</b>, or avoiding duplication between template files.
+This can be broken down into two more specific use cases: </p>
+
+<ol>
+<li><p>
+Reusing a template "inside" another template.  For example, you might want
+to define an HTML "panel" for a user profile, and include that panel across
+multiple HTML pages.
+</p>
+
+<p>
+Nearly all template systems have an include feature that implements this.  For example, in <a
+  href="http://djangoproject.com/">Django</a> you
+use the <code>{%&nbsp;include&nbsp;%}</code> statement.
+</p>
+</li>
+
+<li>
+<p>
+Reusing the "outside" of a template, specifying this "shell" in another
+template.  For example, most sites have a common page header, footer, or
+sidebar.  You don't want to repeat this across pages.
+</p>
+
+<p>
+In Django, <i>template inheritance</i> or the <code>{% block %}</code> and
+<code>{%&nbsp;extends&nbsp;%}</code> tags are what you use to implement this. <a
+  href="#footnote1">[1] </a></p>
+</li>
+
+</ol>
+
+<p>
+I should note that I'm not only avoiding new features -- I see problems with
+these "standard" solutions.  First, include statements break encapsulation.
+You've broken up your templates into modules (files), but what about the data
+dictionary?  A lot of web apps seem to have a lot of what are essentially global
+template variables stuffed into a "servlet base class".  
+</p>
+
+<p>
+Also, if inclusion is implemented by naive textual substitution, then we haven't
+moved beyond the C preprocessor and its well known problems. 
+</p>
+
+<p>
+I have less experience with the "inheritance" model.  But I have dealt with
+inheritance in specialized languages (as well as in all the popular general
+purpose languages), and it inevitably suffers from the <a
+href="http://en.wikipedia.org/wiki/Fragile_base_class">fragile base class</a>
+problem.  When you can override anything, there's no possibility of hiding data.
+A change to your "base class" requires you (in theory) to test every page on
+your site.
+</p>
+
+<p>
+Anyway, for each of these two problems, I've implemented a small dynamic page
+that shows how to express the reuse pattern in JSON Template.  </p>
+
+<a name="section2"><h3>Sample program for reuse on the "outside"</h3></a>
+
+<p>
+The second case is easier, so we'll start with that: <a
+  href="reusing_the_outside.py.html">reusing_the_outside.py</a>.
+</p>
+
+<p>
+The idea is simple: 
+</p>
+
+<ol>
+  <li>Create the <code>&lt;body&gt;&lt;/body&gt;</code> section of the page,
+ using a template expansion.</li>
+
+ <li>Put that HTML in a JSON dictionary.</li>
+
+ <li>Use <b>another</b> template expansion to generate the complete page (making
+ sure to use the <code>raw</code> formatter to avoid double escaping).
+ </li>
+</ol>
+  
+<p>
+This involves very little code: A template expansion involes just constructing a
+dictionary and then a single line of code for the API call.
+</p>
+
+<p>In fact, this
+article <i>itself</i> is <a href="html.jsont">generated using this method</a>.
+The "shell" has substitutions for the <code>&lt;title&gt;</code> and
+<code>&lt;body&gt;</code>, as in the example.  It also has <code>repeated
+section</code>s for external JavaScript and CSS (e.g. for <a
+href="http://code.google.com/p/google-code-prettify">google-code-prettify</a>),
+and a <code>section</code> for <a href="http://www.google.com/analytics/">Google Analytics</a>.
+</p>
+
+<a name="section3"><h3>Sample program for reuse on the "inside"</h3></a>
+
+<p>
+The first case is shown in <a href="reusing_the_inside.py.html">reusing_the_inside.py</a>.
+</p>
+
+<p> The idea here is a bit more subtle.  We already know how to substitute
+variables with the <code>{variable-name|formatter}</code> syntax (if you don't,
+go back to <a href="Introducing-JSON-Template.html">Introducing JSON
+  Template</a>).
+</p>
+
+<p> JSON Template's execution model involves a <b>cursor</b>, which is moved by
+the names and types of the <b>sections</b> in the template.  <code>{section foo}</code>
+pushes the cursor into the JSON node called <code>foo</code>.  <code>{repeated
+  section bar}</code> runs the cursor over each element in the JSON node
+<code>bar</code>.
+</p>
+
+<p>
+Usually you expand simple <b>variables</b> under the cursor, but there's no
+reason you can't expand entire JSON (sub) <b>dictionaries</b>.  Just like a
+variable, the subdictionary is passed to the formatters you specify in the
+template.
+</p>
+
+<p>
+We can define our own application-specific formatters.  So in this way, we can
+substitute an entire user profile <i>data dictionary</i> for user profile
+<i>HTML</i> -- moreover, we can do it multiple times in the same page, with
+different profiles.
+</p>
+
+<p>
+Read <a href="reusing_the_inside.py.html">the example</a> for
+details.  </p>
+
+<p>It may seem long, but keep in mind the core of what you have to do to
+implement this reuse pattern:
+</p>
+
+<pre class="prettyprint literal">
+def MoreFormatters(formatter_name):
+  if formatter_name == 'user-profile':
+    return USER_PROFILE_TEMPLATE.expand
+  else:
+    return None  # consult default formatters
+
+def TemplateThatCanRenderProfiles(template_str):
+  return jsontemplate.Template(template_str,
+                               more_formatters=MoreFormatters,
+                               default_formatter='html')
+</pre>
+
+<p>
+This is such a small amount of code that "folding it into the language" would
+make your system bigger rather than smaller (accounting for the size of JSON
+template itself).
+</p>
+
+<p>
+If you don't like this extra level of indirection, <i>you</i> can also implement
+a straightforward <code>include</code> mechanism.  Let's follow the convention
+that formatters starting with <code>%</code> load template files.
+</p>
+
+<pre class="prettyprint literal">
+def MoreFormatters(formatter_name):
+  if formatter_name.startswith('%'):
+    filename = formatter_name[1:]
+    # Put your application-specific template-finding logic here
+    # In a production app, you will want to cache the file
+    # open/read and template compilation
+    return jsontemplate.FromFile(open(filename)).expand
+  else:
+    return None  # consult default formatters
+</pre>
+
+<p>
+Now you can write panels like this:
+</p>
+
+<pre class="literal">
+<code>{owner|%user-profile.jsont}
+{member|%user-profile.jsont}</code>
+</pre>
+
+<p>
+... where <code>user-profile.jsont</code> is a template filename.  Beautifully
+simple, right?  JSON Template is meant to be a library and not a framework.
+It's small and extensible, in order to allow each person and each application to
+use it in the most appropriate way.
+</p>
+
+<p>
+To get familiar with the <code>more_formatters</code> argument, it's a good
+exercise to modify the <code>MoreFormatters</code> definition above to
+<i>cache</i> the included template <i>compilations</i>.
+</p>
+
+<a name="section4"><h3>Functional Programming</h3></a>
+
+<p>
+Notice that formatters are quite flexible.  HTML escaping (which takes "&lt;" to
+<code>&amp;gt;</code>, etc.) is a formatter, and constructing an entire user
+profile is <i>also</i> a formatter.  From the template system's point of view,
+there's no difference.
+</p>
+
+<p>
+This works because <i>formatters</i> are simply <a
+  href="http://en.wikipedia.org/wiki/Pure_function">pure functions</a> which map
+JSON nodes to strings -- and <i>TEMPLATES THEMSELVES</i> are also <b>pure
+  functions</b> which map JSON nodes to strings.  This is a key point.
+</p>
+
+<p>
+In other words, defining a <code>Template</code> is defining a function.  In
+mathematical notation, you can write: </p>
+
+<div class="literal">
+<ul>
+  <code>'Hello {name}'</code>
+  <span style="font-size: xx-large">(</span>
+  <code>{'name': 'World'}</code>  
+  <span style="font-size: xx-large">)</span>
+  = <code>'Hello World'</code>
+</ul>
+</div>
+
+<p> Here we are applying the <b>argument</b> <code>{'name': 'World'}</code> to
+the <b>function</b> <code>'Hello {name}'</code> (a template), and getting the
+<b>string</b> <code>'Hello World'</code> as a result.
+</p>
+
+<p>
+JSON Template is more or less a <i>functional programming language</i> (but
+don't tell anyone).  I will probably expound more on this in a future article.
+</p>
+
+
+<a name="section5"><h3>Now onto Design Minimalism</h3></a>
+  
+Design philosophies can be characterized along this axis:
+
+<ol>
+  <li>
+  At one end is what I'll call the <b>dinosaur snaggletooth</b> method of
+  design.
+  </li>
+</ol>
+
+<p>
+This is named after a conversation I had with a former coworker about the good
+old days of <a href="http://en.wikipedia.org/wiki/LEGO">Legos</a>.  You had
+a bunch of blocks, and you combined them in novel ways to build new things.
+Today you have these prepackaged sets instead, and you can make the cool
+Jurassic Forest.  But to make it, you need the <b>dinosaur snaggletooth</b> Lego
+piece, and then the <b>Mongol loincloth</b> Lego piece, the <b>Mandolin coke
+  spoon</b>, etc.  </p>
+
+<p>
+Using this method means coming up with a <i>specific</i> solution for each <i>specific</i>
+problem you encounter.  Seeing the <a
+  href="http://www.ozonehouse.com/mark/periodic/">Perl 6 periodic table of
+  operators</a> gives me this sinking feeling. <a href="#footnote2">[2]</a>
+</p>
+
+<p>
+This method ends up being used a lot because it's easy to copy an existing design, and then add the new features you need for new problems.  Copying certainly lets you get things done much faster.  But the issue is that you haven't internalized why the copied design chose the solutions it did.  You end up with a much larger solution than you would than when starting from first principles.
+</p>
+
+<ol start="2">
+  <li>
+  At the other end is what I'll call <b>problem-oriented</b> rather than
+  solution-oriented design.  You figure out all the problems that need to be
+  solved with the system, and try to solve them with a few <b>orthogonal</b>
+  constructs which can be combined in novel ways.
+  </li>
+</ol>
+
+<p>
+I'm going to be immodest here and say that I'm surprised that the second
+("inside") reuse pattern fell out of JSON Template.  I certainly didn't design
+it with that intent -- only after pondering the include feature pretty hard did
+this occur to me.  I had envisioned formatters as ways to escape variables, just
+as in <a href="http://djangoproject.com/">Django</a> (with filters) and <a
+  href="http://code.google.com/p/google-ctemplate/">google-ctemplate</a>.  But
+having a well-defined <b>data model</b> (of JSON), and a well-defined
+<b>execution model</b> (the cursor traversing a node tree, using a stack), seems
+to have paid off.  Orthogonal designs are the ones that seem to admit
+unexpective and creative uses.  </p>
+
+<a name="section6"><h3>Another example of multiple problems addressed by a single solution</h3></a>
+
+<p>
+Here is the justification behind what might be seen as another unusual design
+choice.
+</p>
+
+<p>
+Problems:
+</p>
+
+<ul>
+  <li>It should be able to generate any type of content -- <b>and</b> the
+  template must be <i>readable</i> in all cases.</li>
+  <li>It should be easy to write <i>ad hoc</i> tools to process templates.</li>
+  <li>The implementation should be small, especially since it's meant to be
+  implemented in multiple programming languages.</li>
+</ul>
+
+<p>
+Solution that addresses all three problems:
+</p>
+
+<ul>
+  <p>
+  The grammar of JSON Template is <b>context free</b>, but it has customizable
+  metacharacters (<code>{}</code>). <a href="#footnote3">[3]</a>
+  </p>
+</ul>
+
+<p>
+This means that a template can be be tokenized by a regular expression.  A
+single <code>re.split()</code> call splits the strings into alternating literal
+strings and template directives.
+</p>
+
+<p>
+A consequence is that it's easy to write tools like (correct) search/replace
+tools, checks for correctness or style, the syntax highlighter, maybe template
+security tools (for escaping), etc.  </p>
+
+<p>
+The <code>{.meta-left}</code> and <code>{.meta-right}</code> constructs are
+admittedly awkard, but customizable metacharacters let you avoid them easily.
+Moreover, any characters will be awkward for generating <i>some</i> kind of
+content (e.g. <code>&lt;&gt;</code> for HTML, <code>{}</code> and
+<code>[]</code> for C, etc.).  In particular, generating <i>templates</i> from
+other templates is not uncommon, so there you'll have ugliness no matter what
+<i>fixed</i> characters you choose (how does it look generating a Django
+template from another Django template?).  So we sacrifice a little consistency
+and allow this small degree of customizability.
+</p>
+
+<p>
+If I had used a parser library/framework, I could have used a more complicated
+grammar and kept implementation the small.  But since <a
+  href="http://code.google.com/p/json-template/">JSON Template</a> is meant to
+be implemented in many languages, and every language has a different native
+parser technology, I avoided this.
+</p>
+
+<a name="section7"><h3>Conclusion</h3></a>
+
+<p> Don't create a <b>dinosaur snaggletooth</b> just to solve the problem you
+have now.  Step back a bit, and see if you address multiple problems with a
+single solution.  Copy solutions where appropriate, but also judiciously avoid
+bloat.
+</p>
+
+<h3>Feedback</h3>
+
+<p>
+Please send mail to the <a
+  href="http://groups.google.com/group/json-template">mailing list</a> or
+comment on <a
+  href="http://www.reddit.com/r/programming/comments/8a1kw/on_design_minimalism_why_json_template_doesnt/">reddit</a>.
+</p>
+
+<hr>
+
+<div class="footnotes">
+  
+<p>
+<a name="footnote1">[1]</a> Both of these are described in the <a
+  href="http://www.djangobook.com/en/2.0/chapter04/">Django Book</a>, under
+"The Include Template Tag" and "Template Inheritance".
+</p>
+
+<p>
+<a name="footnote2">[2]</a> Language War Disclaimer: Perl had a lot of great and
+influential ideas.  (OK, but really, does anyone want to learn, much less
+remember, all that?)
+</p>
+<p>
+<a name="footnote3">[3]</a> <a
+  href="http://code.google.com/p/google-ctemplate/">google-ctemplate</a> also
+has customizeable metacharacters, but the grammar isn't context-free because the
+metacharacters can be changed at any time in the template.  Note: I'm not
+claiming this is a fantastic or original idea -- it's just a <b>design
+  choice</b>, that's all.
+</p>
+</div>
