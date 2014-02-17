@@ -9,7 +9,6 @@ Usage:
 Options:
   --format=FORMAT
       Read input as either JSON or TNET.  (TODO: autodetect it?)
-
   --template=TEMPLATE
       Inline template, rather than reading it from a file.
 """
