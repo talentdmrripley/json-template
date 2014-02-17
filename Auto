@@ -30,7 +30,7 @@ Deploy() {
   # CWD should be build dir?  Then just copy it?
   scp \
     $CDI_OUT/jsont.tin \
-    $PBI_DEPLOY_DEST/json-template/latest/
+    $CDI_DEPLOY_DEST/json-template/latest/
 
   # TODO: Deploy the Poly doc app.
 }
