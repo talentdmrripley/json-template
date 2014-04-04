@@ -1,0 +1,5 @@
+Name: json-template
+Description: json template library and command line tool.
+Publisher: polyd.org
+Build-Variant: portable
+Exports: bin/jsont
