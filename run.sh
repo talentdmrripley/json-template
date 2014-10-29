@@ -94,4 +94,10 @@ unit() {
   "$@"
 }
 
+_link() { ln -s -f -v "$@"; }
+
+install() {
+  _link $PWD/bin/jsont ~/bin
+}
+
 "$@"

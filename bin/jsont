@@ -3,5 +3,5 @@
 # Small jsont wrapper for tests and so forth.
 
 this_dir=$(dirname $(readlink -f $0))
-PYTHONPATH=$this_dir/../python:~/git/docopt:~/hg/tnet/python $this_dir/jsont.py "$@"
+PYTHONPATH=$this_dir/../python:~/git/other/docopt $this_dir/jsont.py "$@"
 
